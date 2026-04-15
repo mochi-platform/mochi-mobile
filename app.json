@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "Mochi",
+    "slug": "mochi",
+    "version": "4.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "mochi",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.siramong.mochi",
+      "permissions": [
+        "android.permission.health.READ_MENSTRUATION"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      [
+        "react-native-edge-to-edge/app.plugin.js",
+        {
+          "android": {
+            "parentTheme": "Default",
+            "enforceNavigationBarContrast": false
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#7c3aed",
+          "defaultChannel": "default",
+          "sounds": [],
+          "iosDisplayInForeground": true
+        }
+      ],
+      [
+        "react-native-health-connect"
+      ],
+      "expo-image-picker",
+      "expo-document-picker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1e2e3fa6-31e0-444b-b373-0ae53e0bc6cf"
+      }
+    }
+  }
+}

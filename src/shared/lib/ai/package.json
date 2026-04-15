@@ -1,0 +1,9 @@
+{
+  "name": "@mochi/ai",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*.ts"
+  }
+}
