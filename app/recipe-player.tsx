@@ -22,7 +22,7 @@ import Animated, {
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useAchievement } from "@/src/core/providers/AchievementContext";
-import { askMochiWhileCooking } from "@/src/shared/lib/ai-client";
+import { askMochiWhileCooking } from "@/src/shared/lib/ai";
 import {
   addPoints,
   checkCookingSessionAchievements,

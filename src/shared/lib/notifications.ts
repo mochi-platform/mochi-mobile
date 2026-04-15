@@ -232,7 +232,12 @@ export async function scheduleMorningReminder(
 export async function cancelMorningReminder(): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(
     NOTIFICATION_ID.MORNING,
-  ).catch(() => {});
+  ).catch((error) =>
+    console.error(
+      "[Notifications] error cancelando recordatorio de mañana:",
+      error instanceof Error ? error.message : String(error),
+    ),
+  );
 }
 
 // ─── Study block reminders ───────────────────────────────────────────────────
@@ -270,7 +275,12 @@ export async function cancelAllStudyBlockReminders(): Promise<void> {
     .filter((id) => id.startsWith("study-block-"));
   await Promise.all(
     studyIds.map((id) =>
-      Notifications.cancelScheduledNotificationAsync(id).catch(() => {}),
+      Notifications.cancelScheduledNotificationAsync(id).catch((error) =>
+        console.error(
+          "[Notifications] error cancelando recordatorio de bloque:",
+          error instanceof Error ? error.message : String(error),
+        ),
+      ),
     ),
   );
 }
@@ -280,7 +290,11 @@ export async function scheduleWeeklySummaryNotification(
   hour: number = 10,
 ): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync("weekly-summary").catch(
-    () => {},
+    (error) =>
+      console.error(
+        "[Notifications] error cancelando resumen semanal previo:",
+        error instanceof Error ? error.message : String(error),
+      ),
   );
 
   await Notifications.scheduleNotificationAsync({
@@ -302,7 +316,11 @@ export async function scheduleWeeklySummaryNotification(
 
 export async function cancelWeeklySummaryNotification(): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync("weekly-summary").catch(
-    () => {},
+    (error) =>
+      console.error(
+        "[Notifications] error cancelando resumen semanal:",
+        error instanceof Error ? error.message : String(error),
+      ),
   );
 }
 
@@ -313,7 +331,11 @@ export async function scheduleExamReminder(
 ): Promise<void> {
   const identifier = `exam-${examId}`;
   await Notifications.cancelScheduledNotificationAsync(identifier).catch(
-    () => {},
+    (error) =>
+      console.error(
+        "[Notifications] error cancelando recordatorio de examen previo:",
+        error instanceof Error ? error.message : String(error),
+      ),
   );
 
   const exam = new Date(`${examDate}T20:00:00`);
@@ -339,7 +361,11 @@ export async function scheduleExamReminder(
 
 export async function cancelExamReminder(examId: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(`exam-${examId}`).catch(
-    () => {},
+    (error) =>
+      console.error(
+        "[Notifications] error cancelando recordatorio de examen:",
+        error instanceof Error ? error.message : String(error),
+      ),
   );
 }
 
@@ -422,13 +448,23 @@ export async function cancelHabitReminder(habitId?: string): Promise<void> {
   if (habitId) {
     await Notifications.cancelScheduledNotificationAsync(
       NOTIFICATION_ID.habit(habitId),
-    ).catch(() => {});
+    ).catch((error) =>
+      console.error(
+        "[Notifications] error cancelando recordatorio de hábito:",
+        error instanceof Error ? error.message : String(error),
+      ),
+    );
     return;
   }
 
   await Notifications.cancelScheduledNotificationAsync(
     NOTIFICATION_ID.HABIT_LEGACY,
-  ).catch(() => {});
+  ).catch((error) =>
+    console.error(
+      "[Notifications] error cancelando recordatorio de hábitos legacy:",
+      error instanceof Error ? error.message : String(error),
+    ),
+  );
 
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   const habitIds = scheduled
@@ -437,7 +473,12 @@ export async function cancelHabitReminder(habitId?: string): Promise<void> {
 
   await Promise.all(
     habitIds.map((id) =>
-      Notifications.cancelScheduledNotificationAsync(id).catch(() => {}),
+      Notifications.cancelScheduledNotificationAsync(id).catch((error) =>
+        console.error(
+          "[Notifications] error cancelando recordatorio de hábito por id:",
+          error instanceof Error ? error.message : String(error),
+        ),
+      ),
     ),
   );
 }
@@ -471,7 +512,12 @@ export async function scheduleCookingReminder(time: string): Promise<void> {
 export async function cancelCookingReminder(): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(
     NOTIFICATION_ID.COOKING,
-  ).catch(() => {});
+  ).catch((error) =>
+    console.error(
+      "[Notifications] error cancelando recordatorio de cocina:",
+      error instanceof Error ? error.message : String(error),
+    ),
+  );
 }
 
 // ─── Master cancel ───────────────────────────────────────────────────────────

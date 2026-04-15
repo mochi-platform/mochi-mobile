@@ -17,7 +17,7 @@ import {
 } from "react-native-safe-area-context";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
-import { suggestExerciseDescription } from "@/src/shared/lib/ai-client";
+import { suggestExerciseDescription } from "@/src/shared/lib/ai";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 
 export function CreateExerciseScreen() {
@@ -64,7 +64,10 @@ export function CreateExerciseScreen() {
       setDuration(String(suggestion.estimatedDuration || 60));
       setNotes(suggestion.description);
     } catch (error) {
-      console.error("AI suggestion error:", error);
+      console.error(
+        "[ExerciseCreate] error solicitando sugerencia IA:",
+        error instanceof Error ? error.message : String(error),
+      );
     } finally {
       setAiLoading(false);
     }

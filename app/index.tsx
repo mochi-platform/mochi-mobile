@@ -119,28 +119,48 @@ export default function Home() {
     ...(moduleVisibility.cooking_enabled ? (["cooking"] as const) : []),
   ];
 
+  const navigateToHome = () => {
+    router.replace("/");
+  };
+
+  const navigateToStudy = () => {
+    router.replace("/study-history");
+  };
+
+  const navigateToExercise = () => {
+    router.replace("/exercise-list");
+  };
+
+  const navigateToHabits = () => {
+    router.replace("/habits");
+  };
+
+  const navigateToCooking = () => {
+    router.replace("/cooking");
+  };
+
   const handleNavigate = (screen: MobileScreen) => {
     if (screen === "home") {
-      router.push("/");
+      navigateToHome();
       return;
     }
 
     if (screen === "study") {
-      router.push("/study-history");
+      navigateToStudy();
       return;
     }
 
     if (screen === "exercise") {
-      router.push("/exercise-list");
+      navigateToExercise();
       return;
     }
 
     if (screen === "habits") {
-      router.push("/habits");
+      navigateToHabits();
       return;
     }
 
-    router.push("/cooking");
+    navigateToCooking();
   };
 
   return (
@@ -148,9 +168,10 @@ export default function Home() {
       <View className="flex-1">
         <HomeDashboard
           userName="Amiga"
-          onNavigateToCooking={() => {
-            router.push("/cooking");
-          }}
+          onNavigateToStudy={navigateToStudy}
+          onNavigateToExercise={navigateToExercise}
+          onNavigateToHabits={navigateToHabits}
+          onNavigateToCooking={navigateToCooking}
           moduleVisibility={moduleVisibility}
         />
       </View>

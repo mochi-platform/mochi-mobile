@@ -26,6 +26,7 @@ export function useExamSprints(userId: string | undefined) {
       const { data: sprintsData, error: sprintsError } = await supabase
         .from("exam_prep_sprints")
         .select("*")
+        .returns<ExamPrepSprint[]>()
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -40,11 +41,12 @@ export function useExamSprints(userId: string | undefined) {
 
       // Fetch milestones for each sprint
       const sprintsWithMilestones: SprintWithMilestones[] = await Promise.all(
-        (sprintsData as ExamPrepSprint[]).map(async (sprint) => {
+        sprintsData.map(async (sprint) => {
           const { data: milestonesData, error: milestonesError } =
             await supabase
               .from("exam_sprint_milestones")
               .select("*")
+              .returns<ExamSprintMilestone[]>()
               .eq("sprint_id", sprint.id)
               .order("milestone_number", { ascending: true });
 
@@ -54,7 +56,7 @@ export function useExamSprints(userId: string | undefined) {
 
           return {
             ...sprint,
-            milestones: (milestonesData as ExamSprintMilestone[]) ?? [],
+            milestones: milestonesData ?? [],
           };
         }),
       );
@@ -65,7 +67,10 @@ export function useExamSprints(userId: string | undefined) {
       setError(
         err instanceof Error ? err : new Error("Error fetching sprints"),
       );
-      console.error("useExamSprints error:", err);
+      console.error(
+        "[useExamSprints] error cargando sprints:",
+        err instanceof Error ? err.message : String(err),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -102,9 +107,12 @@ export function useExamSprints(userId: string | undefined) {
       // Refresh sprints list
       void fetchSprints();
 
-      return (data as ExamPrepSprint[])[0];
+      return data?.[0] as ExamPrepSprint;
     } catch (err) {
-      console.error("Error creating sprint:", err);
+      console.error(
+        "[useExamSprints] error creando sprint:",
+        err instanceof Error ? err.message : String(err),
+      );
       throw err;
     }
   };
@@ -124,7 +132,10 @@ export function useExamSprints(userId: string | undefined) {
       // Refresh sprints list
       void fetchSprints();
     } catch (err) {
-      console.error("Error updating sprint:", err);
+      console.error(
+        "[useExamSprints] error actualizando sprint:",
+        err instanceof Error ? err.message : String(err),
+      );
       throw err;
     }
   };
@@ -141,7 +152,10 @@ export function useExamSprints(userId: string | undefined) {
       // Refresh sprints list
       void fetchSprints();
     } catch (err) {
-      console.error("Error deleting sprint:", err);
+      console.error(
+        "[useExamSprints] error eliminando sprint:",
+        err instanceof Error ? err.message : String(err),
+      );
       throw err;
     }
   };

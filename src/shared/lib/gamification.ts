@@ -59,7 +59,8 @@ export async function trackEngagementEvent({
         ignoreDuplicates: true,
       },
     )
-    .select("id");
+    .select("id")
+    .returns<Array<{ id: string }>>();
 
   if (error) {
     throw error;
@@ -121,7 +122,13 @@ export async function unlockAchievement(
     .from("achievements")
     .select("id, title, description, points, icon")
     .eq("key", achievementKey)
-    .single();
+    .single<{
+      id: string;
+      title: string;
+      description: string;
+      points: number;
+      icon: string | null;
+    }>();
 
   if (achError || !achievement) return null;
 
@@ -132,7 +139,8 @@ export async function unlockAchievement(
       { user_id: userId, achievement_id: achievement.id },
       { onConflict: "user_id,achievement_id", ignoreDuplicates: true },
     )
-    .select("id");
+    .select("id")
+    .returns<Array<{ id: string }>>();
 
   if (insertError) return null;
 
@@ -186,16 +194,23 @@ export async function createStreakRecoveryPlan(
         is_active: true,
         completed_tasks: 0,
       })
-      .select("id");
+      .select("id")
+      .returns<Array<{ id: string }>>();
 
     if (error) {
-      console.error("Error creating recovery plan:", error);
+      console.error(
+        "[Gamification] error creando plan de recuperación:",
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
 
     return (data?.[0] as { id: string })?.id ?? null;
   } catch (err) {
-    console.error("Error creating recovery plan:", err);
+    console.error(
+      "[Gamification] error creando plan de recuperación:",
+      err instanceof Error ? err.message : String(err),
+    );
     return null;
   }
 }
@@ -258,7 +273,7 @@ export async function checkStreakAchievements(
     .from("streaks")
     .select("current_streak")
     .eq("user_id", userId)
-    .single();
+    .single<{ current_streak: number }>();
   const streak = data?.current_streak ?? 0;
   if (streak >= 3) await tryUnlock(userId, "streak_3", onUnlock);
   if (streak >= 7) await tryUnlock(userId, "streak_7", onUnlock);

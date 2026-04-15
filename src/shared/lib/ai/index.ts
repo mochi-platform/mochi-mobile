@@ -1,4 +1,6 @@
 import OpenAI from 'openai'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import Constants from 'expo-constants'
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 const TEXT_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free'
@@ -8,6 +10,7 @@ const FALLBACK_MODELS: AIModel[] = [TEXT_MODEL, MULTIMODAL_MODEL]
 const AI_LOG_PREFIX = '[mochi-ai]'
 
 type ChatRole = 'system' | 'user' | 'assistant'
+type OpenAIChatMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam
 
 export type AIModel =
   | 'nvidia/nemotron-3-super-120b-a12b:free'
@@ -116,6 +119,12 @@ export interface AIRecipeResponse {
 export interface FlashcardPair {
   front: string
   back: string
+}
+
+export interface AISuggestion {
+  description: string
+  estimatedDuration?: number
+  difficulty?: 'fácil' | 'medio' | 'difícil'
 }
 
 export interface StudyBlockSuggestion {
@@ -867,7 +876,7 @@ function buildClient(openrouter: OpenAI): MochiAIContract {
           { role: 'system', content: params.systemPrompt },
           { role: 'user', content: params.userMessage },
         ],
-        max_tokens: params.maxTokens ?? 2048,
+        max_tokens: params.maxTokens ?? 8192,
         temperature: params.temperature ?? 0.35,
       })
 
@@ -938,11 +947,15 @@ function buildClient(openrouter: OpenAI): MochiAIContract {
 
   async function callAIWithMessages(messages: ChatMessage[], model = TEXT_MODEL): Promise<string> {
     try {
+      const completionMessages: OpenAIChatMessage[] = messages.map((message) => ({
+        role: message.role,
+        content: message.content as OpenAIChatMessage['content'],
+      }))
+
       const completion = await openrouter.chat.completions.create({
         model,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        messages: messages as any,
-        max_tokens: 1024,
+        messages: completionMessages,
+        max_tokens: 8192,
         temperature: 0.35,
       })
 
@@ -1425,6 +1438,17 @@ type AIClient = MochiAIContract
 
 let activeClient: AIClient | null = null
 
+function resolveOpenRouterKey(): string {
+  const envKey = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY?.trim()
+  if (envKey) return envKey
+
+  const extra = Constants.expoConfig?.extra as { openrouterApiKey?: unknown } | undefined
+  const extraKey =
+    typeof extra?.openrouterApiKey === 'string' ? extra.openrouterApiKey.trim() : ''
+
+  return extraKey
+}
+
 function requireClient(): AIClient {
   if (!activeClient) {
     throw new AIError({
@@ -1438,7 +1462,7 @@ function requireClient(): AIClient {
 
 export function createAIClient(apiKey?: string): AIClient {
   const resolvedApiKey =
-    apiKey ?? process.env.VITE_OPENROUTER_API_KEY ?? process.env.EXPO_PUBLIC_OPENROUTER_API_KEY
+    apiKey ?? process.env.VITE_OPENROUTER_API_KEY ?? resolveOpenRouterKey()
 
   if (!resolvedApiKey?.trim()) {
     throw new AIError({
@@ -1574,4 +1598,162 @@ export async function generateRecoveryPlanSuggestions(
   input: GenerateRecoveryPlanSuggestionsInput
 ): Promise<RecoveryPlanTask[]> {
   return requireClient().generateRecoveryPlanSuggestions(input)
+}
+
+const AUTO_OPENROUTER_KEY = resolveOpenRouterKey()
+
+if (AUTO_OPENROUTER_KEY) {
+  createAIClient(AUTO_OPENROUTER_KEY)
+}
+
+function canUseAI(): boolean {
+  return Boolean(AUTO_OPENROUTER_KEY)
+}
+
+function sanitizeDailyMotivationMessage(raw: string): string {
+  const text = raw.replace(/\s+/g, ' ').trim()
+  if (!text) return ''
+
+  const withoutGreeting = text.replace(
+    /^(?:¡?hola(?:\s+[\p{L}\p{M}'-]+)?!?|buen(?:os|as)?\s+d[ií]as(?:\s+[\p{L}\p{M}'-]+)?!?|buenas\s+tardes(?:\s+[\p{L}\p{M}'-]+)?!?|buenas\s+noches(?:\s+[\p{L}\p{M}'-]+)?!?|good\s+morning(?:\s+[\w'-]+)?!?|good\s+afternoon(?:\s+[\w'-]+)?!?|good\s+evening(?:\s+[\w'-]+)?!?|good\s+night(?:\s+[\w'-]+)?!?)[,:\s-]*/iu,
+    ''
+  )
+
+  const cleaned = withoutGreeting
+    .replace(/\bstudent\b/giu, 'estudiante')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return cleaned
+}
+
+export async function suggestExerciseDescription(exerciseName: string): Promise<AISuggestion> {
+  const cacheKey = `ai-exercise-${exerciseName}`
+
+  try {
+    const cached = await AsyncStorage.getItem(cacheKey)
+    if (cached) return JSON.parse(cached) as AISuggestion
+  } catch {
+    // Ignore cache read errors and continue with AI or fallback.
+  }
+
+  if (!canUseAI()) {
+    return {
+      description: `${exerciseName}: Realiza correctamente`,
+      estimatedDuration: 60,
+      difficulty: 'medio',
+    }
+  }
+
+  const prompt = `Eres un entrenador personal experto. El usuario quiere hacer el ejercicio: "${exerciseName}". Proporciona una descripción breve (1-2 oraciones) de cómo hacerlo correctamente y el tiempo estimado en segundos (número solo). Responde SOLO en este formato JSON sin explicaciones adicionales: {"description": "...", "estimatedDuration": 60, "difficulty": "medio"}`
+
+  const response = await callAIWithFallback({
+    systemPrompt:
+      'Eres un entrenador personal de Mochi. Responde siempre en español y si se solicita JSON, responde solo JSON válido.',
+    userMessage: prompt,
+    maxTokens: 2048,
+  })
+
+  try {
+    const parsed = parseAIJson<AISuggestion>(response, { expected: 'object' })
+    const suggestion: AISuggestion = {
+      description: parsed.description || `${exerciseName}: Realiza correctamente`,
+      estimatedDuration: parsed.estimatedDuration || 60,
+      difficulty: parsed.difficulty || 'medio',
+    }
+
+    AsyncStorage.setItem(cacheKey, JSON.stringify(suggestion)).catch((error) =>
+      console.error(
+        '[AIClient] error guardando cache de sugerencia de ejercicio:',
+        error instanceof Error ? error.message : String(error)
+      )
+    )
+    return suggestion
+  } catch {
+    return {
+      description: `${exerciseName}: Realiza correctamente`,
+      estimatedDuration: 60,
+      difficulty: 'medio',
+    }
+  }
+}
+
+export async function suggestStudyDuration(subject: string): Promise<number> {
+  if (!canUseAI()) return 90
+
+  const prompt = `Sugiere una duración en minutos para un bloque de estudio de "${subject}" para una estudiante. Responde SOLO con un número (entre 30 y 180).`
+
+  const response = await callAI(prompt)
+  const duration = parseInt(response.trim(), 10)
+  return Number.isNaN(duration) ? 90 : Math.max(30, Math.min(180, duration))
+}
+
+export async function getDailyMotivation(
+  studyBlockCount: number,
+  hasRoutine: boolean,
+  timeOfDay: string,
+  cyclePhaseLabel?: string
+): Promise<string> {
+  const today = new Date().toISOString().slice(0, 10)
+  const cycleKey = cyclePhaseLabel ? cyclePhaseLabel.toLowerCase().replace(/\s+/g, '-') : 'sin-fase'
+  const cacheKey = `daily-motivation-v2-${today}-${timeOfDay}-${cycleKey}`
+
+  try {
+    const cached = await AsyncStorage.getItem(cacheKey)
+    if (cached) return cached
+  } catch {
+    // Ignore cache read errors and continue with AI or fallback.
+  }
+
+  if (!canUseAI()) {
+    return 'Hoy es un gran día para avanzar un paso más hacia tus metas.'
+  }
+
+  const timeText =
+    timeOfDay === 'dawn'
+      ? 'la madrugada'
+      : timeOfDay === 'morning'
+        ? 'la mañana'
+        : timeOfDay === 'afternoon'
+          ? 'la tarde'
+          : 'la noche'
+
+  const cycleHint = cyclePhaseLabel
+    ? ` La usuaria está en su ${cyclePhaseLabel}. Ten en cuenta esto con un tono cálido y sin presión.`
+    : ''
+
+  const prompt = `Eres Mochi, una asistente adorable. Es ${timeText}. Escribe un mensaje breve y motivador (máximo 2 oraciones) considerando que hoy la usuaria tiene ${studyBlockCount} bloques de estudio${hasRoutine ? ' y una rutina de ejercicio' : ''}.${cycleHint} Reglas estrictas: no saludes, no uses nombre propio, no uses inglés, no uses emojis. Responde solo el mensaje, sin comillas.`
+
+  const response = await callAI(prompt)
+  const cleaned = sanitizeDailyMotivationMessage(response)
+  const message = cleaned || 'Hoy es un gran día para avanzar un paso más hacia tus metas.'
+
+  try {
+    await AsyncStorage.setItem(cacheKey, message)
+  } catch {
+    // Ignore cache write errors.
+  }
+
+  return message
+}
+
+export async function suggestRecipeNames(ingredients: string[]): Promise<string[]> {
+  if (!canUseAI()) return []
+
+  const ingredientList = ingredients.slice(0, 5).join(', ')
+  const prompt = `Sugiere 3 nombres creativos y apetitosos en español para una receta que tiene: ${ingredientList}. Responde SOLO con un JSON array de strings, sin explicaciones: ["nombre1", "nombre2", "nombre3"]`
+
+  const response = await callAIWithFallback({
+    systemPrompt:
+      'Eres una asistente creativa de Mochi. Responde siempre en español y devuelve solo JSON válido si se solicita JSON.',
+    userMessage: prompt,
+    maxTokens: 2048,
+  })
+
+  try {
+    const parsed = parseAIJson<string[]>(response, { expected: 'array' })
+    return parsed.map((name) => String(name).trim()).filter(Boolean)
+  } catch {
+    return []
+  }
 }

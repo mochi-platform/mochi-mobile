@@ -8,7 +8,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import { getDailyMotivation } from "@/src/shared/lib/ai-client";
+import { getDailyMotivation } from "@/src/shared/lib/ai";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { getCyclePersonality } from "@/src/shared/lib/cyclePersonality";
 import type { CyclePhase } from "@/src/shared/lib/healthConnect";

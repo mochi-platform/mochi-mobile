@@ -62,7 +62,10 @@ export function useEnergyDaily() {
         setError(
           err instanceof Error ? err : new Error("Error fetching energy"),
         );
-        console.error("useEnergyDaily error:", err);
+        console.error(
+          "[useEnergyDaily] error cargando energía:",
+          err instanceof Error ? err.message : String(err),
+        );
       } finally {
         setIsLoading(false);
       }

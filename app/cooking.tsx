@@ -18,7 +18,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useAchievement } from "@/src/core/providers/AchievementContext";
-import { generateRecipe } from "@/src/shared/lib/ai-client";
+import { generateRecipe } from "@/src/shared/lib/ai";
 import {
   addPoints,
   checkCookingRecipeAchievements,
@@ -31,7 +31,7 @@ import type {
   AIRecipeResponse,
   RecipeDifficulty,
 } from "@/src/shared/types/database";
-import type { RecipeGenerationType } from "@/src/shared/lib/ai-client";
+import type { RecipeGenerationType } from "@/src/shared/lib/ai";
 import { useCycleRecommendation } from "@/src/shared/hooks/useCycleRecommendation";
 
 const difficultyConfig: Record<

@@ -29,7 +29,10 @@ export function useExamSprintProgress(sprintId: string) {
       setError(
         err instanceof Error ? err : new Error("Error fetching progress"),
       );
-      console.error("useExamSprintProgress error:", err);
+      console.error(
+        "[useExamSprintProgress] error cargando progreso:",
+        err instanceof Error ? err.message : String(err),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +71,10 @@ export function useExamSprintProgress(sprintId: string) {
 
       return data;
     } catch (err) {
-      console.error("Error logging progress:", err);
+      console.error(
+        "[useExamSprintProgress] error registrando progreso:",
+        err instanceof Error ? err.message : String(err),
+      );
       throw err;
     }
   };
@@ -88,7 +94,10 @@ export function useExamSprintProgress(sprintId: string) {
       // Refresh progress list
       void fetchProgress();
     } catch (err) {
-      console.error("Error updating progress:", err);
+      console.error(
+        "[useExamSprintProgress] error actualizando progreso:",
+        err instanceof Error ? err.message : String(err),
+      );
       throw err;
     }
   };

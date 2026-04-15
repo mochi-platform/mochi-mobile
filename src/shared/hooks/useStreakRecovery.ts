@@ -36,7 +36,10 @@ export function useStreakRecovery(userId: string | undefined) {
       setError(
         err instanceof Error ? err : new Error("Error fetching recovery plan"),
       );
-      console.error("useStreakRecovery error:", err);
+      console.error(
+        "[useStreakRecovery] error cargando plan de recuperación:",
+        err instanceof Error ? err.message : String(err),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +88,10 @@ export function useStreakRecovery(userId: string | undefined) {
       setActiveRecoveryPlan(newPlan);
       return newPlan;
     } catch (err) {
-      console.error("Error creating recovery plan:", err);
+      console.error(
+        "[useStreakRecovery] error creando plan de recuperación:",
+        err instanceof Error ? err.message : String(err),
+      );
       throw err;
     }
   };
@@ -111,7 +117,10 @@ export function useStreakRecovery(userId: string | undefined) {
       // Refresh plan
       void fetchActiveRecoveryPlan();
     } catch (err) {
-      console.error("Error completing recovery task:", err);
+      console.error(
+        "[useStreakRecovery] error completando tarea de recuperación:",
+        err instanceof Error ? err.message : String(err),
+      );
       throw err;
     }
   };
@@ -127,7 +136,10 @@ export function useStreakRecovery(userId: string | undefined) {
 
       setActiveRecoveryPlan(null);
     } catch (err) {
-      console.error("Error dismissing recovery plan:", err);
+      console.error(
+        "[useStreakRecovery] error descartando plan de recuperación:",
+        err instanceof Error ? err.message : String(err),
+      );
       throw err;
     }
   };

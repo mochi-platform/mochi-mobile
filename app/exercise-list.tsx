@@ -73,7 +73,10 @@ export function ExerciseListScreen() {
       if (deleteError) throw deleteError;
       await loadExercises();
     } catch (err) {
-      console.error("handleDeleteExercise error:", err);
+      console.error(
+        "[ExerciseList] error eliminando ejercicio:",
+        err instanceof Error ? err.message : String(err),
+      );
       setError(
         err instanceof Error ? err.message : "No se pudo eliminar el ejercicio",
       );

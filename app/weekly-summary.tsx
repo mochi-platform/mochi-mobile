@@ -13,7 +13,7 @@ import { captureRef } from "react-native-view-shot";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
-import { callAI } from "@/src/shared/lib/ai-client";
+import { callAI } from "@/src/shared/lib/ai";
 
 type AtlasIntensity = "Baja" | "Media" | "Alta";
 

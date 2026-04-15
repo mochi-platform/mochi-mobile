@@ -282,7 +282,10 @@ export function StudySchedule() {
 
                 await loadBlocks();
               } catch (err) {
-                console.error("handleDeleteBlock caught:", err);
+                console.error(
+                  "[StudySchedule] error eliminando bloque:",
+                  err instanceof Error ? err.message : String(err),
+                );
                 setError(getErrorMessage(err, "No se pudo eliminar el bloque"));
               }
             })();

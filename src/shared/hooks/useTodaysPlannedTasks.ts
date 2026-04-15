@@ -103,7 +103,10 @@ export function useTodaysPlannedTasks() {
         setError(
           err instanceof Error ? err : new Error("Error fetching tasks"),
         );
-        console.error("useTodaysPlannedTasks error:", err);
+        console.error(
+          "[useTodaysPlannedTasks] error cargando tareas:",
+          err instanceof Error ? err.message : String(err),
+        );
       } finally {
         setIsLoading(false);
       }

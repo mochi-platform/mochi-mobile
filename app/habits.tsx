@@ -233,7 +233,10 @@ export function HabitsScreen() {
         .eq("habit_id", habitId)
         .eq("log_date", todayISO);
       if (deleteError) {
-        console.error("Error removing habit log:", deleteError);
+          console.error(
+            "[Habits] error eliminando registro de hábito:",
+            deleteError instanceof Error ? deleteError.message : String(deleteError),
+          );
         return;
       }
       setCompletedToday((prev) => {
@@ -248,7 +251,10 @@ export function HabitsScreen() {
         log_date: todayISO,
       });
       if (insertError) {
-        console.error("Error adding habit log:", insertError);
+        console.error(
+          "[Habits] error agregando registro de hábito:",
+          insertError instanceof Error ? insertError.message : String(insertError),
+        );
         return;
       }
       setCompletedToday((prev) => {
@@ -306,7 +312,10 @@ export function HabitsScreen() {
       setShowModal(false);
       await loadHabits();
     } catch (err) {
-      console.error("Error creating habit:", err);
+      console.error(
+        "[Habits] error creando hábito:",
+        err instanceof Error ? err.message : String(err),
+      );
     } finally {
       setSaving(false);
     }
@@ -335,7 +344,10 @@ export function HabitsScreen() {
 
       await loadHabits();
     } catch (err) {
-      console.error("handleDeleteHabit error:", err);
+      console.error(
+        "[Habits] error eliminando hábito:",
+        err instanceof Error ? err.message : String(err),
+      );
       setError(
         err instanceof Error ? err.message : "No se pudo eliminar el hábito",
       );

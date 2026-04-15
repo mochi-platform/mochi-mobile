@@ -19,7 +19,7 @@ import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useCycle } from "@/src/core/providers/CycleContext";
 import TimePickerModal from "@/src/shared/components/TimePickerModal";
-import { suggestStudyDuration } from "@/src/shared/lib/ai-client";
+import { suggestStudyDuration } from "@/src/shared/lib/ai";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 
 const daysOfWeek = [
@@ -213,7 +213,10 @@ export function CreateStudyBlockScreen() {
       );
       setEndTime(nextEndTime);
     } catch (error) {
-      console.error("AI suggestion error:", error);
+      console.error(
+        "[StudyCreate] error solicitando sugerencia IA:",
+        error instanceof Error ? error.message : String(error),
+      );
       showAlert({
         title: "No se pudo generar sugerencia",
         message:

@@ -1,6 +1,7 @@
 import "../global.css";
 import { useEffect, useRef, useState } from "react";
-import { Stack, router, usePathname } from "expo-router";
+import { Stack, router, usePathname, type ErrorBoundaryProps } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Easing,
@@ -24,6 +25,38 @@ import { AchievementProvider } from "@/src/core/providers/AchievementContext";
 import { CycleProvider } from "@/src/core/providers/CycleContext";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { supabase } from "@/src/shared/lib/supabase";
+
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return (
+    <View className="flex-1 items-center justify-center bg-white px-6">
+      <SystemBars style={{ statusBar: "dark", navigationBar: "light" }} />
+      <View className="w-full max-w-sm items-center rounded-3xl border border-rose-100 bg-rose-50 p-6">
+        <View className="h-14 w-14 items-center justify-center rounded-full bg-rose-100">
+          <Ionicons name="alert-circle" size={30} color="#e11d48" />
+        </View>
+        <Text className="mt-4 text-center text-xl font-bold text-rose-900">
+          Algo salió mal
+        </Text>
+        <Text className="mt-2 text-center text-sm font-semibold text-rose-700">
+          Ocurrió un error inesperado
+        </Text>
+        <TouchableOpacity
+          className="mt-6 rounded-2xl bg-pink-200 px-5 py-3"
+          onPress={retry}
+        >
+          <Text className="text-center text-base font-bold text-pink-900">
+            Reintentar
+          </Text>
+        </TouchableOpacity>
+        {error?.message ? (
+          <Text className="mt-3 text-center text-xs text-rose-500">
+            {error.message}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
 
 type ModuleVisibility = {
   partner_features_enabled: boolean;

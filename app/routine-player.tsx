@@ -209,7 +209,10 @@ export function RoutinePlayerScreen() {
       await checkExerciseAchievements(session.user.id, showAchievement);
       await checkStreakAchievements(session.user.id, showAchievement);
     } catch (err) {
-      console.error("Error completing routine:", err);
+      console.error(
+        "[RoutinePlayer] error completando rutina:",
+        err instanceof Error ? err.message : String(err),
+      );
     }
   }
 

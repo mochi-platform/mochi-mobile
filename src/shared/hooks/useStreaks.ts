@@ -40,7 +40,10 @@ export function useStreaks() {
         setError(
           err instanceof Error ? err : new Error("Error fetching streaks"),
         );
-        console.error("useStreaks error:", err);
+        console.error(
+          "[useStreaks] error cargando rachas:",
+          err instanceof Error ? err.message : String(err),
+        );
       } finally {
         setIsLoading(false);
       }

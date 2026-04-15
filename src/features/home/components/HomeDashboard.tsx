@@ -39,6 +39,9 @@ import {
 
 type HomeDashboardProps = {
   userName: string;
+  onNavigateToStudy: () => void;
+  onNavigateToExercise: () => void;
+  onNavigateToHabits: () => void;
   onNavigateToCooking: () => void;
   moduleVisibility: {
     partner_features_enabled: boolean;
@@ -179,6 +182,9 @@ function AnimatedDashboardCard({
 
 export function HomeDashboard({
   userName,
+  onNavigateToStudy,
+  onNavigateToExercise,
+  onNavigateToHabits,
   onNavigateToCooking,
   moduleVisibility,
 }: HomeDashboardProps) {
@@ -578,7 +584,11 @@ export function HomeDashboard({
             setIsCyclePromptDismissed(true);
             if (!userId) return;
             AsyncStorage.setItem(buildCycleDismissKey(userId), "true").catch(
-              () => {},
+              (error) =>
+                console.error(
+                  "[HomeDashboard] error guardando estado de ciclo:",
+                  error instanceof Error ? error.message : String(error),
+                ),
             );
           }}
         />
@@ -613,7 +623,7 @@ export function HomeDashboard({
       {moduleVisibility.habits_enabled && (
         <TouchableOpacity
           className="mt-4 rounded-3xl border-2 border-green-200 bg-white p-4"
-          onPress={() => router.push("/habits")}
+          onPress={onNavigateToHabits}
         >
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
@@ -657,12 +667,16 @@ export function HomeDashboard({
           ) : error ? (
             <Text className="text-sm font-semibold text-red-600">{error}</Text>
           ) : todayBlocks.length === 0 ? (
-            <View className="items-center py-2">
+            <TouchableOpacity
+              className="items-center py-2"
+              onPress={onNavigateToStudy}
+              activeOpacity={0.8}
+            >
               <MochiCharacter mood="sleepy" size={78} />
               <Text className="mt-3 text-sm font-semibold text-slate-500">
                 No hay bloques para este día
               </Text>
-            </View>
+            </TouchableOpacity>
           ) : (
             todayBlocks.map((block) => (
               <TouchableOpacity
@@ -803,12 +817,16 @@ export function HomeDashboard({
               </TouchableOpacity>
             ))
           ) : (
-            <View className="items-center py-2">
+            <TouchableOpacity
+              className="items-center py-2"
+              onPress={onNavigateToExercise}
+              activeOpacity={0.8}
+            >
               <MochiCharacter mood="happy" size={78} />
               <Text className="mt-3 text-sm font-semibold text-slate-500">
                 Crea tu primera rutina
               </Text>
-            </View>
+            </TouchableOpacity>
           )}
         </AnimatedDashboardCard>
       )}
