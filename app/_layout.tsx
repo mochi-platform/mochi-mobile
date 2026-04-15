@@ -28,6 +28,10 @@ import {
 } from "@/src/core/providers/SystemBarsContext";
 import { AchievementProvider } from "@/src/core/providers/AchievementContext";
 import { CycleProvider } from "@/src/core/providers/CycleContext";
+import {
+  BottomNav,
+  type MobileScreen,
+} from "@/src/features/home/components/BottomNav";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { supabase } from "@/src/shared/lib/supabase";
 
@@ -88,6 +92,70 @@ const defaultModuleVisibility: ModuleVisibility = {
   cooking_enabled: true,
   notes_enabled: true,
 };
+
+const bottomNavRoutes: Record<MobileScreen, string> = {
+  home: "/",
+  study: "/study-history",
+  exercise: "/exercise-list",
+  habits: "/habits",
+  cooking: "/cooking",
+};
+
+function getBottomNavScreen(pathname: string): MobileScreen {
+  if (
+    pathname === "/" ||
+    pathname === "/settings" ||
+    pathname === "/profile" ||
+    pathname === "/weekly-summary" ||
+    pathname === "/flashcards" ||
+    pathname.startsWith("/auth")
+  ) {
+    return "home";
+  }
+
+  if (
+    pathname === "/study-history" ||
+    pathname === "/study-create" ||
+    pathname === "/study-edit" ||
+    pathname === "/study-timer" ||
+    pathname === "/exam-log"
+  ) {
+    return "study";
+  }
+
+  if (
+    pathname === "/exercise-list" ||
+    pathname === "/exercise-create" ||
+    pathname === "/routine-create" ||
+    pathname === "/routine-player"
+  ) {
+    return "exercise";
+  }
+
+  if (pathname === "/habits") {
+    return "habits";
+  }
+
+  if (
+    pathname === "/cooking" ||
+    pathname === "/recipe-detail" ||
+    pathname === "/recipe-player"
+  ) {
+    return "cooking";
+  }
+
+  return "home";
+}
+
+function getVisibleTabs(settings: ModuleVisibility): MobileScreen[] {
+  return [
+    "home",
+    ...(settings.study_enabled ? (["study"] as const) : []),
+    ...(settings.exercise_enabled ? (["exercise"] as const) : []),
+    ...(settings.habits_enabled ? (["habits"] as const) : []),
+    ...(settings.cooking_enabled ? (["cooking"] as const) : []),
+  ];
+}
 
 function isRouteAllowed(pathname: string, settings: ModuleVisibility): boolean {
   if (
@@ -332,16 +400,34 @@ function RootLayoutNavigator() {
     );
   }
 
+  const showBottomNav =
+    Boolean(session) && !requiresOnboarding && !pathname.startsWith("/auth") && pathname !== "/login";
+  const currentScreen = getBottomNavScreen(pathname);
+  const visibleTabs = getVisibleTabs(moduleVisibility);
+
   return (
-    <>
+    <View className="flex-1">
       <SystemBars
         style={{
           statusBar: theme.statusBarStyle,
           navigationBar: theme.navigationBarStyle,
         }}
       />
-      <Stack screenOptions={{ headerShown: false }} />
-    </>
+      <View className="flex-1">
+        <Stack screenOptions={{ headerShown: false }} />
+      </View>
+      {showBottomNav ? (
+        <BottomNav
+          currentScreen={currentScreen}
+          onNavigate={(screen) => {
+            const targetRoute = bottomNavRoutes[screen];
+            if (pathname === targetRoute) return;
+            router.replace(targetRoute);
+          }}
+          visibleTabs={visibleTabs}
+        />
+      ) : null}
+    </View>
   );
 }
 

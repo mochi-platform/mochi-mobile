@@ -4,10 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import HomeDashboard from "@/src/features/home/components/HomeDashboard";
-import {
-  BottomNav,
-  type MobileScreen,
-} from "@/src/features/home/components/BottomNav";
 import { QuickCaptureModal } from "@/src/shared/components/QuickCaptureModal";
 import { RecoveryPlanModal } from "@/src/shared/components/RecoveryPlanModal";
 import { useStreakRecovery } from "@/src/shared/hooks/useStreakRecovery";
@@ -111,18 +107,6 @@ export default function Home() {
   // Show recovery modal if streak recovery is active and not dismissed yet
   const showRecoveryModal = activeRecoveryPlan !== null && !recoveryDismissed;
 
-  const visibleTabs: MobileScreen[] = [
-    "home",
-    ...(moduleVisibility.study_enabled ? (["study"] as const) : []),
-    ...(moduleVisibility.exercise_enabled ? (["exercise"] as const) : []),
-    ...(moduleVisibility.habits_enabled ? (["habits"] as const) : []),
-    ...(moduleVisibility.cooking_enabled ? (["cooking"] as const) : []),
-  ];
-
-  const navigateToHome = () => {
-    router.replace("/");
-  };
-
   const navigateToStudy = () => {
     router.replace("/study-history");
   };
@@ -139,30 +123,6 @@ export default function Home() {
     router.replace("/cooking");
   };
 
-  const handleNavigate = (screen: MobileScreen) => {
-    if (screen === "home") {
-      navigateToHome();
-      return;
-    }
-
-    if (screen === "study") {
-      navigateToStudy();
-      return;
-    }
-
-    if (screen === "exercise") {
-      navigateToExercise();
-      return;
-    }
-
-    if (screen === "habits") {
-      navigateToHabits();
-      return;
-    }
-
-    navigateToCooking();
-  };
-
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
       <View className="flex-1">
@@ -175,12 +135,6 @@ export default function Home() {
           moduleVisibility={moduleVisibility}
         />
       </View>
-
-      <BottomNav
-        currentScreen="home"
-        onNavigate={handleNavigate}
-        visibleTabs={visibleTabs}
-      />
 
       {/* Recovery Plan Modal - appears when streak = 0 */}
       <RecoveryPlanModal

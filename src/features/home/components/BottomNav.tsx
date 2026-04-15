@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -150,6 +151,7 @@ export function BottomNav({
   onNavigate,
   visibleTabs,
 }: BottomNavProps) {
+  const insets = useSafeAreaInsets();
   const palette = tabPalettes[currentScreen];
   const filteredTabs = visibleTabs?.length
     ? tabs.filter((tab) => visibleTabs.includes(tab.id))
@@ -157,7 +159,8 @@ export function BottomNav({
 
   return (
     <View
-      className={`border-t px-3 pb-6 pt-3 ${palette.border} ${palette.container}`}
+      className={`border-t px-3 pt-3 ${palette.border} ${palette.container}`}
+      style={{ paddingBottom: insets.bottom + 24 }}
     >
       <View className="flex-row items-center justify-between">
         {filteredTabs.map((tab) => (
