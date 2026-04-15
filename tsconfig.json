@@ -3,14 +3,13 @@
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
+    "ignoreDeprecations": "5.0",
     "paths": {
       "@/*": ["./*"],
-      "@mochi/ai": ["src/shared/lib/ai"],
-      "@mochi/ai/*": ["src/shared/lib/ai/*"],
-      "@mochi/supabase": ["src/shared/lib/supabase"],
-      "@mochi/supabase/*": ["src/shared/lib/supabase/*"]
+      "@mochi/ai": ["./src/shared/lib/ai"],
+      "@mochi/ai/*": ["./src/shared/lib/ai/*"],
+      "@mochi/supabase": ["./src/shared/lib/supabase"],
+      "@mochi/supabase/*": ["./src/shared/lib/supabase/*"]
     }
   }
 }

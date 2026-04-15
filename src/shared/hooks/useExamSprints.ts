@@ -26,7 +26,6 @@ export function useExamSprints(userId: string | undefined) {
       const { data: sprintsData, error: sprintsError } = await supabase
         .from("exam_prep_sprints")
         .select("*")
-        .returns<ExamPrepSprint[]>()
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -39,14 +38,15 @@ export function useExamSprints(userId: string | undefined) {
         return;
       }
 
+      const typedSprints = sprintsData as ExamPrepSprint[];
+
       // Fetch milestones for each sprint
       const sprintsWithMilestones: SprintWithMilestones[] = await Promise.all(
-        sprintsData.map(async (sprint) => {
+        typedSprints.map(async (sprint: ExamPrepSprint) => {
           const { data: milestonesData, error: milestonesError } =
             await supabase
               .from("exam_sprint_milestones")
               .select("*")
-              .returns<ExamSprintMilestone[]>()
               .eq("sprint_id", sprint.id)
               .order("milestone_number", { ascending: true });
 
@@ -56,7 +56,7 @@ export function useExamSprints(userId: string | undefined) {
 
           return {
             ...sprint,
-            milestones: milestonesData ?? [],
+            milestones: (milestonesData as ExamSprintMilestone[] | null) ?? [],
           };
         }),
       );

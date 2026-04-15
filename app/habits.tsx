@@ -233,10 +233,12 @@ export function HabitsScreen() {
         .eq("habit_id", habitId)
         .eq("log_date", todayISO);
       if (deleteError) {
-          console.error(
-            "[Habits] error eliminando registro de hábito:",
-            deleteError instanceof Error ? deleteError.message : String(deleteError),
-          );
+        console.error(
+          "[Habits] error eliminando registro de hábito:",
+          deleteError instanceof Error
+            ? deleteError.message
+            : String(deleteError),
+        );
         return;
       }
       setCompletedToday((prev) => {
@@ -253,7 +255,9 @@ export function HabitsScreen() {
       if (insertError) {
         console.error(
           "[Habits] error agregando registro de hábito:",
-          insertError instanceof Error ? insertError.message : String(insertError),
+          insertError instanceof Error
+            ? insertError.message
+            : String(insertError),
         );
         return;
       }

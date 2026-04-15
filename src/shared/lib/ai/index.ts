@@ -272,6 +272,27 @@ function hasAttachment(base64?: string, mimeType?: string): boolean {
   return Boolean(base64 && mimeType)
 }
 
+function toOpenAIMessage(message: ChatMessage): OpenAIChatMessage {
+  if (message.role === 'system') {
+    return {
+      role: 'system',
+      content: String(message.content ?? ''),
+    }
+  }
+
+  if (message.role === 'assistant') {
+    return {
+      role: 'assistant',
+      content: String(message.content ?? ''),
+    }
+  }
+
+  return {
+    role: 'user',
+    content: message.content as OpenAI.Chat.Completions.ChatCompletionUserMessageParam['content'],
+  }
+}
+
 function normalizeError(error: unknown, model?: string): AIError {
   if (error instanceof AIError) {
     return error
@@ -947,10 +968,9 @@ function buildClient(openrouter: OpenAI): MochiAIContract {
 
   async function callAIWithMessages(messages: ChatMessage[], model = TEXT_MODEL): Promise<string> {
     try {
-      const completionMessages: OpenAIChatMessage[] = messages.map((message) => ({
-        role: message.role,
-        content: message.content as OpenAIChatMessage['content'],
-      }))
+      const completionMessages: OpenAIChatMessage[] = messages.map((message) =>
+        toOpenAIMessage(message)
+      )
 
       const completion = await openrouter.chat.completions.create({
         model,

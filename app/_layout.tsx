@@ -1,6 +1,11 @@
 import "../global.css";
 import { useEffect, useRef, useState } from "react";
-import { Stack, router, usePathname, type ErrorBoundaryProps } from "expo-router";
+import {
+  Stack,
+  router,
+  usePathname,
+  type ErrorBoundaryProps,
+} from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
 import Animated, {
