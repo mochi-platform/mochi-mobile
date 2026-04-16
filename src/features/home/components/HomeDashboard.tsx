@@ -32,10 +32,8 @@ import { DailyMotivation } from "@/src/features/home/components/DailyMotivation"
 import { CycleWidget } from "@/src/shared/components/CycleWidget";
 import {
   getGreeting,
-  getTimeColor,
   getTimeIcon,
   getTimeOfDay,
-  type TimeOfDay,
 } from "@/src/shared/lib/timeContext";
 
 type HomeDashboardProps = {
@@ -141,6 +139,15 @@ type AnimatedDashboardCardProps = {
   className: string;
 };
 
+type DashboardActionTone = "blue" | "teal" | "orange" | "indigo";
+
+type DashboardActionButtonProps = {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  tone: DashboardActionTone;
+  onPress: () => void;
+};
+
 function AnimatedDashboardCard({
   children,
   delay,
@@ -175,6 +182,54 @@ function AnimatedDashboardCard({
   );
 }
 
+function DashboardActionButton({
+  label,
+  icon,
+  tone,
+  onPress,
+}: DashboardActionButtonProps) {
+  const toneMap: Record<
+    DashboardActionTone,
+    { buttonClass: string; textClass: string; iconColor: string }
+  > = {
+    blue: {
+      buttonClass: "border-blue-200 bg-blue-50",
+      textClass: "text-blue-700",
+      iconColor: "#1d4ed8",
+    },
+    teal: {
+      buttonClass: "border-teal-200 bg-teal-50",
+      textClass: "text-teal-700",
+      iconColor: "#0f766e",
+    },
+    orange: {
+      buttonClass: "border-orange-200 bg-orange-50",
+      textClass: "text-orange-700",
+      iconColor: "#c2410c",
+    },
+    indigo: {
+      buttonClass: "border-indigo-200 bg-indigo-50",
+      textClass: "text-indigo-700",
+      iconColor: "#4338ca",
+    },
+  };
+
+  const current = toneMap[tone];
+
+  return (
+    <TouchableOpacity
+      className={`mt-3 flex-row items-center justify-center rounded-2xl border py-2 ${current.buttonClass}`}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      <Ionicons name={icon} size={14} color={current.iconColor} />
+      <Text className={`ml-1.5 text-xs font-bold ${current.textClass}`}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 export function HomeDashboard({
   userName,
   onNavigateToStudy,
@@ -196,15 +251,6 @@ export function HomeDashboard({
   const timeOfDay = getTimeOfDay();
   const greetingText = getGreeting(userName);
   const greetingIcon = getTimeIcon() as keyof typeof Ionicons.glyphMap;
-  const greetingBgClass = getTimeColor();
-
-  const timeLabelMap: Record<TimeOfDay, string> = {
-    dawn: "Madrugada",
-    morning: "Mañana",
-    afternoon: "Tarde",
-    evening: "Noche",
-    night: "Noche",
-  };
 
   const [todayBlocks, setTodayBlocks] = useState<StudyBlock[]>([]);
   const [todayRoutines, setTodayRoutines] = useState<RoutineWithExercises[]>(
@@ -545,42 +591,22 @@ export function HomeDashboard({
   return (
     <ScrollView className="flex-1 bg-blue-100 px-5 pt-12">
       {/* Header */}
-      <View className="flex-row items-start justify-between">
-        <View
-          className={`flex-1 mr-3 rounded-3xl border-2 border-blue-200 px-4 py-3 ${greetingBgClass}`}
-        >
-          <View className="flex-row items-center">
-            <Ionicons name={greetingIcon} size={18} color="#1e40af" />
-            <Text className="ml-2 text-2xl font-extrabold text-blue-900">
-              {greetingText}
-            </Text>
-          </View>
-          <Text className="mt-1 text-sm font-semibold text-blue-700">
-            {today}
-          </Text>
-          <View className="mt-3 self-start rounded-full border border-blue-200 bg-white/80 px-3 py-1">
-            <View className="flex-row items-center">
-              <Ionicons name={greetingIcon} size={12} color="#1e40af" />
-              <Text className="ml-1 text-xs font-bold text-blue-800">
-                {timeLabelMap[timeOfDay]}
-              </Text>
-            </View>
-          </View>
-        </View>
+      <View>
         <View className="flex-row items-center">
-          <TouchableOpacity
-            className="mr-2 h-10 w-10 items-center justify-center rounded-full bg-blue-200"
-            onPress={() => router.push("/settings")}
-          >
-            <Ionicons name="settings-outline" size={18} color="#1e40af" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="h-10 w-10 items-center justify-center rounded-full bg-blue-200"
-            onPress={() => router.push("/profile")}
-          >
-            <Ionicons name="person" size={18} color="#1e40af" />
-          </TouchableOpacity>
+          <Ionicons name={greetingIcon} size={18} color="#1e40af" />
+          <Text className="ml-2 text-2xl font-extrabold text-blue-900">
+            {greetingText}
+          </Text>
         </View>
+        <Text className="mt-1 text-sm font-semibold text-blue-700">{today}</Text>
+        <TouchableOpacity
+          className="mt-3 self-start flex-row items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1"
+          onPress={() => router.push("/profile")}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="person-outline" size={12} color="#1e40af" />
+          <Text className="ml-1 text-xs font-bold text-blue-800">Perfil</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Motivación */}
@@ -731,6 +757,13 @@ export function HomeDashboard({
               </TouchableOpacity>
             ))
           )}
+
+          <DashboardActionButton
+            label="Ver estudio"
+            icon="book-outline"
+            tone="blue"
+            onPress={onNavigateToStudy}
+          />
         </AnimatedDashboardCard>
       )}
 
@@ -844,6 +877,13 @@ export function HomeDashboard({
               </Text>
             </TouchableOpacity>
           )}
+
+          <DashboardActionButton
+            label="Ver rutinas"
+            icon="barbell-outline"
+            tone="teal"
+            onPress={onNavigateToExercise}
+          />
         </AnimatedDashboardCard>
       )}
 
@@ -940,16 +980,12 @@ export function HomeDashboard({
                 )}
               </TouchableOpacity>
 
-              {/* FIX: navega a la tab de Cocina, no a una ruta de Expo Router */}
-              <TouchableOpacity
-                className="mt-3 flex-row items-center justify-center rounded-2xl border border-orange-200 px-3 py-2.5"
+              <DashboardActionButton
+                label="Ver recetas"
+                icon="restaurant-outline"
+                tone="orange"
                 onPress={onNavigateToCooking}
-              >
-                <Ionicons name="restaurant-outline" size={14} color="#c2410c" />
-                <Text className="ml-1.5 flex-shrink text-xs font-bold text-orange-700">
-                  Ver todas las recetas
-                </Text>
-              </TouchableOpacity>
+              />
             </>
           ) : (
             <TouchableOpacity
@@ -963,6 +999,13 @@ export function HomeDashboard({
               </Text>
             </TouchableOpacity>
           )}
+
+          <DashboardActionButton
+            label="Ver recetas"
+            icon="restaurant-outline"
+            tone="orange"
+            onPress={onNavigateToCooking}
+          />
         </AnimatedDashboardCard>
       )}
 
@@ -1029,16 +1072,14 @@ export function HomeDashboard({
           })}
         </View>
 
-        <TouchableOpacity
-          className="self-start rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2"
+        <DashboardActionButton
+          label="Ver analíticas"
+          icon="stats-chart-outline"
+          tone="indigo"
           onPress={() => {
             void Linking.openURL("https://mochi.siramong.tech/analytics");
           }}
-        >
-          <Text className="text-xs font-bold text-indigo-700">
-            Ver analíticas completas
-          </Text>
-        </TouchableOpacity>
+        />
       </AnimatedDashboardCard>
 
       <View style={{ height: bottomSpacerHeight }} />

@@ -190,6 +190,17 @@ export function ProfileScreen() {
             {profile?.full_name ?? session?.user.email ?? "Mochi Student"}
           </Text>
 
+          <TouchableOpacity
+            className="mt-3 flex-row items-center rounded-full border border-purple-200 bg-white px-4 py-2"
+            onPress={() => router.push("/settings")}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="settings-outline" size={14} color="#7c3aed" />
+            <Text className="ml-1.5 text-xs font-bold text-purple-800">
+              Ir a configuración
+            </Text>
+          </TouchableOpacity>
+
           <View className="mt-3 flex-row items-center">
             <View className="mr-3 flex-row items-center rounded-full bg-yellow-200 px-4 py-2">
               {loading ? (
@@ -252,7 +263,7 @@ export function ProfileScreen() {
                 return (
                   <View key={achievement.id} className="mb-3 w-1/2 pr-3">
                     <View
-                      className={`rounded-2xl border-2 p-3 ${
+                      className={`h-40 rounded-2xl border-2 p-3 ${
                         isUnlocked
                           ? "border-purple-200 bg-purple-100"
                           : "border-gray-200 bg-gray-100 opacity-60"
@@ -285,14 +296,17 @@ export function ProfileScreen() {
                       >
                         {achievement.title}
                       </Text>
-                      {isUnlocked && (
+
+                      <View className="mt-1 flex-1 justify-end">
                         <Text
-                          className="mt-1 text-xs text-purple-500"
+                          className={`text-xs ${isUnlocked ? "text-purple-500" : "text-gray-500"}`}
                           numberOfLines={2}
                         >
-                          {achievement.description}
+                          {isUnlocked
+                            ? achievement.description
+                            : "Desbloquéalo completando actividades"}
                         </Text>
-                      )}
+                      </View>
                     </View>
                   </View>
                 );
