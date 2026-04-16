@@ -13,6 +13,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { TabHeader } from "@/src/shared/components/TabHeader";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { MoodLog } from "@/src/shared/types/database";
@@ -264,16 +265,14 @@ export function MoodScreen() {
             keyboardDismissMode="on-drag"
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           >
-            <View className="mb-5 flex-row items-center">
-              <Ionicons name="heart" size={20} color="#c2410c" />
-              <Text className="ml-2 text-2xl font-extrabold text-orange-900">
-                Estado de ánimo
-              </Text>
-            </View>
-
-            <Text className="text-sm font-semibold text-orange-700">
-              Tu check-in emocional diario en pocos segundos
-            </Text>
+            <TabHeader
+              iconName="heart"
+              title="Estado de ánimo"
+              subtitle="Tu check-in emocional diario en pocos segundos"
+              iconColor="#c2410c"
+              titleClassName="text-2xl font-extrabold text-orange-900"
+              subtitleClassName="text-sm font-semibold text-orange-700"
+            />
 
             {loading ? (
               <View className="mt-6 items-center rounded-3xl border-2 border-orange-200 bg-white p-6">

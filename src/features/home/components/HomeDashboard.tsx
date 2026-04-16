@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Text,
   TouchableOpacity,
@@ -85,6 +85,81 @@ const colorMap: Record<string, string> = {
   purple: "bg-purple-200",
   green: "bg-green-200",
 };
+
+type MoodDisplay = {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  cardClass: string;
+  iconColor: string;
+  textColor: string;
+};
+
+const moodDisplayMap: Record<number, MoodDisplay> = {
+  1: {
+    label: "Mal",
+    icon: "sad",
+    cardClass: "border-red-200 bg-red-50",
+    iconColor: "#b91c1c",
+    textColor: "text-red-800",
+  },
+  2: {
+    label: "Regular",
+    icon: "sad-outline",
+    cardClass: "border-orange-200 bg-orange-50",
+    iconColor: "#c2410c",
+    textColor: "text-orange-800",
+  },
+  3: {
+    label: "Bien",
+    icon: "happy-outline",
+    cardClass: "border-yellow-200 bg-yellow-50",
+    iconColor: "#a16207",
+    textColor: "text-yellow-800",
+  },
+  4: {
+    label: "Muy bien",
+    icon: "happy",
+    cardClass: "border-green-200 bg-green-50",
+    iconColor: "#15803d",
+    textColor: "text-green-800",
+  },
+  5: {
+    label: "Excelente",
+    icon: "heart",
+    cardClass: "border-pink-200 bg-pink-50",
+    iconColor: "#be185d",
+    textColor: "text-pink-800",
+  },
+};
+
+function getMoodDisplay(mood: number | null | undefined): MoodDisplay {
+  return mood ? moodDisplayMap[mood] : {
+    label: "Sin registro",
+    icon: "ellipse-outline",
+    cardClass: "border-slate-200 bg-slate-50",
+    iconColor: "#94a3b8",
+    textColor: "text-slate-500",
+  };
+}
+
+function buildCurrentWeekDays(): string[] {
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay() + 1);
+  weekStart.setHours(0, 0, 0, 0);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(weekStart);
+    day.setDate(weekStart.getDate() + index);
+    return day.toISOString().slice(0, 10);
+  });
+}
+
+function formatWeekdayShort(isoDate: string): string {
+  return new Intl.DateTimeFormat("es-ES", { weekday: "short" })
+    .format(new Date(`${isoDate}T00:00:00`))
+    .replace(".", "");
+}
 
 const quickAccessItems: QuickAccessItem[] = [
   {
@@ -205,6 +280,7 @@ export function HomeDashboard({
   const timeOfDay = getTimeOfDay();
   const greetingText = getGreeting(userName);
   const greetingIcon = getTimeIcon() as keyof typeof Ionicons.glyphMap;
+  const currentWeekDays = useMemo(() => buildCurrentWeekDays(), []);
 
   const [todayBlocks, setTodayBlocks] = useState<StudyBlock[]>([]);
   const [todayRoutines, setTodayRoutines] = useState<RoutineWithExercises[]>(
@@ -218,7 +294,7 @@ export function HomeDashboard({
   const [weeklySummary, setWeeklySummary] = useState({
     studySessions: 0,
     currentStreak: 0,
-    habitsAverageLabel: "0/0",
+    habitsProgress: 0,
     pointsGained: 0,
     moodDots: [] as Array<number | null>,
   });
@@ -484,7 +560,7 @@ export function HomeDashboard({
           currentStreak:
             (streakRes.data as { current_streak: number } | null)
               ?.current_streak ?? 0,
-          habitsAverageLabel: `${avgPerDay}/${totalHabits}`,
+          habitsProgress: totalHabits > 0 ? avgPerDay / totalHabits : 0,
           pointsGained: studyPoints + routinePoints + gratitudePoints,
           moodDots: moodDays.map((day) => moodMap.get(day) ?? null),
         });
@@ -546,11 +622,19 @@ export function HomeDashboard({
     };
   };
 
+  const habitCompletionProgress =
+    habitCount > 0 ? habitLogsCount / habitCount : 0;
+  const weeklyHabitProgress = Math.min(
+    Math.max(weeklySummary.habitsProgress, 0),
+    1,
+  );
+
   return (
     <ScrollView
       className="flex-1 bg-blue-50 px-5 pt-12"
       contentContainerStyle={{ paddingBottom: bottomSpacerHeight }}
     >
+
       {/* Header */}
       <View>
         <View className="flex-row items-center justify-between">
@@ -641,16 +725,33 @@ export function HomeDashboard({
             <View className="flex-row items-center">
               <Ionicons name="leaf" size={18} color="#7c3aed" />
               <Text className="ml-2 text-base font-bold text-purple-900">
-                Hábitos de hoy
+                Tus hábitos
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#7c3aed" />
           </View>
-          <Text className="mt-2 text-sm font-semibold text-purple-700">
-            {loading
-              ? "Cargando hábitos..."
-              : `${habitLogsCount}/${habitCount} hábitos completados hoy`}
-          </Text>
+          {loading ? (
+            <Text className="mt-2 text-sm font-semibold text-purple-700">
+              Cargando hábitos...
+            </Text>
+          ) : (
+            <View className="mt-3 rounded-2xl border border-purple-100 bg-purple-50 px-3 py-3">
+              <View className="mb-2 flex-row items-center justify-between">
+                <Text className="text-xs font-extrabold uppercase tracking-wide text-purple-500">
+                  Progreso de hoy
+                </Text>
+                <Text className="text-xs font-extrabold text-purple-700">
+                  {Math.round(habitCompletionProgress * 100)}%
+                </Text>
+              </View>
+              <View className="h-2.5 overflow-hidden rounded-full bg-purple-100">
+                <View
+                  className="h-full rounded-full bg-purple-500"
+                  style={{ width: `${habitCompletionProgress * 100}%` }}
+                />
+              </View>
+            </View>
+          )}
         </TouchableOpacity>
       )}
 
@@ -956,55 +1057,83 @@ export function HomeDashboard({
           </Text>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-3"
-        >
-          <View className="mr-2 flex-row items-center rounded-2xl bg-purple-50 px-3 py-2">
-            <Ionicons name="book" size={14} color="#7c3aed" />
-            <Text className="ml-1 text-xs font-bold text-purple-900">
-              {weeklySummary.studySessions} sesiones
-            </Text>
+        <View className="mb-2">
+          <View className="mb-2 flex-row">
+            <View className="mr-2 flex-1 flex-row items-center rounded-2xl bg-purple-50 px-3 py-2">
+              <Ionicons name="book" size={14} color="#7c3aed" />
+              <Text className="ml-1 flex-1 text-xs font-bold text-purple-900">
+                {weeklySummary.studySessions} sesiones
+              </Text>
+            </View>
+            <View className="ml-2 flex-1 flex-row items-center rounded-2xl bg-pink-50 px-3 py-2">
+              <Ionicons name="flame" size={14} color="#be185d" />
+              <Text className="ml-1 flex-1 text-xs font-bold text-pink-900">
+                {weeklySummary.currentStreak} días
+              </Text>
+            </View>
           </View>
-          <View className="mr-2 flex-row items-center rounded-2xl bg-pink-50 px-3 py-2">
-            <Ionicons name="flame" size={14} color="#be185d" />
-            <Text className="ml-1 text-xs font-bold text-pink-900">
-              {weeklySummary.currentStreak} días
-            </Text>
-          </View>
-          <View className="mr-2 flex-row items-center rounded-2xl bg-green-50 px-3 py-2">
-            <Ionicons name="leaf" size={14} color="#15803d" />
-            <Text className="ml-1 text-xs font-bold text-green-900">
-              {weeklySummary.habitsAverageLabel} hábitos/día
-            </Text>
-          </View>
-          <View className="mr-2 flex-row items-center rounded-2xl bg-yellow-50 px-3 py-2">
-            <Ionicons name="star" size={14} color="#a16207" />
-            <Text className="ml-1 text-xs font-bold text-yellow-900">
-              {weeklySummary.pointsGained} puntos
-            </Text>
-          </View>
-        </ScrollView>
 
-        <View className="mb-3 flex-row items-center">
-          {weeklySummary.moodDots.map((mood, index) => {
-            const bgClass =
-              mood === null
-                ? "bg-slate-200"
-                : mood <= 2
-                  ? "bg-pink-300"
-                  : mood === 3
-                    ? "bg-yellow-300"
-                    : "bg-emerald-300";
+          <View className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <View className="mb-2 flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <Ionicons name="happy" size={14} color="#475569" />
+                <Text className="ml-1 text-xs font-bold text-slate-800">
+                  Ánimo semanal
+                </Text>
+              </View>
+            </View>
 
-            return (
+            <View className="flex-row">
+              {currentWeekDays.map((day, index) => {
+                const moodDisplay = getMoodDisplay(
+                  weeklySummary.moodDots[index],
+                );
+
+                return (
+                  <View
+                    key={day}
+                    className={`mx-0.5 flex-1 items-center rounded-2xl px-1.5 py-2 ${moodDisplay.cardClass}`}
+                  >
+                    <Ionicons
+                      name={moodDisplay.icon}
+                      size={18}
+                      color={moodDisplay.iconColor}
+                      style={{ marginTop: 4 }}
+                    />
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+
+          <View className="mt-2 rounded-2xl border border-green-100 bg-green-50 px-3 py-3">
+            <View className="mb-2 flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <Ionicons name="leaf" size={14} color="#15803d" />
+                <Text className="ml-1 text-xs font-bold text-green-900">
+                  Hábitos de la semana
+                </Text>
+              </View>
+              <Text className="text-xs font-extrabold text-green-700">
+                {Math.round(weeklyHabitProgress * 100)}%
+              </Text>
+            </View>
+            <View className="h-2.5 overflow-hidden rounded-full bg-green-100">
               <View
-                key={`${index}-${mood ?? "none"}`}
-                className={`mr-2 h-2 w-2 rounded-full ${bgClass}`}
+                className="h-full rounded-full bg-green-500"
+                style={{ width: `${weeklyHabitProgress * 100}%` }}
               />
-            );
-          })}
+            </View>
+          </View>
+
+          <View className="mt-2 flex-row">
+            <View className="flex-1 flex-row items-center rounded-2xl bg-yellow-50 px-3 py-2">
+              <Ionicons name="star" size={14} color="#a16207" />
+              <Text className="ml-1 flex-1 text-xs font-bold text-yellow-900">
+                {weeklySummary.pointsGained} puntos
+              </Text>
+            </View>
+          </View>
         </View>
       </AnimatedDashboardCard>
 

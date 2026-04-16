@@ -23,7 +23,7 @@ export default function TabsLayout() {
         options={{
           title: "Estudio",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book" color={color} size={size} />
+            <Ionicons name="school-outline" color={color} size={size} />
           ),
         }}
       />

@@ -10,6 +10,7 @@ type FloatingActionButtonProps = {
   iconName?: keyof typeof Ionicons.glyphMap;
   showSparkles?: boolean;
   accessibilityLabel: string;
+  bottomOffset?: number;
 };
 
 const fabBorderColorMap: Record<string, string> = {
@@ -28,6 +29,7 @@ export function FloatingActionButton({
   iconName = "add",
   showSparkles = false,
   accessibilityLabel,
+  bottomOffset = 0,
 }: FloatingActionButtonProps) {
   const insets = useSafeAreaInsets();
   const borderColor = fabBorderColorMap[borderClassName] ?? "#cbd5e1";
@@ -35,7 +37,10 @@ export function FloatingActionButton({
   return (
     <TouchableOpacity
       className={`absolute right-5 z-20 h-14 w-14 items-center justify-center rounded-full border-4 ${borderClassName} ${containerClassName}`}
-      style={{ bottom: getFabBottomOffset(insets.bottom), borderColor }}
+      style={{
+        bottom: getFabBottomOffset(insets.bottom) + bottomOffset,
+        borderColor,
+      }}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}

@@ -26,6 +26,7 @@ import {
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { TabHeader } from "@/src/shared/components/TabHeader";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
 import type {
   Recipe,
@@ -390,12 +391,14 @@ export function CookingScreen() {
           className="flex-1 px-5 pt-12"
           showsVerticalScrollIndicator={false}
         >
-          <View className="mb-5 flex-row items-center">
-            <Ionicons name="restaurant" size={20} color="#c2410c" />
-            <Text className="ml-2 text-2xl font-extrabold text-orange-900">
-              Cocina
-            </Text>
-          </View>
+          <TabHeader
+            iconName="restaurant"
+            title="Cocina"
+            subtitle="Recetas y preparación"
+            iconColor="#c2410c"
+            titleClassName="text-2xl font-extrabold text-orange-900"
+            subtitleClassName="text-sm font-semibold text-orange-700"
+          />
 
           {loading ? (
             <View className="items-center py-12">

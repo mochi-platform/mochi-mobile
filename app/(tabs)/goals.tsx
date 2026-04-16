@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { GoalCard } from "@/src/features/goals/components/GoalCard";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { TabHeader } from "@/src/shared/components/TabHeader";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { addPoints } from "@/src/shared/lib/gamification";
 import { supabase } from "@/src/shared/lib/supabase";
@@ -335,16 +336,14 @@ export function GoalsScreen() {
           className="flex-1 px-5 pt-12"
           showsVerticalScrollIndicator={false}
         >
-          <View className="mb-5 flex-row items-center">
-            <Ionicons name="flag" size={20} color="#7c3aed" />
-            <Text className="ml-2 text-2xl font-extrabold text-purple-900">
-              Metas
-            </Text>
-          </View>
-
-          <Text className="text-sm font-semibold text-purple-700">
-            Visualiza tu progreso y celebra cada avance
-          </Text>
+          <TabHeader
+            iconName="flag"
+            title="Metas"
+            subtitle="Visualiza tu progreso y celebra cada avance"
+            iconColor="#7c3aed"
+            titleClassName="text-2xl font-extrabold text-purple-900"
+            subtitleClassName="text-sm font-semibold text-purple-700"
+          />
 
           {celebratingGoal && (
             <View className="mt-5 items-center rounded-3xl border-2 border-green-200 bg-green-50 p-5">

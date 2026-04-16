@@ -13,6 +13,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { TabHeader } from "@/src/shared/components/TabHeader";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { addPoints } from "@/src/shared/lib/gamification";
 import { supabase } from "@/src/shared/lib/supabase";
@@ -181,16 +182,14 @@ export function GratitudeScreen() {
             keyboardDismissMode="on-drag"
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           >
-            <View className="mb-5 flex-row items-center">
-              <Ionicons name="flower" size={20} color="#047857" />
-              <Text className="ml-2 text-2xl font-extrabold text-emerald-900">
-                Gratitud
-              </Text>
-            </View>
-
-            <Text className="text-sm font-semibold text-emerald-700">
-              Escribe hasta 3 cosas bonitas de tu día
-            </Text>
+            <TabHeader
+              iconName="flower"
+              title="Gratitud"
+              subtitle="Escribe hasta 3 cosas bonitas de tu día"
+              iconColor="#047857"
+              titleClassName="text-2xl font-extrabold text-emerald-900"
+              subtitleClassName="text-sm font-semibold text-emerald-700"
+            />
 
               {loading ? (
                 <View className="mt-6 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6">
