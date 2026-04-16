@@ -12,6 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
+import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
 import type { QuickNote } from "@/src/shared/types/database";
 
 const colorMap: Record<QuickNote["color"], { card: string; dot: string }> = {
@@ -196,33 +197,34 @@ export function NotesScreen() {
   return (
     <SafeAreaView className="flex-1 bg-yellow-50">
       <View className="flex-1 px-5">
-        <View className="mt-4 flex-row items-center justify-between">
-          <Text className="text-2xl font-extrabold text-yellow-900">
-            Notas rápidas
-          </Text>
-          <TouchableOpacity
-            className="h-11 w-11 items-center justify-center rounded-full bg-yellow-300"
-            onPress={() => {
-              void openCreate();
-            }}
-          >
-            <Ionicons name="add" size={24} color="#854d0e" />
-          </TouchableOpacity>
-        </View>
+        <ScrollView
+          className="mt-0 flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: 48 }}
+        >
+          <View className="mb-5 flex-row items-center">
+            <Ionicons name="document-text" size={20} color="#854d0e" />
+            <Text className="ml-2 text-2xl font-extrabold text-yellow-900">
+              Notas rápidas
+            </Text>
+          </View>
 
-        {loading ? (
-          <Text className="mt-4 text-sm font-semibold text-yellow-700">
-            Cargando notas...
+          <Text className="text-sm font-semibold text-yellow-700">
+            Ideas, pendientes y recordatorios en un solo lugar
           </Text>
-        ) : null}
-        {error ? (
-          <Text className="mt-4 text-sm font-semibold text-red-600">
-            {error}
-          </Text>
-        ) : null}
 
-        <ScrollView className="mt-4" showsVerticalScrollIndicator={false}>
-          <View className="flex-row flex-wrap justify-between">
+          {loading ? (
+            <Text className="mt-4 text-sm font-semibold text-yellow-700">
+              Cargando notas...
+            </Text>
+          ) : null}
+          {error ? (
+            <Text className="mt-4 text-sm font-semibold text-red-600">
+              {error}
+            </Text>
+          ) : null}
+
+          <View className="mt-4 flex-row flex-wrap justify-between">
             {orderedNotes.map((note) => (
               <TouchableOpacity
                 key={note.id}
@@ -260,8 +262,17 @@ export function NotesScreen() {
               </TouchableOpacity>
             ))}
           </View>
+          <View className="h-24" />
         </ScrollView>
       </View>
+
+      <FloatingActionButton
+        onPress={() => {
+          void openCreate();
+        }}
+        containerClassName="bg-yellow-500"
+        accessibilityLabel="Crear nota rápida"
+      />
 
       <Modal visible={editorVisible} animationType="slide" transparent>
         <View className="flex-1 justify-end bg-black/25">

@@ -9,12 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { useSession } from "@/src/core/providers/SessionContext";
@@ -174,34 +170,27 @@ export function GratitudeScreen() {
   return (
     <>
       <View className="flex-1 bg-emerald-50">
-        <SafeAreaView className="flex-1">
-          <KeyboardAvoidingView
-            className="flex-1"
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollView
+            className="flex-1 px-5 pt-12"
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           >
-            <ScrollView
-              className="flex-1 px-5"
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-            >
-              <TouchableOpacity
-                className="mt-4 flex-row items-center"
-                onPress={() => router.back()}
-              >
-                <Ionicons name="chevron-back" size={22} color="#047857" />
-                <Text className="ml-1 font-bold text-emerald-900">Volver</Text>
-              </TouchableOpacity>
+            <View className="mb-5 flex-row items-center">
+              <Ionicons name="flower" size={20} color="#047857" />
+              <Text className="ml-2 text-2xl font-extrabold text-emerald-900">
+                Gratitud
+              </Text>
+            </View>
 
-              <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-4">
-                <Text className="text-2xl font-extrabold text-emerald-900">
-                  Gratitud
-                </Text>
-                <Text className="mt-2 text-sm font-semibold text-emerald-700">
-                  Escribe hasta 3 cosas bonitas de tu día
-                </Text>
-              </View>
+            <Text className="text-sm font-semibold text-emerald-700">
+              Escribe hasta 3 cosas bonitas de tu día
+            </Text>
 
               {loading ? (
                 <View className="mt-6 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6">
@@ -356,9 +345,8 @@ export function GratitudeScreen() {
                   </View>
                 </>
               )}
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </View>
       {AlertComponent}
     </>

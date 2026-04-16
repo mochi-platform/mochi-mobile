@@ -12,7 +12,6 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GoalCard } from "@/src/features/goals/components/GoalCard";
@@ -333,25 +332,19 @@ export function GoalsScreen() {
     <>
       <SafeAreaView className="flex-1 bg-purple-50">
         <ScrollView
-          className="flex-1 px-5"
+          className="flex-1 px-5 pt-12"
           showsVerticalScrollIndicator={false}
         >
-          <TouchableOpacity
-            className="mt-4 flex-row items-center"
-            onPress={() => router.back()}
-          >
-            <Ionicons name="chevron-back" size={22} color="#7c3aed" />
-            <Text className="ml-1 font-bold text-purple-700">Volver</Text>
-          </TouchableOpacity>
-
-          <View className="mt-6">
-            <Text className="text-2xl font-extrabold text-purple-900">
+          <View className="mb-5 flex-row items-center">
+            <Ionicons name="flag" size={20} color="#7c3aed" />
+            <Text className="ml-2 text-2xl font-extrabold text-purple-900">
               Metas
             </Text>
-            <Text className="mt-1 text-sm font-semibold text-purple-600">
-              Visualiza tu progreso y celebra cada avance
-            </Text>
           </View>
+
+          <Text className="text-sm font-semibold text-purple-700">
+            Visualiza tu progreso y celebra cada avance
+          </Text>
 
           {celebratingGoal && (
             <View className="mt-5 items-center rounded-3xl border-2 border-green-200 bg-green-50 p-5">

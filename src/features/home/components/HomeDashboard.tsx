@@ -76,7 +76,6 @@ type QuickAccessItem = {
   icon: keyof typeof Ionicons.glyphMap;
   cardClass: string;
   iconColor: string;
-  textClass: string;
 };
 
 const colorMap: Record<string, string> = {
@@ -96,7 +95,6 @@ const quickAccessItems: QuickAccessItem[] = [
     icon: "flag-outline",
     cardClass: "border-pink-200 bg-pink-100",
     iconColor: "#be185d",
-    textClass: "text-pink-900",
   },
   {
     label: "Vales",
@@ -105,7 +103,6 @@ const quickAccessItems: QuickAccessItem[] = [
     icon: "ticket-outline",
     cardClass: "border-yellow-200 bg-yellow-100",
     iconColor: "#92400e",
-    textClass: "text-yellow-900",
   },
   {
     label: "Estado de ánimo",
@@ -114,7 +111,6 @@ const quickAccessItems: QuickAccessItem[] = [
     icon: "heart-outline",
     cardClass: "border-orange-200 bg-orange-100",
     iconColor: "#c2410c",
-    textClass: "text-orange-900",
   },
   {
     label: "Gratitud",
@@ -123,7 +119,6 @@ const quickAccessItems: QuickAccessItem[] = [
     icon: "flower-outline",
     cardClass: "border-emerald-200 bg-emerald-100",
     iconColor: "#047857",
-    textClass: "text-emerald-900",
   },
   {
     label: "Notas",
@@ -132,7 +127,6 @@ const quickAccessItems: QuickAccessItem[] = [
     icon: "document-text-outline",
     cardClass: "border-violet-200 bg-violet-100",
     iconColor: "#6d28d9",
-    textClass: "text-violet-900",
   },
 ];
 
@@ -635,16 +629,12 @@ export function HomeDashboard({
           {visibleQuickAccessItems.map((item) => (
             <TouchableOpacity
               key={item.route}
-              className={`mr-3 w-20 items-center rounded-2xl border-2 px-3 py-3 ${item.cardClass}`}
+              className={`mr-3 h-14 w-14 items-center justify-center rounded-2xl border-2 ${item.cardClass}`}
               onPress={() => router.push(item.route)}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
             >
-              <Ionicons name={item.icon} size={20} color={item.iconColor} />
-              <Text
-                className={`mt-2 text-center text-xs font-bold ${item.textClass}`}
-                numberOfLines={2}
-              >
-                {item.label}
-              </Text>
+              <Ionicons name={item.icon} size={22} color={item.iconColor} />
             </TouchableOpacity>
           ))}
         </ScrollView>

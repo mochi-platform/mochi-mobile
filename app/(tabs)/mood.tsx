@@ -9,12 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { useSession } from "@/src/core/providers/SessionContext";
@@ -256,34 +252,28 @@ export function MoodScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-orange-50">
+      <View className="flex-1 bg-orange-50">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <ScrollView
-            className="flex-1 px-5"
+            className="flex-1 px-5 pt-12"
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           >
-            <TouchableOpacity
-              className="mt-4 flex-row items-center"
-              onPress={() => router.back()}
-            >
-              <Ionicons name="chevron-back" size={22} color="#c2410c" />
-              <Text className="ml-1 font-bold text-orange-900">Volver</Text>
-            </TouchableOpacity>
-
-            <View className="mt-6 rounded-3xl border-2 border-orange-200 bg-white p-4">
-              <Text className="text-2xl font-extrabold text-orange-900">
+            <View className="mb-5 flex-row items-center">
+              <Ionicons name="heart" size={20} color="#c2410c" />
+              <Text className="ml-2 text-2xl font-extrabold text-orange-900">
                 Estado de ánimo
               </Text>
-              <Text className="mt-2 text-sm font-semibold text-orange-700">
-                Tu check-in emocional diario en pocos segundos
-              </Text>
             </View>
+
+            <Text className="text-sm font-semibold text-orange-700">
+              Tu check-in emocional diario en pocos segundos
+            </Text>
 
             {loading ? (
               <View className="mt-6 items-center rounded-3xl border-2 border-orange-200 bg-white p-6">
@@ -455,7 +445,7 @@ export function MoodScreen() {
             )}
           </ScrollView>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
       {AlertComponent}
     </>
   );
