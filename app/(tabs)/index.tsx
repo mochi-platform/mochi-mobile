@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import HomeDashboard from "@/src/features/home/components/HomeDashboard";
@@ -11,7 +10,6 @@ import { useSession } from "@/src/core/providers/SessionContext";
 import { useModuleVisibility } from "@/src/core/providers/ModuleVisibilityContext";
 
 export default function Home() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session } = useSession();
   const { moduleVisibility } = useModuleVisibility();
@@ -57,7 +55,7 @@ export default function Home() {
   };
 
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+    <View className="flex-1">
       <View className="flex-1">
         <HomeDashboard
           userName="Amiga"

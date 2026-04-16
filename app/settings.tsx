@@ -730,16 +730,6 @@ export function SettingsScreen() {
                     Módulos
                   </Text>
 
-                  <View className="mt-4 mb-4 rounded-2xl border border-violet-200 bg-violet-50 px-3 py-3">
-                    <Text className="text-sm font-bold text-violet-900">
-                      Funciones de pareja
-                    </Text>
-                    <Text className="mt-1 text-xs font-semibold text-violet-700">
-                      Este estado se administra desde base de datos y no se
-                      puede cambiar desde la app.
-                    </Text>
-                  </View>
-
                   <View className="mt-4">
                     {moduleItems.map((module) => (
                       <View

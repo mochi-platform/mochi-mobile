@@ -7,6 +7,7 @@ import {
   ScrollView,
   Linking,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import Animated, {
@@ -188,6 +189,7 @@ export function HomeDashboard({
   onNavigateToCooking,
   moduleVisibility,
 }: HomeDashboardProps) {
+  const insets = useSafeAreaInsets();
   const { session } = useSession();
   const { cycleData, isAvailable, hasPermission, requestPermission } =
     useCycle();
@@ -268,6 +270,7 @@ export function HomeDashboard({
   });
   const shouldShowCycleWidget =
     isAvailable && (hasPermission || !isCyclePromptDismissed);
+  const bottomSpacerHeight = Math.max(96, insets.bottom + 72);
 
   useEffect(() => {
     const userId = session?.user.id;
@@ -1058,7 +1061,7 @@ export function HomeDashboard({
         </TouchableOpacity>
       </AnimatedDashboardCard>
 
-      <View className="mb-12" />
+      <View style={{ height: bottomSpacerHeight }} />
     </ScrollView>
   );
 }
