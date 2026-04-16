@@ -522,6 +522,7 @@ export function HabitsScreen() {
       <FloatingActionButton
         onPress={() => setShowModal(true)}
         containerClassName="bg-purple-500"
+        borderClassName="border-purple-300"
         accessibilityLabel="Crear hábito"
       />
 

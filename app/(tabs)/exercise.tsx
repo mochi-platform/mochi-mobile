@@ -184,6 +184,7 @@ export function ExerciseScreen() {
 			<FloatingActionButton
 				onPress={() => router.push("/exercise-create?returnTo=/exercise-list")}
 				containerClassName="bg-teal-500"
+				borderClassName="border-teal-300"
 				accessibilityLabel="Crear ejercicio"
 			/>
 			{AlertComponent}

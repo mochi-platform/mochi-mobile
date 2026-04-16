@@ -117,15 +117,7 @@ const quickAccessItems: QuickAccessItem[] = [
     icon: "flower-outline",
     cardClass: "border-emerald-200 bg-emerald-100",
     iconColor: "#047857",
-  },
-  {
-    label: "Notas",
-    route: "/notes",
-    enabledKey: "notes_enabled",
-    icon: "document-text-outline",
-    cardClass: "border-violet-200 bg-violet-100",
-    iconColor: "#6d28d9",
-  },
+  }
 ];
 
 function buildCycleDismissKey(userId: string): string {
@@ -190,27 +182,36 @@ function DashboardActionButton({
 }: DashboardActionButtonProps) {
   const toneMap: Record<
     DashboardActionTone,
-    { buttonClass: string; textClass: string; iconColor: string }
+    {
+      buttonClass: string;
+      textClass: string;
+      iconColor: string;
+      borderColor: string;
+    }
   > = {
     blue: {
       buttonClass: "border-blue-200 bg-blue-50",
       textClass: "text-blue-700",
       iconColor: "#1d4ed8",
+      borderColor: "#bfdbfe",
     },
     teal: {
       buttonClass: "border-teal-200 bg-teal-50",
       textClass: "text-teal-700",
       iconColor: "#0f766e",
+      borderColor: "#99f6e4",
     },
     orange: {
       buttonClass: "border-orange-200 bg-orange-50",
       textClass: "text-orange-700",
       iconColor: "#c2410c",
+      borderColor: "#fed7aa",
     },
     indigo: {
       buttonClass: "border-indigo-200 bg-indigo-50",
       textClass: "text-indigo-700",
       iconColor: "#4338ca",
+      borderColor: "#c7d2fe",
     },
   };
 
@@ -218,12 +219,13 @@ function DashboardActionButton({
 
   return (
     <TouchableOpacity
-      className={`mt-3 flex-row items-center justify-center rounded-2xl border py-2 ${current.buttonClass}`}
+      className={`mt-3 w-full flex-row items-center justify-center rounded-2xl border px-4 py-3 ${current.buttonClass}`}
+      style={{ width: "100%", borderColor: current.borderColor }}
       onPress={onPress}
       activeOpacity={0.85}
     >
       <Ionicons name={icon} size={14} color={current.iconColor} />
-      <Text className={`ml-1.5 text-xs font-bold ${current.textClass}`}>
+      <Text className={`ml-1.5 text-center text-sm font-bold ${current.textClass}`}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -310,7 +312,7 @@ export function HomeDashboard({
   });
   const shouldShowCycleWidget =
     isAvailable && (hasPermission || !isCyclePromptDismissed);
-  const bottomSpacerHeight = Math.max(96, insets.bottom + 72);
+  const bottomSpacerHeight = Math.max(220, insets.bottom + 170);
 
   useEffect(() => {
     const userId = session?.user.id;
@@ -589,7 +591,10 @@ export function HomeDashboard({
   };
 
   return (
-    <ScrollView className="flex-1 bg-blue-100 px-5 pt-12">
+    <ScrollView
+      className="flex-1 bg-blue-100 px-5 pt-12"
+      contentContainerStyle={{ paddingBottom: bottomSpacerHeight }}
+    >
       {/* Header */}
       <View>
         <View className="flex-row items-center">
@@ -729,7 +734,8 @@ export function HomeDashboard({
             todayBlocks.map((block) => (
               <TouchableOpacity
                 key={block.id}
-                className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-3"
+                className="mb-3 flex-row items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 p-3"
+                style={{ borderColor: "#bfdbfe" }}
                 onPress={() => router.push(`/study-timer?blockId=${block.id}`)}
               >
                 <View className="flex-row items-center">
@@ -999,13 +1005,6 @@ export function HomeDashboard({
               </Text>
             </TouchableOpacity>
           )}
-
-          <DashboardActionButton
-            label="Ver recetas"
-            icon="restaurant-outline"
-            tone="orange"
-            onPress={onNavigateToCooking}
-          />
         </AnimatedDashboardCard>
       )}
 
@@ -1082,7 +1081,6 @@ export function HomeDashboard({
         />
       </AnimatedDashboardCard>
 
-      <View style={{ height: bottomSpacerHeight }} />
     </ScrollView>
   );
 }

@@ -248,6 +248,7 @@ export function StudyScreen() {
 			<FloatingActionButton
 				onPress={() => router.push("/exam-log")}
 				containerClassName="bg-pink-500"
+				borderClassName="border-pink-300"
 				accessibilityLabel="Registrar examen"
 			/>
 		</View>

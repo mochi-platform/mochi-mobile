@@ -330,7 +330,7 @@ export function GoalsScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-purple-50">
+      <View className="flex-1 bg-purple-50">
         <ScrollView
           className="flex-1 px-5 pt-12"
           showsVerticalScrollIndicator={false}
@@ -398,7 +398,7 @@ export function GoalsScreen() {
         >
           <Ionicons name="add" size={28} color="white" />
         </TouchableOpacity>
-      </SafeAreaView>
+      </View>
 
       <Modal
         transparent

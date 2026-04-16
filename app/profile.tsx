@@ -201,7 +201,7 @@ export function ProfileScreen() {
           >
             <Ionicons name="settings-outline" size={14} color="#7c3aed" />
             <Text className="ml-1.5 text-xs font-bold text-purple-800">
-              Ir a configuración
+              Configuración
             </Text>
           </TouchableOpacity>
 

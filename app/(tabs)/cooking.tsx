@@ -451,6 +451,7 @@ export function CookingScreen() {
         <FloatingActionButton
           onPress={() => setShowGenerateModal(true)}
           containerClassName="bg-orange-500"
+          borderClassName="border-orange-300"
           accessibilityLabel="Generar receta con IA"
           showSparkles
         />
