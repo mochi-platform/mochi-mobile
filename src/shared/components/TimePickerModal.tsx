@@ -1,5 +1,5 @@
 import { Text, View, TouchableOpacity, ScrollView, Modal } from "react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -22,10 +22,23 @@ export function TimePickerModal({
   onCancel,
   label,
 }: TimePickerModalProps) {
-  const [hours, setHours] = useState(parseInt(time.split(":")[0]));
-  const [minutes, setMinutes] = useState(parseInt(time.split(":")[1]));
+  const [hours, setHours] = useState(0);
+  const [minutes, setMinutes] = useState(0);
   const modalScale = useSharedValue(0.8);
   const modalOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const [hoursRaw = "0", minutesRaw = "0"] = time.split(":");
+    const nextHours = Number.parseInt(hoursRaw, 10);
+    const nextMinutes = Number.parseInt(minutesRaw, 10);
+
+    setHours(Number.isFinite(nextHours) ? Math.max(0, Math.min(23, nextHours)) : 0);
+    setMinutes(
+      Number.isFinite(nextMinutes) ? Math.max(0, Math.min(59, nextMinutes)) : 0,
+    );
+  }, [time, visible]);
 
   useEffect(() => {
     if (visible) {
@@ -46,85 +59,117 @@ export function TimePickerModal({
     };
   });
 
-  const hoursArray = Array.from({ length: 24 }, (_, i) => i);
-  const minutesArray = Array.from({ length: 60 }, (_, i) => i);
+  const hoursArray = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
+  const minutesArray = useMemo(
+    () => Array.from({ length: 60 }, (_, i) => i),
+    [],
+  );
+
+  const selectedTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 
   const handleConfirm = () => {
-    const timeString = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-    onConfirm(timeString);
+    onConfirm(selectedTime);
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 items-center justify-center bg-black/40">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onCancel}
+    >
+      <View className="flex-1 items-center justify-center bg-black/45 px-4 py-8">
         <Animated.View
           style={modalAnimatedStyle}
-          className="w-80 rounded-3xl bg-white p-6"
+          className="w-full max-w-md rounded-[28px] bg-white px-5 py-5"
         >
-          <Text className="text-lg font-extrabold text-purple-900">
-            {label}
-          </Text>
+          <View className="mb-4">
+            <Text className="text-lg font-extrabold text-purple-900">
+              {label}
+            </Text>
+            <Text className="mt-1 text-sm font-medium text-slate-500">
+              Selecciona una hora concreta sin pelearte con el espacio.
+            </Text>
+          </View>
 
-          <View className="mt-6 flex-row justify-center gap-4">
-            {/* Horas */}
-            <View className="flex-1">
-              <Text className="mb-2 text-xs font-bold text-purple-700">
+          <View className="mb-4 rounded-2xl bg-purple-50 px-4 py-3">
+            <Text className="text-xs font-bold uppercase tracking-[0.2em] text-purple-500">
+              Hora seleccionada
+            </Text>
+            <Text className="mt-1 text-3xl font-extrabold text-purple-900">
+              {selectedTime}
+            </Text>
+          </View>
+
+          <View className="gap-4">
+            <View>
+              <Text className="mb-2 text-sm font-bold text-purple-800">
                 Hora
               </Text>
               <ScrollView
-                className="h-32 rounded-2xl border-2 border-purple-200 bg-purple-50"
-                scrollIndicatorInsets={{ right: 1 }}
+                className="max-h-52 rounded-2xl border border-purple-200 bg-purple-50"
+                showsVerticalScrollIndicator={false}
               >
-                {hoursArray.map((h) => (
-                  <TouchableOpacity
-                    key={h}
-                    className={`items-center py-3 ${hours === h ? "bg-purple-200" : ""}`}
-                    onPress={() => setHours(h)}
-                  >
-                    <Text
-                      className={`text-lg font-bold ${hours === h ? "text-purple-900" : "text-purple-500"}`}
-                    >
-                      {String(h).padStart(2, "0")}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                <View className="flex-row flex-wrap gap-2 p-3">
+                  {hoursArray.map((h) => {
+                    const isSelected = hours === h;
+
+                    return (
+                      <TouchableOpacity
+                        key={h}
+                        className={`h-11 w-[22%] items-center justify-center rounded-2xl border ${isSelected ? "border-purple-600 bg-purple-600" : "border-transparent bg-white"}`}
+                        onPress={() => setHours(h)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Seleccionar hora ${String(h).padStart(2, "0")}`}
+                      >
+                        <Text
+                          className={`text-base font-extrabold ${isSelected ? "text-white" : "text-purple-700"}`}
+                        >
+                          {String(h).padStart(2, "0")}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </ScrollView>
             </View>
 
-            <View className="items-center justify-center">
-              <Text className="text-2xl font-bold text-purple-700">:</Text>
-            </View>
-
-            {/* Minutos */}
-            <View className="flex-1">
-              <Text className="mb-2 text-xs font-bold text-purple-700">
+            <View>
+              <Text className="mb-2 text-sm font-bold text-purple-800">
                 Minuto
               </Text>
               <ScrollView
-                className="h-32 rounded-2xl border-2 border-purple-200 bg-purple-50"
-                scrollIndicatorInsets={{ right: 1 }}
+                className="max-h-64 rounded-2xl border border-purple-200 bg-purple-50"
+                showsVerticalScrollIndicator={false}
               >
-                {minutesArray.map((m) => (
-                  <TouchableOpacity
-                    key={m}
-                    className={`items-center py-3 ${minutes === m ? "bg-purple-200" : ""}`}
-                    onPress={() => setMinutes(m)}
-                  >
-                    <Text
-                      className={`text-lg font-bold ${minutes === m ? "text-purple-900" : "text-purple-500"}`}
-                    >
-                      {String(m).padStart(2, "0")}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                <View className="flex-row flex-wrap gap-2 p-3">
+                  {minutesArray.map((m) => {
+                    const isSelected = minutes === m;
+
+                    return (
+                      <TouchableOpacity
+                        key={m}
+                        className={`h-10 w-[15%] items-center justify-center rounded-2xl border ${isSelected ? "border-purple-600 bg-purple-600" : "border-transparent bg-white"}`}
+                        onPress={() => setMinutes(m)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Seleccionar minuto ${String(m).padStart(2, "0")}`}
+                      >
+                        <Text
+                          className={`text-xs font-extrabold ${isSelected ? "text-white" : "text-purple-700"}`}
+                        >
+                          {String(m).padStart(2, "0")}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </ScrollView>
             </View>
           </View>
 
-          {/* Buttons */}
-          <View className="mt-6 flex-row gap-3">
+          <View className="mt-5 flex-row gap-3">
             <TouchableOpacity
-              className="flex-1 items-center rounded-2xl border-2 border-purple-200 bg-white py-3"
+              className="flex-1 items-center rounded-2xl border border-purple-200 bg-white py-3"
               onPress={onCancel}
             >
               <Text className="font-bold text-purple-700">Cancelar</Text>

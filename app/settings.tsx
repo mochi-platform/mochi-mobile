@@ -70,8 +70,7 @@ type ModuleToggleKey =
   | "mood_enabled"
   | "gratitude_enabled"
   | "vouchers_enabled"
-  | "cooking_enabled"
-  | "notes_enabled";
+  | "cooking_enabled";
 
 type ModuleItem = {
   key: ModuleToggleKey;
@@ -93,11 +92,6 @@ const moduleItems: ModuleItem[] = [
   { key: "gratitude_enabled", label: "Gratitud", icon: "flower" },
   { key: "vouchers_enabled", label: "Vales (pareja)", icon: "ticket" },
   { key: "cooking_enabled", label: "Cocina", icon: "restaurant" },
-  {
-    key: "notes_enabled",
-    label: "Notas rápidas",
-    icon: "document-text",
-  },
 ];
 
 const defaultModuleSettings: Pick<
@@ -111,7 +105,6 @@ const defaultModuleSettings: Pick<
   | "gratitude_enabled"
   | "vouchers_enabled"
   | "cooking_enabled"
-  | "notes_enabled"
 > = {
   partner_features_enabled: false,
   study_enabled: true,
@@ -122,7 +115,6 @@ const defaultModuleSettings: Pick<
   gratitude_enabled: true,
   vouchers_enabled: false,
   cooking_enabled: true,
-  notes_enabled: true,
 };
 
 function isValidTime(value: string): boolean {
@@ -206,7 +198,7 @@ export function SettingsScreen() {
         supabase
           .from("user_settings")
           .select(
-            "partner_features_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled, notes_enabled",
+            "partner_features_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled",
           )
           .eq("user_id", userId)
           .maybeSingle(),
@@ -362,7 +354,6 @@ export function SettingsScreen() {
         mood_enabled: nextSettings.mood_enabled,
         gratitude_enabled: nextSettings.gratitude_enabled,
         cooking_enabled: nextSettings.cooking_enabled,
-        notes_enabled: nextSettings.notes_enabled,
       };
 
       const { error: upsertError } = await supabase

@@ -53,7 +53,6 @@ type HomeDashboardProps = {
     gratitude_enabled: boolean;
     vouchers_enabled: boolean;
     cooking_enabled: boolean;
-    notes_enabled: boolean;
   };
 };
 
@@ -65,13 +64,12 @@ type UpcomingExam = {
 
 type QuickAccessItem = {
   label: string;
-  route: "/goals" | "/vouchers" | "/mood" | "/gratitude" | "/notes";
+  route: "/goals" | "/vouchers" | "/mood" | "/gratitude";
   enabledKey:
     | "goals_enabled"
     | "vouchers_enabled"
     | "mood_enabled"
-    | "gratitude_enabled"
-    | "notes_enabled";
+    | "gratitude_enabled";
   icon: keyof typeof Ionicons.glyphMap;
   cardClass: string;
   iconColor: string;
@@ -161,6 +159,47 @@ function formatWeekdayShort(isoDate: string): string {
     .replace(".", "");
 }
 
+function formatTimeHHMM(value: string): string {
+  const [hoursRaw = "00", minutesRaw = "00"] = value.split(":");
+  const hours = Number.parseInt(hoursRaw, 10);
+  const minutes = Number.parseInt(minutesRaw, 10);
+
+  const safeHours = Number.isFinite(hours) ? Math.max(0, Math.min(23, hours)) : 0;
+  const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.min(59, minutes)) : 0;
+
+  return `${String(safeHours).padStart(2, "0")}:${String(safeMinutes).padStart(2, "0")}`;
+}
+
+function getBlockDurationLabel(startTime: string, endTime: string): string {
+  const [startHoursRaw = "0", startMinutesRaw = "0"] = startTime.split(":");
+  const [endHoursRaw = "0", endMinutesRaw = "0"] = endTime.split(":");
+
+  const startHours = Number.parseInt(startHoursRaw, 10);
+  const startMinutes = Number.parseInt(startMinutesRaw, 10);
+  const endHours = Number.parseInt(endHoursRaw, 10);
+  const endMinutes = Number.parseInt(endMinutesRaw, 10);
+
+  const startTotal =
+    (Number.isFinite(startHours) ? startHours : 0) * 60 +
+    (Number.isFinite(startMinutes) ? startMinutes : 0);
+  const endTotal =
+    (Number.isFinite(endHours) ? endHours : 0) * 60 +
+    (Number.isFinite(endMinutes) ? endMinutes : 0);
+  const durationMinutes = Math.max(0, endTotal - startTotal);
+  const durationHours = Math.floor(durationMinutes / 60);
+  const remainingMinutes = durationMinutes % 60;
+
+  if (durationHours > 0 && remainingMinutes > 0) {
+    return `${durationHours}h ${remainingMinutes}min`;
+  }
+
+  if (durationHours > 0) {
+    return `${durationHours}h`;
+  }
+
+  return `${durationMinutes}min`;
+}
+
 const quickAccessItems: QuickAccessItem[] = [
   {
     label: "Metas",
@@ -193,7 +232,7 @@ const quickAccessItems: QuickAccessItem[] = [
     icon: "flower",
     cardClass: "border-emerald-200 bg-emerald-100",
     iconColor: "#047857",
-  }
+  },
 ];
 
 const quickAccessRouteMap: Record<QuickAccessItem["route"], string> = {
@@ -201,7 +240,6 @@ const quickAccessRouteMap: Record<QuickAccessItem["route"], string> = {
   "/vouchers": "/vouchers",
   "/mood": "/(tabs)/mood",
   "/gratitude": "/(tabs)/gratitude",
-  "/notes": "/notes",
 };
 
 function buildCycleDismissKey(userId: string): string {
@@ -813,13 +851,13 @@ export function HomeDashboard({
                       {block.subject}
                     </Text>
                     <Text className="text-xs font-semibold text-slate-500">
-                      {block.start_time} - {block.end_time}
+                      {formatTimeHHMM(block.start_time)} - {formatTimeHHMM(block.end_time)}
                     </Text>
                   </View>
                 </View>
                 <View className="rounded-full bg-white px-3 py-1">
                   <Text className="text-xs font-bold text-slate-600">
-                    {`${parseInt(block.end_time.split(":")[0]) - parseInt(block.start_time.split(":")[0])}h`}
+                    {getBlockDurationLabel(block.start_time, block.end_time)}
                   </Text>
                 </View>
               </TouchableOpacity>

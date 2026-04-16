@@ -177,7 +177,6 @@ export interface UserSettings {
   gratitude_enabled: boolean
   vouchers_enabled: boolean
   cooking_enabled: boolean
-  notes_enabled?: boolean
   created_at: string
   updated_at: string
 }

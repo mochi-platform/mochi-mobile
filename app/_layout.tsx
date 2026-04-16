@@ -171,7 +171,6 @@ function isRouteAllowed(
     gratitude_enabled: boolean;
     vouchers_enabled: boolean;
     cooking_enabled: boolean;
-    notes_enabled: boolean;
   },
 ): boolean {
   if (
@@ -185,10 +184,6 @@ function isRouteAllowed(
     pathname.startsWith("/auth")
   ) {
     return true;
-  }
-
-  if (pathname === "/notes") {
-    return settings.notes_enabled;
   }
 
   if (pathname === "/habits") {

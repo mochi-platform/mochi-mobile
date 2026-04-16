@@ -19,7 +19,6 @@ export type ModuleVisibility = {
   gratitude_enabled: boolean;
   vouchers_enabled: boolean;
   cooking_enabled: boolean;
-  notes_enabled: boolean;
 };
 
 export const defaultModuleVisibility: ModuleVisibility = {
@@ -32,7 +31,6 @@ export const defaultModuleVisibility: ModuleVisibility = {
   gratitude_enabled: true,
   vouchers_enabled: false,
   cooking_enabled: true,
-  notes_enabled: true,
 };
 
 type ModuleVisibilityContextValue = {
@@ -71,7 +69,7 @@ export function ModuleVisibilityProvider({
       const { data, error } = await supabase
         .from("user_settings")
         .select(
-          "partner_features_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled, notes_enabled",
+          "partner_features_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled",
         )
         .eq("user_id", session.user.id)
         .maybeSingle();

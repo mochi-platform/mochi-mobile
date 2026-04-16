@@ -208,7 +208,6 @@ export function OnboardingScreen() {
         goals_enabled: selectedModules.has("goals_enabled"),
         mood_enabled: selectedModules.has("mood_enabled"),
         gratitude_enabled: selectedModules.has("gratitude_enabled"),
-        notes_enabled: true,
       };
 
       const { error: settingsError } = await supabase
