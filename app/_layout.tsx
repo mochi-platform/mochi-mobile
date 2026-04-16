@@ -1,5 +1,5 @@
 import "../global.css";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
   Stack,
   router,
@@ -17,8 +17,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import * as Notifications from "expo-notifications";
-import { SystemBars } from "react-native-edge-to-edge";
+import { isExpoGo } from "@/lib/env";
 import {
   SessionProvider,
   useSession,
@@ -39,10 +38,56 @@ import {
 } from "@/src/features/home/components/BottomNav";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 
+type NotificationModule = typeof import("expo-notifications");
+type NotificationEventSubscription = import("expo-notifications").EventSubscription;
+type SystemBarsProps = {
+  style: {
+    statusBar: "light" | "dark";
+    navigationBar: "light" | "dark";
+  };
+};
+
+let notificationsModulePromise: Promise<NotificationModule> | null = null;
+
+async function getNotificationsModule(): Promise<NotificationModule | null> {
+  if (isExpoGo) return null;
+  notificationsModulePromise ??= import("expo-notifications");
+  return notificationsModulePromise;
+}
+
+function EdgeToEdgeSystemBars({ style }: SystemBarsProps) {
+  const [SystemBarsComponent, setSystemBarsComponent] =
+    useState<ComponentType<SystemBarsProps> | null>(null);
+
+  useEffect(() => {
+    if (isExpoGo) return;
+
+    let mounted = true;
+    void import("react-native-edge-to-edge")
+      .then((module) => {
+        if (!mounted) return;
+        setSystemBarsComponent(() => module.SystemBars);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setSystemBarsComponent(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (isExpoGo || !SystemBarsComponent) return null;
+  return <SystemBarsComponent style={style} />;
+}
+
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <View className="flex-1 items-center justify-center bg-white px-6">
-      <SystemBars style={{ statusBar: "dark", navigationBar: "light" }} />
+      <EdgeToEdgeSystemBars
+        style={{ statusBar: "dark", navigationBar: "light" }}
+      />
       <View className="w-full max-w-sm items-center rounded-3xl border border-rose-100 bg-rose-50 p-6">
         <View className="h-14 w-14 items-center justify-center rounded-full bg-rose-100">
           <Ionicons name="alert-circle" size={30} color="#e11d48" />
@@ -204,16 +249,6 @@ function isRouteAllowed(
   return true;
 }
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
-
 function RootLayoutNavigator() {
   const { session, loading, requiresOnboarding, profileError, refreshProfile } =
     useSession();
@@ -223,7 +258,31 @@ function RootLayoutNavigator() {
   const segments = useSegments();
   const loadingScale = useSharedValue(1);
   const notificationResponseListener =
-    useRef<Notifications.EventSubscription | null>(null);
+    useRef<NotificationEventSubscription | null>(null);
+
+  useEffect(() => {
+    if (isExpoGo) return;
+
+    let mounted = true;
+    void (async () => {
+      const Notifications = await getNotificationsModule();
+      if (!mounted || !Notifications) return;
+
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (loading) {
@@ -257,22 +316,33 @@ function RootLayoutNavigator() {
   }, [session, loading, requiresOnboarding]);
 
   useEffect(() => {
-    notificationResponseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        const data = response.notification.request.content.data as Record<
-          string,
-          unknown
-        > | null;
-        const screen = typeof data?.screen === "string" ? data.screen : null;
+    if (isExpoGo) return;
 
-        if (screen === "habits") router.push("/(tabs)/habits");
-        else if (screen === "study") router.push("/(tabs)/study");
-        else if (screen === "cooking") router.push("/(tabs)/cooking");
-        else if (screen === "weekly-summary") router.push("/weekly-summary");
-        else if (screen === "exam-log") router.push("/exam-log");
-      });
+    let mounted = true;
+    void (async () => {
+      const Notifications = await getNotificationsModule();
+      if (!mounted || !Notifications) return;
+
+      notificationResponseListener.current =
+        Notifications.addNotificationResponseReceivedListener((response) => {
+          const data = response.notification.request.content.data as Record<
+            string,
+            unknown
+          > | null;
+          const screen = typeof data?.screen === "string" ? data.screen : null;
+
+          if (screen === "habits") router.push("/(tabs)/habits");
+          else if (screen === "study") router.push("/(tabs)/study");
+          else if (screen === "cooking") router.push("/(tabs)/cooking");
+          else if (screen === "weekly-summary") router.push("/weekly-summary");
+          else if (screen === "exam-log") router.push("/exam-log");
+        });
+    })();
+
     return () => {
+      mounted = false;
       notificationResponseListener.current?.remove();
+      notificationResponseListener.current = null;
     };
   }, []);
 
@@ -293,7 +363,9 @@ function RootLayoutNavigator() {
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-purple-50 px-6">
-        <SystemBars style={{ statusBar: "dark", navigationBar: "dark" }} />
+        <EdgeToEdgeSystemBars
+          style={{ statusBar: "dark", navigationBar: "dark" }}
+        />
         <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm">
           <View className="items-center">
             <Animated.View style={loadingAnimatedStyle}>
@@ -311,7 +383,9 @@ function RootLayoutNavigator() {
   if (profileError && session) {
     return (
       <View className="flex-1 items-center justify-center bg-yellow-50 px-6">
-        <SystemBars style={{ statusBar: "dark", navigationBar: "dark" }} />
+        <EdgeToEdgeSystemBars
+          style={{ statusBar: "dark", navigationBar: "dark" }}
+        />
         <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm">
           <Text className="text-center text-lg font-semibold text-purple-900">
             Ups, no pudimos cargar tu perfil
@@ -361,7 +435,7 @@ function RootLayoutNavigator() {
 
   return (
     <View className="flex-1">
-      <SystemBars
+      <EdgeToEdgeSystemBars
         style={{
           statusBar: theme.statusBarStyle,
           navigationBar: theme.navigationBarStyle,

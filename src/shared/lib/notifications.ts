@@ -1,6 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Notifications from "expo-notifications";
+import { isExpoGo } from "@/lib/env";
 import type { StudyBlock } from "@/src/shared/types/database";
+
+type PermissionStatus = import("expo-notifications").PermissionStatus;
+type ExpoNotificationsModule = typeof import("expo-notifications");
+
+let notificationsModulePromise: Promise<ExpoNotificationsModule> | null = null;
+
+async function getNotificationsModule(): Promise<ExpoNotificationsModule | null> {
+  if (isExpoGo) return null;
+  notificationsModulePromise ??= import("expo-notifications");
+  return notificationsModulePromise;
+}
 
 type HabitReminderTarget = {
   id: string;
@@ -46,7 +57,10 @@ export type NotificationPrefs = {
 
 // ─── Permissions ─────────────────────────────────────────────────────────────
 
-export async function requestNotificationPermissions(): Promise<Notifications.PermissionStatus> {
+export async function requestNotificationPermissions(): Promise<PermissionStatus> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return "undetermined";
+
   const { status } = await Notifications.requestPermissionsAsync({
     ios: {
       allowAlert: true,
@@ -57,7 +71,10 @@ export async function requestNotificationPermissions(): Promise<Notifications.Pe
   return status;
 }
 
-export async function getNotificationPermissionStatus(): Promise<Notifications.PermissionStatus> {
+export async function getNotificationPermissionStatus(): Promise<PermissionStatus> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return "undetermined";
+
   const { status } = await Notifications.getPermissionsAsync();
   return status;
 }
@@ -211,6 +228,9 @@ function subtractMinutes(
 export async function scheduleMorningReminder(
   wakeUpTime: string,
 ): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await cancelMorningReminder();
   const { hour, minute } = parseTime(wakeUpTime);
 
@@ -230,6 +250,9 @@ export async function scheduleMorningReminder(
 }
 
 export async function cancelMorningReminder(): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await Notifications.cancelScheduledNotificationAsync(
     NOTIFICATION_ID.MORNING,
   ).catch((error) =>
@@ -245,6 +268,9 @@ export async function cancelMorningReminder(): Promise<void> {
 export async function scheduleStudyBlockReminders(
   blocks: StudyBlock[],
 ): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await cancelAllStudyBlockReminders();
 
   for (const block of blocks) {
@@ -269,6 +295,9 @@ export async function scheduleStudyBlockReminders(
 }
 
 export async function cancelAllStudyBlockReminders(): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   const studyIds = scheduled
     .map((n) => n.identifier)
@@ -289,6 +318,9 @@ export async function scheduleWeeklySummaryNotification(
   dayOfWeek: number = 0,
   hour: number = 10,
 ): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await Notifications.cancelScheduledNotificationAsync("weekly-summary").catch(
     (error) =>
       console.error(
@@ -315,6 +347,9 @@ export async function scheduleWeeklySummaryNotification(
 }
 
 export async function cancelWeeklySummaryNotification(): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await Notifications.cancelScheduledNotificationAsync("weekly-summary").catch(
     (error) =>
       console.error(
@@ -329,6 +364,9 @@ export async function scheduleExamReminder(
   subject: string,
   examDate: string,
 ): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   const identifier = `exam-${examId}`;
   await Notifications.cancelScheduledNotificationAsync(identifier).catch(
     (error) =>
@@ -360,6 +398,9 @@ export async function scheduleExamReminder(
 }
 
 export async function cancelExamReminder(examId: string): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await Notifications.cancelScheduledNotificationAsync(`exam-${examId}`).catch(
     (error) =>
       console.error(
@@ -372,6 +413,9 @@ export async function cancelExamReminder(examId: string): Promise<void> {
 // ─── Habit reminder ──────────────────────────────────────────────────────────
 
 export async function scheduleHabitReminder(time: string): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await cancelHabitReminder();
   const { hour, minute } = parseTime(time);
 
@@ -395,6 +439,9 @@ export async function scheduleHabitReminderForHabit(
   habit: HabitReminderTarget,
   time: string,
 ): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await cancelHabitReminder(habit.id);
   const { hour, minute } = parseTime(time);
 
@@ -419,6 +466,9 @@ export async function scheduleHabitRemindersForHabits(
   time: string,
   enabledByHabit: Record<string, boolean> = {},
 ): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await cancelHabitReminder();
   const { hour, minute } = parseTime(time);
 
@@ -445,6 +495,9 @@ export async function scheduleHabitRemindersForHabits(
 }
 
 export async function cancelHabitReminder(habitId?: string): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   if (habitId) {
     await Notifications.cancelScheduledNotificationAsync(
       NOTIFICATION_ID.habit(habitId),
@@ -490,6 +543,9 @@ export async function cancelHabitReminder(habitId?: string): Promise<void> {
  * Por defecto a las 19:00 — justo antes de preparar la cena.
  */
 export async function scheduleCookingReminder(time: string): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await cancelCookingReminder();
   const { hour, minute } = parseTime(time);
 
@@ -510,6 +566,9 @@ export async function scheduleCookingReminder(time: string): Promise<void> {
 }
 
 export async function cancelCookingReminder(): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await Notifications.cancelScheduledNotificationAsync(
     NOTIFICATION_ID.COOKING,
   ).catch((error) =>
@@ -523,6 +582,9 @@ export async function cancelCookingReminder(): Promise<void> {
 // ─── Master cancel ───────────────────────────────────────────────────────────
 
 export async function cancelAllNotifications(): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 

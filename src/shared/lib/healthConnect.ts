@@ -1,15 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
-import {
-  SdkAvailabilityStatus,
-  getGrantedPermissions,
-  getSdkStatus,
-  initialize,
-  readRecords,
-  requestPermission,
-  revokeAllPermissions,
-  type Permission,
-} from "react-native-health-connect";
+import type { Permission } from "react-native-health-connect";
+import { isExpoGo } from "@/lib/env";
 
 export type CyclePhase =
   | "menstrual"
@@ -42,6 +34,17 @@ type CachedCyclePayload = {
 const PHASE_CACHE_KEY = "cycle:phase:cache";
 const PHASE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 let permissionRequestInFlight: Promise<boolean> | null = null;
+let healthConnectModulePromise:
+  | Promise<typeof import("react-native-health-connect")>
+  | null = null;
+
+async function getHealthConnectModule(): Promise<
+  typeof import("react-native-health-connect") | null
+> {
+  if (isExpoGo) return null;
+  healthConnectModulePromise ??= import("react-native-health-connect");
+  return healthConnectModulePromise;
+}
 
 function logHealthConnectError(scope: string, error: unknown): void {
   const message = error instanceof Error ? error.message : String(error);
@@ -145,20 +148,23 @@ function estimatePeriodLength(records: MenstruationRecord[]): number {
 }
 
 async function ensureHealthConnectInitialized(): Promise<boolean> {
-  if (Platform.OS !== "android") return false;
+  if (isExpoGo || Platform.OS !== "android") return false;
+
+  const healthConnect = await getHealthConnectModule();
+  if (!healthConnect) return false;
 
   let status: number;
   try {
-    status = await getSdkStatus();
+    status = await healthConnect.getSdkStatus();
   } catch (error) {
     logHealthConnectError("getSdkStatus", error);
     return false;
   }
 
-  if (status !== SdkAvailabilityStatus.SDK_AVAILABLE) return false;
+  if (status !== healthConnect.SdkAvailabilityStatus.SDK_AVAILABLE) return false;
 
   try {
-    return await initialize();
+    return await healthConnect.initialize();
   } catch (error) {
     logHealthConnectError("initialize", error);
     return false;
@@ -183,8 +189,11 @@ export async function requestCyclePermissions(): Promise<boolean> {
     const isReady = await ensureHealthConnectInitialized();
     if (!isReady) return false;
 
+    const healthConnect = await getHealthConnectModule();
+    if (!healthConnect) return false;
+
     try {
-      const granted = await requestPermission(CYCLE_PERMISSIONS);
+      const granted = await healthConnect.requestPermission(CYCLE_PERMISSIONS);
       const grantedKeys = new Set(
         granted.map(
           (permission) => `${permission.accessType}:${permission.recordType}`,
@@ -211,8 +220,11 @@ export async function hasCyclePermissions(): Promise<boolean> {
   const isReady = await ensureHealthConnectInitialized();
   if (!isReady) return false;
 
+  const healthConnect = await getHealthConnectModule();
+  if (!healthConnect) return false;
+
   try {
-    const granted = await getGrantedPermissions();
+    const granted = await healthConnect.getGrantedPermissions();
     const grantedKeys = new Set(
       granted.map(
         (permission) => `${permission.accessType}:${permission.recordType}`,
@@ -232,8 +244,11 @@ export async function revokeCyclePermissions(): Promise<boolean> {
   const isReady = await ensureHealthConnectInitialized();
   if (!isReady) return false;
 
+  const healthConnect = await getHealthConnectModule();
+  if (!healthConnect) return false;
+
   try {
-    await revokeAllPermissions();
+    await healthConnect.revokeAllPermissions();
     await AsyncStorage.removeItem(PHASE_CACHE_KEY);
     return true;
   } catch (error) {
@@ -246,12 +261,15 @@ export async function readMenstruationRecords(): Promise<MenstruationRecord[]> {
   const canRead = await hasCyclePermissions();
   if (!canRead) return [];
 
+  const healthConnect = await getHealthConnectModule();
+  if (!healthConnect) return [];
+
   const now = new Date();
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(now.getMonth() - 6);
 
   try {
-    const periodResult = await readRecords("MenstruationPeriod", {
+    const periodResult = await healthConnect.readRecords("MenstruationPeriod", {
       timeRangeFilter: {
         operator: "between",
         startTime: sixMonthsAgo.toISOString(),
@@ -273,7 +291,7 @@ export async function readMenstruationRecords(): Promise<MenstruationRecord[]> {
       return periodRecords.sort((a, b) => (a.startDate < b.startDate ? 1 : -1));
     }
 
-    const flowResult = await readRecords("MenstruationFlow", {
+    const flowResult = await healthConnect.readRecords("MenstruationFlow", {
       timeRangeFilter: {
         operator: "between",
         startTime: sixMonthsAgo.toISOString(),
