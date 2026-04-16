@@ -4,12 +4,11 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
-import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/src/shared/lib/supabase";
 
 type SessionContextValue = {
@@ -40,10 +39,10 @@ async function fetchOnboardingStatus(userId: string): Promise<boolean> {
 
 export function SessionProvider({ children }: SessionProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [requiresOnboarding, setRequiresOnboarding] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const isRefreshingForegroundSessionRef = useRef(false);
 
   const refreshProfile = useCallback(async () => {
     if (!session?.user.id) return;
@@ -61,37 +60,96 @@ export function SessionProvider({ children }: SessionProviderProps) {
   // ─── Inicialización y listener de auth ───────────────────────────────────────
   useEffect(() => {
     let mounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    let appStateSubscription: { remove: () => void } | null = null;
+
+    const applySessionState = (nextSession: Session | null) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+    };
+
+    async function updateOnboardingState(nextSession: Session | null) {
+      if (!mounted) return;
+
+      if (!nextSession?.user.id) {
+        setRequiresOnboarding(false);
+        setProfileError(null);
+        return;
+      }
+
+      try {
+        const needsOnboarding = await fetchOnboardingStatus(nextSession.user.id);
+        if (mounted) {
+          setRequiresOnboarding(needsOnboarding);
+          setProfileError(null);
+        }
+      } catch (error) {
+        if (mounted) {
+          setProfileError(
+            error instanceof Error ? error.message : "Error cargando perfil",
+          );
+        }
+      }
+    }
 
     async function initializeSession() {
       try {
+        // Recupera sesión inicial antes de registrar el listener para cubrir reloads.
         const {
           data: { session: initialSession },
         } = await supabase.auth.getSession();
 
         if (!mounted) return;
 
-        setSession(initialSession);
+        applySessionState(initialSession);
+        await updateOnboardingState(initialSession);
 
-        if (initialSession?.user.id) {
-          try {
-            const needsOnboarding = await fetchOnboardingStatus(
-              initialSession.user.id,
-            );
-            if (mounted) {
-              setRequiresOnboarding(needsOnboarding);
-              setProfileError(null);
-            }
-          } catch (error) {
-            if (mounted) {
-              setProfileError(
-                error instanceof Error ? error.message : "Error cargando perfil",
-              );
-            }
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+          if (!mounted) return;
+
+          if (event === "SIGNED_OUT") {
+            applySessionState(null);
+            setRequiresOnboarding(false);
+            setProfileError(null);
+            return;
           }
-        }
+
+          if (
+            event === "SIGNED_IN" ||
+            event === "TOKEN_REFRESHED" ||
+            event === "INITIAL_SESSION"
+          ) {
+            applySessionState(nextSession);
+            await updateOnboardingState(nextSession);
+          }
+        });
+
+        authSubscription = subscription;
+
+        const handleAppStateChange = async (nextState: AppStateStatus) => {
+          if (nextState !== "active" || !mounted) return;
+
+          const {
+            data: { session: activeSession },
+          } = await supabase.auth.getSession();
+
+          if (!mounted) return;
+
+          applySessionState(activeSession);
+          await updateOnboardingState(activeSession);
+        };
+
+        appStateSubscription = AppState.addEventListener(
+          "change",
+          (state) => {
+            void handleAppStateChange(state);
+          },
+        );
       } catch (error) {
         if (mounted) {
-          setSession(null);
+          applySessionState(null);
           setRequiresOnboarding(false);
           setProfileError(
             error instanceof Error ? error.message : "Error cargando sesión",
@@ -104,124 +162,10 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
     void initializeSession();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      async (_event: AuthChangeEvent, nextSession: Session | null) => {
-        if (!mounted) return;
-
-        setSession(nextSession);
-
-        if (!nextSession) {
-          setRequiresOnboarding(false);
-          setProfileError(null);
-          return;
-        }
-
-        try {
-          const needsOnboarding = await fetchOnboardingStatus(
-            nextSession.user.id,
-          );
-          if (mounted) {
-            setRequiresOnboarding(needsOnboarding);
-            setProfileError(null);
-          }
-        } catch (error) {
-          if (mounted) {
-            setProfileError(
-              error instanceof Error ? error.message : "Error cargando perfil",
-            );
-          }
-        }
-      },
-    );
-
     return () => {
       mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // ─── AppState: refrescar sesión al volver al primer plano ────────────────────
-  // Cuando Android/iOS suspende la app, el autoRefresh se pausa.
-  // Al volver al primer plano llamamos getSession() para que Supabase
-  // detecte si el token expiró y lo refresque antes de que el usuario
-  // intente hacer cualquier acción.
-  useEffect(() => {
-    let currentAppState: AppStateStatus = AppState.currentState;
-
-    if (currentAppState === "active") {
-      void supabase.auth.startAutoRefresh();
-    }
-
-    const resetSessionState = () => {
-      setSession(null);
-      setRequiresOnboarding(false);
-      setProfileError(null);
-    };
-
-    const handleAppStateChange = async (nextState: AppStateStatus) => {
-      const wasInBackground = currentAppState !== "active";
-      currentAppState = nextState;
-
-      if (nextState !== "active") {
-        try {
-          await supabase.auth.stopAutoRefresh();
-        } catch {
-          // No-op: evitar rechazos no manejados al pausar auto-refresh.
-        }
-        return;
-      }
-
-      if (!wasInBackground || isRefreshingForegroundSessionRef.current) return;
-
-      isRefreshingForegroundSessionRef.current = true;
-      try {
-        // Al volver a primer plano, forzamos ciclo de refresh para evitar tokens colgados.
-        await supabase.auth.startAutoRefresh();
-
-        const { data: currentData } = await supabase.auth.getSession();
-        if (!currentData.session) {
-          resetSessionState();
-          return;
-        }
-
-        const { data: refreshedData, error: refreshError } =
-          await supabase.auth.refreshSession();
-
-        if (refreshError || !refreshedData.session) {
-          const message = refreshError?.message?.toLowerCase() ?? "";
-          const isInvalidSession =
-            message.includes("refresh token") ||
-            message.includes("jwt") ||
-            message.includes("session");
-
-          if (isInvalidSession) {
-            resetSessionState();
-          }
-          return;
-        }
-
-        setSession((prev) => {
-          if (prev?.access_token !== refreshedData.session?.access_token) {
-            return refreshedData.session;
-          }
-          return prev;
-        });
-      } catch {
-        // Silencioso: si fue un error temporal de red, mantenemos estado actual.
-      } finally {
-        isRefreshingForegroundSessionRef.current = false;
-      }
-    };
-
-    const subscription = AppState.addEventListener("change", (state) => {
-      void handleAppStateChange(state);
-    });
-
-    return () => {
-      subscription.remove();
-      void supabase.auth.stopAutoRefresh();
+      authSubscription?.unsubscribe();
+      appStateSubscription?.remove();
     };
   }, []);
 
