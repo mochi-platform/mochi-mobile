@@ -191,6 +191,7 @@ export function OnboardingScreen() {
         .from("profiles")
         .update({
           full_name: fullName.trim(),
+          mochi_name: "Mochi",
           wake_up_time: wakeUpTime,
         })
         .eq("id", user.id);

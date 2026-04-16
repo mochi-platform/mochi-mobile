@@ -57,6 +57,7 @@ type HabitNotificationTarget = {
 
 type ProfileSettings = {
   full_name: string | null;
+  mochi_name: string | null;
   wake_up_time: string | null;
 };
 
@@ -136,6 +137,7 @@ export function SettingsScreen() {
 
   const [profile, setProfile] = useState<ProfileSettings>({
     full_name: "",
+    mochi_name: "Mochi",
     wake_up_time: "",
   });
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -198,7 +200,7 @@ export function SettingsScreen() {
       ] = await Promise.all([
         supabase
           .from("profiles")
-          .select("full_name, wake_up_time")
+          .select("full_name, mochi_name, wake_up_time")
           .eq("id", userId)
           .single(),
         supabase
@@ -226,12 +228,12 @@ export function SettingsScreen() {
       if (settingsRes.error) throw settingsRes.error;
       if (habitsRes.error) throw habitsRes.error;
 
-      setProfile(
-        (profileRes.data as ProfileSettings | null) ?? {
-          full_name: "",
-          wake_up_time: "",
-        },
-      );
+      const profileData = profileRes.data as ProfileSettings | null;
+      setProfile({
+        full_name: profileData?.full_name ?? "",
+        mochi_name: (profileData?.mochi_name ?? "").trim() || "Mochi",
+        wake_up_time: profileData?.wake_up_time ?? "",
+      });
       const mergedModuleSettings = {
         ...defaultModuleSettings,
         ...((settingsRes.data as Partial<
@@ -261,7 +263,7 @@ export function SettingsScreen() {
           ? err.message
           : "No se pudieron cargar los ajustes",
       );
-      setProfile({ full_name: "", wake_up_time: "" });
+      setProfile({ full_name: "", mochi_name: "Mochi", wake_up_time: "" });
       setModuleSettings(defaultModuleSettings);
       setHabitTargets([]);
       setHabitNotificationMap({});
@@ -299,6 +301,7 @@ export function SettingsScreen() {
         .from("profiles")
         .update({
           full_name: (profile.full_name ?? "").trim() || null,
+          mochi_name: (profile.mochi_name ?? "").trim() || "Mochi",
           wake_up_time: wakeUpTimeValue,
         })
         .eq("id", userId);
@@ -684,6 +687,21 @@ export function SettingsScreen() {
                       value={profile.full_name ?? ""}
                       onChangeText={(value) =>
                         setProfile((prev) => ({ ...prev, full_name: value }))
+                      }
+                    />
+                  </View>
+
+                  <View className="mt-4">
+                    <Text className="mb-2 text-sm font-bold text-blue-900">
+                      Nombre de tu Mochi
+                    </Text>
+                    <TextInput
+                      className="rounded-2xl border-2 border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-slate-800"
+                      placeholder="Mochi"
+                      placeholderTextColor="#93c5fd"
+                      value={profile.mochi_name ?? ""}
+                      onChangeText={(value) =>
+                        setProfile((prev) => ({ ...prev, mochi_name: value }))
                       }
                     />
                   </View>

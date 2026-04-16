@@ -34,6 +34,7 @@ import type {
 
 interface Profile {
   full_name: string;
+  mochi_name: string | null;
   total_points: number;
   wake_up_time: string | null;
 }
@@ -91,7 +92,7 @@ export function ProfileScreen() {
       const [profileRes, streakRes, userAchRes, allAchRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("full_name, total_points, wake_up_time")
+          .select("full_name, mochi_name, total_points, wake_up_time")
           .eq("id", userId)
           .single(),
         supabase.from("streaks").select("*").eq("user_id", userId).single(),
@@ -188,6 +189,9 @@ export function ProfileScreen() {
           <MochiCharacter mood="happy" size={80} />
           <Text className="mt-4 text-2xl font-extrabold text-purple-900">
             {profile?.full_name ?? session?.user.email ?? "Mochi Student"}
+          </Text>
+          <Text className="mt-1 text-sm font-semibold text-purple-700">
+            Tu Mochi: {(profile?.mochi_name ?? "").trim() || "Mochi"}
           </Text>
 
           <TouchableOpacity
