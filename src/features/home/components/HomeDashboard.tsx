@@ -35,6 +35,7 @@ import {
   getTimeIcon,
   getTimeOfDay,
 } from "@/src/shared/lib/timeContext";
+import { getHomeBottomSpacerHeight } from "@/src/shared/lib/layout";
 
 type HomeDashboardProps = {
   userName: string;
@@ -107,8 +108,8 @@ const quickAccessItems: QuickAccessItem[] = [
     route: "/mood",
     enabledKey: "mood_enabled",
     icon: "heart-outline",
-    cardClass: "border-orange-200 bg-orange-100",
-    iconColor: "#c2410c",
+    cardClass: "border-purple-200 bg-purple-100",
+    iconColor: "#7c3aed",
   },
   {
     label: "Gratitud",
@@ -119,6 +120,14 @@ const quickAccessItems: QuickAccessItem[] = [
     iconColor: "#047857",
   }
 ];
+
+const quickAccessRouteMap: Record<QuickAccessItem["route"], string> = {
+  "/goals": "/(tabs)/goals",
+  "/vouchers": "/vouchers",
+  "/mood": "/(tabs)/mood",
+  "/gratitude": "/(tabs)/gratitude",
+  "/notes": "/notes",
+};
 
 function buildCycleDismissKey(userId: string): string {
   return `dashboard:cycle_prompt_dismissed:${userId}`;
@@ -131,7 +140,7 @@ type AnimatedDashboardCardProps = {
   className: string;
 };
 
-type DashboardActionTone = "blue" | "teal" | "orange" | "indigo";
+type DashboardActionTone = "blue" | "pink" | "teal" | "orange" | "indigo";
 
 type DashboardActionButtonProps = {
   label: string;
@@ -195,6 +204,12 @@ function DashboardActionButton({
       iconColor: "#1d4ed8",
       borderColor: "#bfdbfe",
     },
+    pink: {
+      buttonClass: "border-pink-200 bg-pink-50",
+      textClass: "text-pink-700",
+      iconColor: "#be185d",
+      borderColor: "#fbcfe8",
+    },
     teal: {
       buttonClass: "border-teal-200 bg-teal-50",
       textClass: "text-teal-700",
@@ -208,10 +223,10 @@ function DashboardActionButton({
       borderColor: "#fed7aa",
     },
     indigo: {
-      buttonClass: "border-indigo-200 bg-indigo-50",
-      textClass: "text-indigo-700",
-      iconColor: "#4338ca",
-      borderColor: "#c7d2fe",
+      buttonClass: "border-purple-200 bg-purple-50",
+      textClass: "text-purple-700",
+      iconColor: "#7c3aed",
+      borderColor: "#d8b4fe",
     },
   };
 
@@ -301,6 +316,10 @@ export function HomeDashboard({
     transform: [{ scale: loadingScale.value }],
   }));
 
+  const handleQuickAccessPress = (route: QuickAccessItem["route"]) => {
+    router.replace(quickAccessRouteMap[route]);
+  };
+
   const visibleQuickAccessItems = quickAccessItems.filter((item) => {
     if (item.enabledKey === "vouchers_enabled") {
       return (
@@ -312,7 +331,7 @@ export function HomeDashboard({
   });
   const shouldShowCycleWidget =
     isAvailable && (hasPermission || !isCyclePromptDismissed);
-  const bottomSpacerHeight = Math.max(220, insets.bottom + 170);
+  const bottomSpacerHeight = getHomeBottomSpacerHeight(insets.bottom);
 
   useEffect(() => {
     const userId = session?.user.id;
@@ -576,7 +595,7 @@ export function HomeDashboard({
       return { badgeClass: "bg-red-100 text-red-700", text: "Mañana" };
     if (days <= 3)
       return {
-        badgeClass: "bg-orange-100 text-orange-700",
+        badgeClass: "bg-pink-100 text-pink-700",
         text: `En ${days} días`,
       };
     if (days <= 7)
@@ -597,21 +616,26 @@ export function HomeDashboard({
     >
       {/* Header */}
       <View>
-        <View className="flex-row items-center">
-          <Ionicons name={greetingIcon} size={18} color="#1e40af" />
-          <Text className="ml-2 text-2xl font-extrabold text-blue-900">
-            {greetingText}
-          </Text>
+        <View className="flex-row items-center justify-between">
+          <View>
+            <View className="flex-row items-center">
+              <Ionicons name={greetingIcon} size={18} color="#1e40af" />
+              <Text className="ml-2 text-2xl font-extrabold text-blue-900">
+                {greetingText}
+              </Text>
+            </View>
+            <Text className="mt-1 text-sm font-semibold text-blue-700">{today}</Text>
+          </View>
+          <TouchableOpacity
+            className="h-9 w-9 items-center justify-center rounded-full border border-blue-200 bg-blue-50"
+            onPress={() => router.push("/profile")}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Ir al perfil"
+          >
+            <Ionicons name="person-outline" size={16} color="#1e40af" />
+          </TouchableOpacity>
         </View>
-        <Text className="mt-1 text-sm font-semibold text-blue-700">{today}</Text>
-        <TouchableOpacity
-          className="mt-3 self-start flex-row items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1"
-          onPress={() => router.push("/profile")}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="person-outline" size={12} color="#1e40af" />
-          <Text className="ml-1 text-xs font-bold text-blue-800">Perfil</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Motivación */}
@@ -661,7 +685,7 @@ export function HomeDashboard({
             <TouchableOpacity
               key={item.route}
               className={`mr-3 h-14 w-14 items-center justify-center rounded-2xl border-2 ${item.cardClass}`}
-              onPress={() => router.push(item.route)}
+              onPress={() => handleQuickAccessPress(item.route)}
               accessibilityRole="button"
               accessibilityLabel={item.label}
             >
@@ -673,19 +697,19 @@ export function HomeDashboard({
 
       {moduleVisibility.habits_enabled && (
         <TouchableOpacity
-          className="mt-4 rounded-3xl border-2 border-green-200 bg-white p-4"
+          className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4"
           onPress={onNavigateToHabits}
         >
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
-              <Ionicons name="leaf" size={18} color="#15803d" />
-              <Text className="ml-2 text-base font-bold text-green-900">
+              <Ionicons name="leaf" size={18} color="#7c3aed" />
+              <Text className="ml-2 text-base font-bold text-purple-900">
                 Hábitos de hoy
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#166534" />
+            <Ionicons name="chevron-forward" size={18} color="#7c3aed" />
           </View>
-          <Text className="mt-2 text-sm font-semibold text-green-700">
+          <Text className="mt-2 text-sm font-semibold text-purple-700">
             {loading
               ? "Cargando hábitos..."
               : `${habitLogsCount}/${habitCount} hábitos completados hoy`}
@@ -697,11 +721,11 @@ export function HomeDashboard({
         <AnimatedDashboardCard
           delay={0}
           animationSeed={animationSeed}
-          className="mt-4 rounded-3xl border-2 border-blue-200 bg-white p-5"
+          className="mt-4 rounded-3xl border-2 border-pink-200 bg-white p-5"
         >
           <View className="mb-3 flex-row items-center">
-            <Ionicons name="book" size={18} color="#1e40af" />
-            <Text className="ml-2 text-base font-bold text-blue-900">
+            <Ionicons name="book" size={18} color="#be185d" />
+            <Text className="ml-2 text-base font-bold text-pink-900">
               Bloques de estudio
             </Text>
           </View>
@@ -711,7 +735,7 @@ export function HomeDashboard({
               <Animated.View style={loadingAnimatedStyle}>
                 <MochiCharacter mood="thinking" size={82} />
               </Animated.View>
-              <Text className="mt-3 text-sm font-semibold text-blue-700">
+              <Text className="mt-3 text-sm font-semibold text-pink-700">
                 Cargando tu agenda...
               </Text>
             </View>
@@ -734,8 +758,8 @@ export function HomeDashboard({
             todayBlocks.map((block) => (
               <TouchableOpacity
                 key={block.id}
-                className="mb-3 flex-row items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 p-3"
-                style={{ borderColor: "#bfdbfe" }}
+                className="mb-3 flex-row items-center justify-between rounded-2xl border border-pink-200 bg-pink-50 p-3"
+                style={{ borderColor: "#fbcfe8" }}
                 onPress={() => router.push(`/study-timer?blockId=${block.id}`)}
               >
                 <View className="flex-row items-center">
@@ -767,7 +791,7 @@ export function HomeDashboard({
           <DashboardActionButton
             label="Ver estudio"
             icon="book-outline"
-            tone="blue"
+            tone="pink"
             onPress={onNavigateToStudy}
           />
         </AnimatedDashboardCard>
@@ -831,7 +855,7 @@ export function HomeDashboard({
         >
           <View className="mb-2 flex-row items-center">
             <Ionicons name="barbell" size={18} color="#0d9488" />
-            <Text className="ml-2 text-base font-bold text-blue-900">
+            <Text className="ml-2 text-base font-bold text-teal-900">
               Rutinas de hoy
             </Text>
           </View>
@@ -953,7 +977,7 @@ export function HomeDashboard({
                   </View>
                   <View className="flex-row items-center gap-1">
                     {latestRecipe.is_favorite && (
-                      <Ionicons name="heart" size={14} color="#f97316" />
+                      <Ionicons name="heart" size={14} color="#ec4899" />
                     )}
                     <Ionicons
                       name="chevron-forward"
@@ -1011,11 +1035,11 @@ export function HomeDashboard({
       <AnimatedDashboardCard
         delay={240}
         animationSeed={animationSeed}
-        className="mt-4 rounded-3xl border-2 border-indigo-200 bg-white p-5"
+        className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-5"
       >
         <View className="mb-3 flex-row items-center">
-          <Ionicons name="stats-chart-outline" size={18} color="#3730a3" />
-          <Text className="ml-2 text-base font-bold text-indigo-900">
+          <Ionicons name="stats-chart-outline" size={18} color="#6d28d9" />
+          <Text className="ml-2 text-base font-bold text-purple-900">
             Esta semana
           </Text>
         </View>
@@ -1025,15 +1049,15 @@ export function HomeDashboard({
           showsHorizontalScrollIndicator={false}
           className="mb-3"
         >
-          <View className="mr-2 flex-row items-center rounded-2xl bg-indigo-50 px-3 py-2">
-            <Ionicons name="book-outline" size={14} color="#4338ca" />
-            <Text className="ml-1 text-xs font-bold text-indigo-900">
+          <View className="mr-2 flex-row items-center rounded-2xl bg-purple-50 px-3 py-2">
+            <Ionicons name="book-outline" size={14} color="#7c3aed" />
+            <Text className="ml-1 text-xs font-bold text-purple-900">
               {weeklySummary.studySessions} sesiones
             </Text>
           </View>
-          <View className="mr-2 flex-row items-center rounded-2xl bg-orange-50 px-3 py-2">
-            <Ionicons name="flame-outline" size={14} color="#c2410c" />
-            <Text className="ml-1 text-xs font-bold text-orange-900">
+          <View className="mr-2 flex-row items-center rounded-2xl bg-pink-50 px-3 py-2">
+            <Ionicons name="flame-outline" size={14} color="#be185d" />
+            <Text className="ml-1 text-xs font-bold text-pink-900">
               {weeklySummary.currentStreak} días
             </Text>
           </View>
@@ -1057,7 +1081,7 @@ export function HomeDashboard({
               mood === null
                 ? "bg-slate-200"
                 : mood <= 2
-                  ? "bg-orange-300"
+                  ? "bg-pink-300"
                   : mood === 3
                     ? "bg-yellow-300"
                     : "bg-emerald-300";

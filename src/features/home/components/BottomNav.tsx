@@ -9,6 +9,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
+import { getBottomNavPaddingBottom } from "@/src/shared/lib/layout";
 
 export type MobileScreen = "home" | "study" | "exercise" | "habits" | "cooking";
 
@@ -42,22 +43,22 @@ const tabs: Array<{
 
 const tabPalettes: Record<MobileScreen, TabPalette> = {
   home: {
-    container: "bg-purple-50",
-    border: "border-purple-200",
-    activeBg: "bg-purple-200",
-    activeIcon: "#7e22ce",
-    inactiveIcon: "#c4b5fd",
-    activeText: "text-purple-800",
-    inactiveText: "text-purple-500",
+    container: "bg-blue-50",
+    border: "border-blue-200",
+    activeBg: "bg-blue-200",
+    activeIcon: "#1d4ed8",
+    inactiveIcon: "#93c5fd",
+    activeText: "text-blue-800",
+    inactiveText: "text-blue-500",
   },
   study: {
-    container: "bg-purple-50",
-    border: "border-purple-200",
-    activeBg: "bg-purple-200",
-    activeIcon: "#6b21a8",
-    inactiveIcon: "#c4b5fd",
-    activeText: "text-purple-800",
-    inactiveText: "text-purple-500",
+    container: "bg-pink-50",
+    border: "border-pink-200",
+    activeBg: "bg-pink-200",
+    activeIcon: "#be185d",
+    inactiveIcon: "#f9a8d4",
+    activeText: "text-pink-800",
+    inactiveText: "text-pink-500",
   },
   exercise: {
     container: "bg-teal-50",
@@ -160,7 +161,7 @@ export function BottomNav({
   return (
     <View
       className={`border-t px-3 pt-3 ${palette.border} ${palette.container}`}
-      style={{ paddingBottom: insets.bottom + 24 }}
+      style={{ paddingBottom: getBottomNavPaddingBottom(insets.bottom) }}
     >
       <View className="flex-row items-center justify-between">
         {filteredTabs.map((tab) => (

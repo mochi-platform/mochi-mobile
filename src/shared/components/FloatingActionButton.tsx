@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getFabBottomOffset } from "@/src/shared/lib/layout";
 
 type FloatingActionButtonProps = {
   onPress: () => void;
@@ -33,8 +34,8 @@ export function FloatingActionButton({
 
   return (
     <TouchableOpacity
-      className={`absolute right-6 z-20 h-14 w-14 items-center justify-center rounded-full border-4 ${borderClassName} ${containerClassName}`}
-      style={{ bottom: insets.bottom + 98, borderColor }}
+      className={`absolute right-5 z-20 h-14 w-14 items-center justify-center rounded-full border-4 ${borderClassName} ${containerClassName}`}
+      style={{ bottom: getFabBottomOffset(insets.bottom), borderColor }}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}

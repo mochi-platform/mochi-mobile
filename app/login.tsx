@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, AntDesign } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { supabase } from "@/src/shared/lib/supabase";
@@ -348,9 +348,7 @@ export function LoginScreen() {
               <ActivityIndicator color="#1f2937" />
             ) : (
               <>
-                <View className="h-5 w-5 items-center justify-center rounded-full bg-gray-800">
-                  <Text className="text-xs font-bold text-white">G</Text>
-                </View>
+                  <AntDesign name="google" size={24} color="black" />
                 <Text className="text-sm font-semibold text-gray-800">
                   Continuar con Google
                 </Text>

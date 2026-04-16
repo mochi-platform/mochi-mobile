@@ -388,11 +388,11 @@ export function GoalsScreen() {
             )}
           </View>
 
-          <View className="h-24" />
+          <View className="h-20" />
         </ScrollView>
 
         <TouchableOpacity
-          className="absolute bottom-8 right-6 h-14 w-14 items-center justify-center rounded-full bg-purple-600 shadow-lg"
+          className="absolute bottom-5 right-5 h-14 w-14 items-center justify-center rounded-full bg-purple-600 shadow-lg"
           onPress={() => setShowCreateSheet(true)}
           activeOpacity={0.9}
         >

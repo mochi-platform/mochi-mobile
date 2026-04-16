@@ -495,7 +495,7 @@ export function HabitsScreen() {
           </>
         )}
 
-        <View className="h-24" />
+        <View className="h-20" />
       </ScrollView>
 
       {/* Celebration overlay */}

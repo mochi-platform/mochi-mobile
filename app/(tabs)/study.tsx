@@ -136,37 +136,33 @@ export function StudyScreen() {
 	const groups = groupSessionsByDate(sessions);
 
 	return (
-		<View className="flex-1 bg-blue-50">
+		<View className="flex-1 bg-pink-50">
 			<ScrollView
 				className="flex-1 px-5 pt-12"
 				showsVerticalScrollIndicator={false}
 			>
 				<View className="mb-5 flex-row items-center">
-					<Ionicons name="book" size={20} color="#1d4ed8" />
-					<Text className="ml-2 text-2xl font-extrabold text-blue-900">
+					<Ionicons name="book" size={20} color="#be185d" />
+					<Text className="ml-2 text-2xl font-extrabold text-pink-900">
 						Estudio
 					</Text>
 				</View>
 
-				<Text className="text-sm font-semibold text-blue-600">
-					Historial de sesiones completadas
-				</Text>
-
 				{!loading && totalSessions > 0 && (
 					<View className="mt-4 flex-row gap-3">
-						<View className="flex-1 rounded-2xl border-2 border-purple-200 bg-purple-100 p-4">
-							<Text className="text-3xl font-extrabold text-purple-900">
+						<View className="flex-1 rounded-2xl border-2 border-fuchsia-200 bg-fuchsia-100 p-4">
+							<Text className="text-3xl font-extrabold text-fuchsia-900">
 								{totalSessions}
 							</Text>
-							<Text className="mt-1 text-xs font-bold text-purple-600">
+							<Text className="mt-1 text-xs font-bold text-fuchsia-600">
 								{totalSessions === 1 ? "sesión" : "sesiones"}
 							</Text>
 						</View>
-						<View className="flex-1 rounded-2xl border-2 border-blue-200 bg-blue-100 p-4">
-							<Text className="text-3xl font-extrabold text-blue-900">
+						<View className="flex-1 rounded-2xl border-2 border-rose-200 bg-rose-100 p-4">
+							<Text className="text-3xl font-extrabold text-rose-900">
 								{totalHours > 0 ? `${totalHours}h` : `${totalMinutes}min`}
 							</Text>
-							<Text className="mt-1 text-xs font-bold text-blue-600">
+							<Text className="mt-1 text-xs font-bold text-rose-600">
 								{totalHours > 0 && totalMinutes > 0
 									? `${totalMinutes}min más`
 									: "estudiadas"}
@@ -180,7 +176,7 @@ export function StudyScreen() {
 						<Animated.View style={loadingAnimatedStyle}>
 							<MochiCharacter mood="thinking" size={90} />
 						</Animated.View>
-						<Text className="mt-4 text-sm font-semibold text-blue-700">
+						<Text className="mt-4 text-sm font-semibold text-pink-700">
 							Cargando historial...
 						</Text>
 					</View>
@@ -195,12 +191,12 @@ export function StudyScreen() {
 						</TouchableOpacity>
 					</View>
 				) : sessions.length === 0 ? (
-					<View className="mt-8 items-center rounded-3xl border-2 border-blue-200 bg-white p-8">
+					<View className="mt-8 items-center rounded-3xl border-2 border-pink-200 bg-white p-8">
 						<MochiCharacter mood="happy" size={88} />
-						<Text className="mt-3 text-center text-base font-bold text-blue-900">
+						<Text className="mt-3 text-center text-base font-bold text-pink-900">
 							Aún no tienes sesiones registradas
 						</Text>
-						<Text className="mt-2 text-center text-sm font-semibold text-blue-500">
+						<Text className="mt-2 text-center text-sm font-semibold text-pink-500">
 							Completa tu primer bloque de estudio para verlo aquí
 						</Text>
 					</View>
@@ -208,26 +204,26 @@ export function StudyScreen() {
 					<View className="mt-6">
 						{groups.map((group) => (
 							<View key={group.date} className="mb-5">
-								<Text className="mb-2 text-xs font-extrabold uppercase tracking-widest text-blue-400">
+								<Text className="mb-2 text-xs font-extrabold uppercase tracking-widest text-pink-400">
 									{group.label}
 								</Text>
 								{group.sessions.map((studySession) => (
 									<View
 										key={studySession.id}
-										className="mb-2 flex-row items-center rounded-2xl border-2 border-blue-100 bg-white p-3"
+										className="mb-2 flex-row items-center rounded-2xl border-2 border-pink-100 bg-white p-3"
 									>
-										<View className="h-10 w-10 items-center justify-center rounded-xl bg-purple-100">
-											<Ionicons name="book-outline" size={18} color="#7c3aed" />
+										<View className="h-10 w-10 items-center justify-center rounded-xl bg-pink-100">
+											<Ionicons name="book-outline" size={18} color="#be185d" />
 										</View>
 										<View className="ml-3 flex-1">
 											<Text className="text-sm font-bold text-slate-800">
 												{studySession.subject}
 											</Text>
-											<Text className="mt-0.5 text-xs font-semibold text-purple-600">
+											<Text className="mt-0.5 text-xs font-semibold text-pink-600">
 												{formatDuration(studySession.duration_seconds)}
 											</Text>
 										</View>
-										<Text className="text-xs font-semibold text-blue-400">
+										<Text className="text-xs font-semibold text-pink-400">
 											{new Date(studySession.completed_at).toLocaleTimeString(
 												"es-ES",
 												{
@@ -243,7 +239,7 @@ export function StudyScreen() {
 					</View>
 				)}
 
-				<View className="h-24" />
+				<View className="h-20" />
 			</ScrollView>
 			<FloatingActionButton
 				onPress={() => router.push("/exam-log")}

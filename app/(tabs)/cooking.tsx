@@ -446,7 +446,7 @@ export function CookingScreen() {
               />
             ))
           )}
-          <View className="h-24" />
+          <View className="h-20" />
         </ScrollView>
         <FloatingActionButton
           onPress={() => setShowGenerateModal(true)}

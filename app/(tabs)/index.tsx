@@ -48,19 +48,19 @@ export default function Home() {
   const showRecoveryModal = activeRecoveryPlan !== null && !recoveryDismissed;
 
   const navigateToStudy = () => {
-    router.replace("/study-history");
+    router.replace("/(tabs)/study");
   };
 
   const navigateToExercise = () => {
-    router.replace("/exercise-list");
+    router.replace("/(tabs)/exercise");
   };
 
   const navigateToHabits = () => {
-    router.replace("/habits");
+    router.replace("/(tabs)/habits");
   };
 
   const navigateToCooking = () => {
-    router.replace("/cooking");
+    router.replace("/(tabs)/cooking");
   };
 
   useEffect(() => {

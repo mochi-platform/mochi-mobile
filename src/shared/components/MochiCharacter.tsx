@@ -1,13 +1,12 @@
 import { useEffect } from "react";
 import { Image } from "react-native";
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSequence,
   withTiming,
-  withDelay,
 } from "react-native-reanimated";
 
 type MochiMood = "happy" | "thinking" | "sleepy" | "excited";
@@ -19,102 +18,79 @@ type MochiCharacterProps = {
 
 const moodScale: Record<MochiMood, number> = {
   happy: 1,
-  thinking: 0.92,
-  sleepy: 0.88,
-  excited: 1.12,
+  thinking: 0.97,
+  sleepy: 0.95,
+  excited: 1.05,
 };
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
   const floatY = useSharedValue(0);
+  const floatX = useSharedValue(0);
   const scale = useSharedValue(1);
   const rotate = useSharedValue(0);
 
-  // 🌊 FLOAT BASE (la tuya, pero un poco más orgánica)
-  useEffect(() => {
-    floatY.value = withRepeat(
-      withSequence(
-        withTiming(-8, { duration: 900, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
-      ),
+  const animateOscillation = (
+    value: { value: number },
+    center: number,
+    amplitude: number,
+    duration: number,
+  ) => {
+    value.value = center - amplitude;
+    value.value = withRepeat(
+      withTiming(center + amplitude, {
+        duration,
+        easing: Easing.inOut(Easing.sin),
+      }),
       -1,
-      false,
+      true,
     );
-  }, []);
+  };
 
-  // 🎭 ANIMACIONES POR MOOD
+  // Una sola capa de animacion por mood para evitar que se pisen entre si.
   useEffect(() => {
+    cancelAnimation(floatY);
+    cancelAnimation(floatX);
+    cancelAnimation(scale);
+    cancelAnimation(rotate);
+
     switch (mood) {
       case "happy":
-        scale.value = withRepeat(
-          withSequence(
-            withTiming(1.05, { duration: 300 }),
-            withTiming(1, { duration: 300 }),
-          ),
-          -1,
-          true,
-        );
+        animateOscillation(floatY, -1.5, 1.7, 2100);
+        animateOscillation(floatX, 0.2, 1.2, 2800);
+        animateOscillation(scale, 1.01, 0.012, 1400);
+        animateOscillation(rotate, 0, 0.8, 2400);
         break;
 
       case "thinking":
-        rotate.value = withRepeat(
-          withSequence(
-            withTiming(-5, { duration: 800 }),
-            withTiming(5, { duration: 800 }),
-            withTiming(0, { duration: 600 }),
-          ),
-          -1,
-          true,
-        );
+        animateOscillation(floatY, -0.7, 1.1, 2600);
+        animateOscillation(floatX, 0, 1.5, 2500);
+        animateOscillation(scale, 1, 0.008, 2200);
+        animateOscillation(rotate, 0, 1.5, 2200);
         break;
 
       case "sleepy":
-        scale.value = withRepeat(
-          withSequence(
-            withTiming(0.95, { duration: 1200 }),
-            withTiming(1, { duration: 1200 }),
-          ),
-          -1,
-          true,
-        );
-
-        floatY.value = withRepeat(
-          withSequence(
-            withTiming(-4, { duration: 1500 }),
-            withTiming(0, { duration: 1500 }),
-          ),
-          -1,
-          false,
-        );
+        animateOscillation(floatY, -0.3, 0.8, 3200);
+        animateOscillation(floatX, 0, 0.55, 3500);
+        animateOscillation(scale, 0.995, 0.007, 2800);
+        animateOscillation(rotate, 0, 0.55, 3000);
         break;
 
       case "excited":
-        scale.value = withRepeat(
-          withSequence(
-            withTiming(1.15, { duration: 200 }),
-            withTiming(1, { duration: 200 }),
-          ),
-          -1,
-          false,
-        );
-
-        floatY.value = withRepeat(
-          withSequence(
-            withTiming(-12, { duration: 300 }),
-            withTiming(0, { duration: 300 }),
-          ),
-          -1,
-          false,
-        );
+        animateOscillation(floatY, -1.8, 2, 1050);
+        animateOscillation(floatX, 0, 1.3, 1200);
+        animateOscillation(scale, 1.02, 0.018, 900);
+        animateOscillation(rotate, 0, 1.4, 1000);
         break;
     }
   }, [mood]);
 
-  // 🎨 ESTILO ANIMADO
+  // Estilo animado
   const animatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
+        { translateX: floatX.value },
         { translateY: floatY.value },
         { scale: scale.value },
         { rotate: `${rotate.value}deg` },

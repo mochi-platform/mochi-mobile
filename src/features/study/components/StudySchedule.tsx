@@ -381,7 +381,7 @@ export function StudySchedule() {
 
         <Animated.View
           style={fabAnimatedStyle}
-          className="absolute bottom-28 right-6"
+          className="absolute bottom-5 right-5"
         >
           <TouchableOpacity
             className="h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-purple-500"

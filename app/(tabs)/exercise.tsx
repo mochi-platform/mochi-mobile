@@ -100,10 +100,6 @@ export function ExerciseScreen() {
 						</View>
 					</View>
 
-					<Text className="text-sm font-semibold text-teal-600">
-						Gestiona tu banco personal de ejercicios
-					</Text>
-
 					{loading ? (
 						<View className="items-center py-12">
 							<ActivityIndicator size="large" color="#14b8a6" />
@@ -178,7 +174,7 @@ export function ExerciseScreen() {
 							))}
 						</View>
 					)}
-					<View className="h-24" />
+					<View className="h-20" />
 				</ScrollView>
 			</View>
 			<FloatingActionButton
