@@ -28,31 +28,40 @@ type ShowAlertParams = {
   buttons: CustomAlertButton[];
 };
 
-const defaultButtonClass = "bg-purple-500";
-const defaultTextClass = "text-white";
-const cancelButtonClass = "border-2 border-purple-200 bg-white";
-const cancelTextClass = "text-purple-700";
-const destructiveButtonClass = "border-2 border-red-700 bg-red-600";
-const destructiveTextClass = "text-white";
-
-function getButtonClasses(style: CustomAlertButtonStyle | undefined) {
+function getButtonStyles(style: CustomAlertButtonStyle | undefined) {
   if (style === "cancel") {
     return {
-      buttonClass: cancelButtonClass,
-      textClass: cancelTextClass,
+      buttonStyle: {
+        backgroundColor: "#ffffff",
+        borderWidth: 2,
+        borderColor: "#e9d5ff",
+      },
+      textStyle: {
+        color: "#7e22ce",
+      },
     };
   }
 
   if (style === "destructive") {
     return {
-      buttonClass: destructiveButtonClass,
-      textClass: destructiveTextClass,
+      buttonStyle: {
+        backgroundColor: "#dc2626",
+        borderWidth: 2,
+        borderColor: "#b91c1c",
+      },
+      textStyle: {
+        color: "#ffffff",
+      },
     };
   }
 
   return {
-    buttonClass: defaultButtonClass,
-    textClass: defaultTextClass,
+    buttonStyle: {
+      backgroundColor: "#a855f7",
+    },
+    textStyle: {
+      color: "#ffffff",
+    },
   };
 }
 
@@ -104,18 +113,17 @@ export function CustomAlert({
 
           <View className={`mt-6 ${isDualAction ? "flex-row" : ""}`}>
             {buttons.map((button, index) => {
-              const { buttonClass, textClass } = getButtonClasses(button.style);
+              const { buttonStyle, textStyle } = getButtonStyles(button.style);
 
               return (
                 <TouchableOpacity
                   key={`${button.text}-${index}`}
-                  className={`rounded-2xl px-4 py-3 ${buttonClass} ${isDualAction ? `flex-1 ${index === 0 ? "mr-2" : "ml-2"}` : index > 0 ? "mt-3" : ""}`}
+                  className={`rounded-2xl px-4 py-3 ${isDualAction ? `flex-1 ${index === 0 ? "mr-2" : "ml-2"}` : index > 0 ? "mt-3" : ""}`}
+                  style={buttonStyle}
                   onPress={button.onPress}
                   activeOpacity={0.85}
                 >
-                  <Text
-                    className={`text-center text-base font-extrabold ${textClass}`}
-                  >
+                  <Text className="text-center text-base font-extrabold" style={textStyle}>
                     {button.text}
                   </Text>
                 </TouchableOpacity>

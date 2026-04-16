@@ -1640,11 +1640,68 @@ function sanitizeDailyMotivationMessage(raw: string): string {
   )
 
   const cleaned = withoutGreeting
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`+/g, '')
     .replace(/\bstudent\b/giu, 'estudiante')
     .replace(/\s+/g, ' ')
     .trim()
 
   return cleaned
+}
+
+function isCorruptedDailyMotivationMessage(message: string): boolean {
+  const trimmed = message.trim()
+  if (!trimmed) return true
+  if (trimmed.length > 220) return true
+
+  const hasFilePath = /(?:[A-Za-z]:\\|\/(?:Users|home|var|tmp|src|dist|node_modules)\b)/i.test(trimmed)
+  if (hasFilePath) return true
+
+  const hasVeryLongNumberRun = /\d{20,}/.test(trimmed)
+  if (hasVeryLongNumberRun) return true
+
+  const hasVeryLongToken = /[^\s]{80,}/.test(trimmed)
+  if (hasVeryLongToken) return true
+
+  const digitCount = (trimmed.match(/\d/g) ?? []).length
+  const digitRatio = digitCount / Math.max(trimmed.length, 1)
+  if (digitRatio > 0.2) return true
+
+  const hasReplacementChars = /[�]/.test(trimmed)
+  if (hasReplacementChars) return true
+
+  return false
+}
+
+function buildDailyMotivationFallback(
+  studyBlockCount: number,
+  hasRoutine: boolean,
+  timeOfDay: string,
+  cyclePhaseLabel?: string
+): string {
+  const timeSegment =
+    timeOfDay === 'dawn'
+      ? 'Arranca con calma'
+      : timeOfDay === 'morning'
+        ? 'Empieza con enfoque'
+        : timeOfDay === 'afternoon'
+          ? 'Aprovecha este impulso'
+          : 'Cierra el día con intención'
+
+  const studySegment =
+    studyBlockCount > 0
+      ? `tienes ${studyBlockCount} bloque${studyBlockCount === 1 ? '' : 's'} de estudio para avanzar.`
+      : 'hoy puedes avanzar con una tarea corta y concreta.'
+
+  const routineSegment = hasRoutine
+    ? ' Si completas también tu rutina, sumarás un extra de energía.'
+    : ''
+
+  const cycleSegment = cyclePhaseLabel
+    ? ` Respeta tu ${cyclePhaseLabel.toLowerCase()} y ve a tu ritmo.`
+    : ''
+
+  return `${timeSegment}: ${studySegment}${routineSegment}${cycleSegment}`.trim()
 }
 
 export async function suggestExerciseDescription(exerciseName: string): Promise<AISuggestion> {
@@ -1720,13 +1777,18 @@ export async function getDailyMotivation(
 
   try {
     const cached = await AsyncStorage.getItem(cacheKey)
-    if (cached) return cached
+    if (cached && !isCorruptedDailyMotivationMessage(cached)) return cached
+    if (cached) {
+      AsyncStorage.removeItem(cacheKey).catch(() => {
+        // Ignore cache cleanup errors.
+      })
+    }
   } catch {
     // Ignore cache read errors and continue with AI or fallback.
   }
 
   if (!canUseAI()) {
-    return 'Hoy es un gran día para avanzar un paso más hacia tus metas.'
+    return buildDailyMotivationFallback(studyBlockCount, hasRoutine, timeOfDay, cyclePhaseLabel)
   }
 
   const timeText =
@@ -1744,9 +1806,17 @@ export async function getDailyMotivation(
 
   const prompt = `Eres Mochi, una asistente adorable. Es ${timeText}. Escribe un mensaje breve y motivador (máximo 2 oraciones) considerando que hoy la usuaria tiene ${studyBlockCount} bloques de estudio${hasRoutine ? ' y una rutina de ejercicio' : ''}.${cycleHint} Reglas estrictas: no saludes, no uses nombre propio, no uses inglés, no uses emojis. Responde solo el mensaje, sin comillas.`
 
-  const response = await callAI(prompt)
-  const cleaned = sanitizeDailyMotivationMessage(response)
-  const message = cleaned || 'Hoy es un gran día para avanzar un paso más hacia tus metas.'
+  let message = buildDailyMotivationFallback(studyBlockCount, hasRoutine, timeOfDay, cyclePhaseLabel)
+
+  try {
+    const response = await callAI(prompt)
+    const cleaned = sanitizeDailyMotivationMessage(response)
+    if (!isCorruptedDailyMotivationMessage(cleaned)) {
+      message = cleaned
+    }
+  } catch {
+    // Keep manual fallback message when AI fails.
+  }
 
   try {
     await AsyncStorage.setItem(cacheKey, message)
