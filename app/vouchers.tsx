@@ -380,7 +380,7 @@ export function VouchersScreen() {
                                 <Ionicons
                                   name={
                                     (voucher.icon as keyof typeof Ionicons.glyphMap) ||
-                                    "ticket-outline"
+                                    "ticket"
                                   }
                                   size={18}
                                   color="#92400e"
@@ -407,7 +407,7 @@ export function VouchersScreen() {
                                 }}
                               >
                                 <Ionicons
-                                  name="share-outline"
+                                  name="share"
                                   size={16}
                                   color="#92400e"
                                 />
@@ -461,7 +461,7 @@ export function VouchersScreen() {
                               <Ionicons
                                 name={
                                   (template.icon as keyof typeof Ionicons.glyphMap) ||
-                                  "gift-outline"
+                                  "gift"
                                 }
                                 size={16}
                                 color="#7c3aed"
@@ -548,7 +548,7 @@ export function VouchersScreen() {
                       <Ionicons
                         name={
                           (shareVoucher.icon as keyof typeof Ionicons.glyphMap) ||
-                          "ticket-outline"
+                          "ticket"
                         }
                         size={30}
                         color="#92400e"
@@ -613,7 +613,7 @@ export function VouchersScreen() {
                   disabled={sharing}
                 >
                   <View className="flex-row items-center gap-2">
-                    <Ionicons name="share-outline" size={18} color="white" />
+                    <Ionicons name="share" size={18} color="white" />
                     <Text className="font-extrabold text-white">
                       {sharing ? "Compartiendo..." : "Compartir imagen"}
                     </Text>

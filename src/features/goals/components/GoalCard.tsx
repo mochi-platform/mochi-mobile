@@ -53,7 +53,7 @@ export function GoalCard({ goal, onPress }: GoalCardProps) {
           </View>
         ) : (
           <View className="rounded-full bg-purple-100 p-2">
-            <Ionicons name="create-outline" size={14} color="#7c3aed" />
+            <Ionicons name="create" size={14} color="#7c3aed" />
           </View>
         )}
       </View>

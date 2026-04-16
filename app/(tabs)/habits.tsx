@@ -96,6 +96,7 @@ export function HabitsScreen() {
 
   const loadingScale = useSharedValue(1);
   const celebrationScale = useSharedValue(0);
+  const progressValue = useSharedValue(0);
 
   useEffect(() => {
     if (loading) {
@@ -144,6 +145,10 @@ export function HabitsScreen() {
 
   const celebrationAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: celebrationScale.value }],
+  }));
+
+  const progressBarAnimatedStyle = useAnimatedStyle(() => ({
+    width: `${progressValue.value * 100}%`,
   }));
 
   const todayISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -385,6 +390,16 @@ export function HabitsScreen() {
     }
   }
 
+  const completionProgress =
+    habits.length > 0 ? completedToday.size / habits.length : 0;
+
+  useEffect(() => {
+    progressValue.value = withTiming(completionProgress, {
+      duration: 420,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [completionProgress, progressValue]);
+
   return (
     <View className="flex-1 bg-purple-50">
       <ScrollView
@@ -454,10 +469,21 @@ export function HabitsScreen() {
           </View>
         ) : (
           <>
-            <View className="mb-4 flex-row items-center justify-between">
-              <Text className="text-sm font-semibold text-purple-500">
-                {completedToday.size}/{habits.length} completados hoy
-              </Text>
+            <View className="mb-4 rounded-2xl border border-purple-200 bg-white/80 px-3 py-3">
+              <View className="mb-2 flex-row items-center justify-between">
+                <Text className="text-xs font-extrabold uppercase tracking-wide text-purple-500">
+                  Progreso de hoy
+                </Text>
+                <Text className="text-xs font-extrabold text-purple-700">
+                  {Math.round(completionProgress * 100)}%
+                </Text>
+              </View>
+              <View className="h-2.5 overflow-hidden rounded-full bg-purple-100">
+                <Animated.View
+                  style={progressBarAnimatedStyle}
+                  className="h-full rounded-full bg-purple-500"
+                />
+              </View>
             </View>
             {habits.map((habit) => (
               <HabitCard

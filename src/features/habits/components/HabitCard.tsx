@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, Entypo } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -52,11 +52,27 @@ const colorIconMap: Record<string, string> = {
 };
 
 const colorDotMap: Record<string, string> = {
-  pink: "#f9a8d4",
-  yellow: "#fcd34d",
-  blue: "#93c5fd",
-  teal: "#5eead4",
-  purple: "#c4b5fd",
+  pink: "#9d174d",
+  yellow: "#92400e",
+  blue: "#1e3a8a",
+  teal: "#134e4a",
+  purple: "#4c1d95",
+};
+
+const colorDotInactiveMap: Record<string, string> = {
+  pink: "#fbcfe8",
+  yellow: "#fde68a",
+  blue: "#bfdbfe",
+  teal: "#99f6e4",
+  purple: "#ddd6fe",
+};
+
+const colorMutedIconMap: Record<string, string> = {
+  pink: "#be185d",
+  yellow: "#b45309",
+  blue: "#1d4ed8",
+  teal: "#0f766e",
+  purple: "#6d28d9",
 };
 
 export function HabitCard({
@@ -116,7 +132,7 @@ export function HabitCard({
                     borderRadius: 4,
                     backgroundColor: done
                       ? (colorDotMap[habit.color] ?? "#c4b5fd")
-                      : "#e5e7eb",
+                      : (colorDotInactiveMap[habit.color] ?? "#ddd6fe"),
                   }}
                 />
               ))}
@@ -130,7 +146,15 @@ export function HabitCard({
         </View>
         <View className="ml-2 items-center">
           <TouchableOpacity
-            className={`mb-2 h-8 w-8 items-center justify-center rounded-full border ${isReminderEnabled ? "border-violet-300 bg-violet-100" : "border-slate-300 bg-white"}`}
+            className="mb-2 h-8 w-8 items-center justify-center rounded-full border"
+            style={{
+              borderColor: isReminderEnabled
+                ? (colorIconMap[habit.color] ?? "#4c1d95")
+                : (colorDotInactiveMap[habit.color] ?? "#ddd6fe"),
+              backgroundColor: isReminderEnabled
+                ? (colorDotInactiveMap[habit.color] ?? "#ddd6fe")
+                : "#ffffff",
+            }}
             onPress={(event) => {
               event.stopPropagation();
               onToggleReminder?.();
@@ -140,18 +164,27 @@ export function HabitCard({
               name={
                 isReminderEnabled
                   ? "notifications"
-                  : "notifications-off-outline"
+                  : "notifications-off"
               }
               size={14}
-              color={isReminderEnabled ? "#7c3aed" : "#94a3b8"}
+              color={
+                isReminderEnabled
+                  ? (colorIconMap[habit.color] ?? "#4c1d95")
+                  : (colorMutedIconMap[habit.color] ?? "#6d28d9")
+              }
             />
           </TouchableOpacity>
 
           <View
-            className={`h-8 w-8 items-center justify-center rounded-full ${isCompleted ? "bg-green-400" : "border-2 border-slate-300 bg-white"}`}
+            className={`h-8 w-8 items-center justify-center rounded-full ${isCompleted ? "" : "border-2 border-slate-300 bg-white"}`}
+            style={
+              isCompleted
+                ? { backgroundColor: colorIconMap[habit.color] ?? "#4c1d95" }
+                : undefined
+            }
           >
             {isCompleted && (
-              <Ionicons name="checkmark" size={16} color="white" />
+              <Entypo name="check" size={16} color="white" />
             )}
           </View>
         </View>

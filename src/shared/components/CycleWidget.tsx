@@ -34,7 +34,7 @@ export function CycleWidget({
       <View className="mt-4 rounded-3xl border-2 border-violet-200 bg-white p-4">
         <View className="flex-row items-start">
           <View className="h-10 w-10 items-center justify-center rounded-2xl bg-violet-100">
-            <Ionicons name="medical-outline" size={18} color="#7c3aed" />
+            <Ionicons name="medical" size={18} color="#7c3aed" />
           </View>
           <View className="ml-3 flex-1">
             <Text className="text-sm font-extrabold text-violet-900">

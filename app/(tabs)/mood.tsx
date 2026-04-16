@@ -38,7 +38,7 @@ const moodOptions: MoodOption[] = [
   },
   {
     value: 2,
-    icon: "sad-outline",
+    icon: "sad",
     label: "Regular",
     tintClass: "border-orange-200 bg-orange-100",
     activeClass: "border-orange-400 bg-orange-200",
@@ -46,7 +46,7 @@ const moodOptions: MoodOption[] = [
   },
   {
     value: 3,
-    icon: "happy-outline",
+    icon: "happy",
     label: "Bien",
     tintClass: "border-yellow-200 bg-yellow-100",
     activeClass: "border-yellow-400 bg-yellow-200",

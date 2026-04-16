@@ -85,18 +85,18 @@ const readOnlyModuleKeys: ModuleToggleKey[] = [
 ];
 
 const moduleItems: ModuleItem[] = [
-  { key: "study_enabled", label: "Estudio", icon: "book-outline" },
-  { key: "exercise_enabled", label: "Ejercicio", icon: "barbell-outline" },
-  { key: "habits_enabled", label: "Hábitos", icon: "leaf-outline" },
-  { key: "goals_enabled", label: "Metas", icon: "flag-outline" },
-  { key: "mood_enabled", label: "Estado de ánimo", icon: "heart-outline" },
-  { key: "gratitude_enabled", label: "Gratitud", icon: "flower-outline" },
-  { key: "vouchers_enabled", label: "Vales (pareja)", icon: "ticket-outline" },
-  { key: "cooking_enabled", label: "Cocina", icon: "restaurant-outline" },
+  { key: "study_enabled", label: "Estudio", icon: "book" },
+  { key: "exercise_enabled", label: "Ejercicio", icon: "barbell" },
+  { key: "habits_enabled", label: "Hábitos", icon: "leaf" },
+  { key: "goals_enabled", label: "Metas", icon: "flag" },
+  { key: "mood_enabled", label: "Estado de ánimo", icon: "heart" },
+  { key: "gratitude_enabled", label: "Gratitud", icon: "flower" },
+  { key: "vouchers_enabled", label: "Vales (pareja)", icon: "ticket" },
+  { key: "cooking_enabled", label: "Cocina", icon: "restaurant" },
   {
     key: "notes_enabled",
     label: "Notas rápidas",
-    icon: "document-text-outline",
+    icon: "document-text",
   },
 ];
 
@@ -847,7 +847,7 @@ export function SettingsScreen() {
                     <View className="flex-row items-center gap-2">
                       <View className="h-9 w-9 items-center justify-center rounded-xl bg-violet-100">
                         <Ionicons
-                          name="notifications-outline"
+                          name="notifications"
                           size={18}
                           color="#7c3aed"
                         />
@@ -875,7 +875,7 @@ export function SettingsScreen() {
                       }}
                     >
                       <Ionicons
-                        name="warning-outline"
+                        name="warning"
                         size={14}
                         color="#d97706"
                       />
@@ -893,7 +893,7 @@ export function SettingsScreen() {
                         <View className="flex-1">
                           <View className="flex-row items-center gap-1.5">
                             <Ionicons
-                              name="sunny-outline"
+                              name="sunny"
                               size={15}
                               color="#7c3aed"
                             />
@@ -923,7 +923,7 @@ export function SettingsScreen() {
                         <View className="flex-1">
                           <View className="flex-row items-center gap-1.5">
                             <Ionicons
-                              name="book-outline"
+                              name="book"
                               size={15}
                               color="#7c3aed"
                             />
@@ -955,7 +955,7 @@ export function SettingsScreen() {
                           <View className="flex-1">
                             <View className="flex-row items-center gap-1.5">
                               <Ionicons
-                                name="leaf-outline"
+                                name="leaf"
                                 size={15}
                                 color="#7c3aed"
                               />
@@ -996,7 +996,7 @@ export function SettingsScreen() {
                           <View className="flex-1">
                             <View className="flex-row items-center gap-1.5">
                               <Ionicons
-                                name="restaurant-outline"
+                                name="restaurant"
                                 size={15}
                                 color="#c2410c"
                               />
@@ -1036,7 +1036,7 @@ export function SettingsScreen() {
                         <View className="flex-1 pr-2">
                           <View className="flex-row items-center gap-1.5">
                             <Ionicons
-                              name="calendar-outline"
+                              name="calendar"
                               size={15}
                               color="#4338ca"
                             />

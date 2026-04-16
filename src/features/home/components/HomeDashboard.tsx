@@ -91,7 +91,7 @@ const quickAccessItems: QuickAccessItem[] = [
     label: "Metas",
     route: "/goals",
     enabledKey: "goals_enabled",
-    icon: "flag-outline",
+    icon: "flag",
     cardClass: "border-pink-200 bg-pink-100",
     iconColor: "#be185d",
   },
@@ -99,7 +99,7 @@ const quickAccessItems: QuickAccessItem[] = [
     label: "Vales",
     route: "/vouchers",
     enabledKey: "vouchers_enabled",
-    icon: "ticket-outline",
+    icon: "ticket",
     cardClass: "border-yellow-200 bg-yellow-100",
     iconColor: "#92400e",
   },
@@ -107,7 +107,7 @@ const quickAccessItems: QuickAccessItem[] = [
     label: "Estado de ánimo",
     route: "/mood",
     enabledKey: "mood_enabled",
-    icon: "heart-outline",
+    icon: "heart",
     cardClass: "border-purple-200 bg-purple-100",
     iconColor: "#7c3aed",
   },
@@ -115,7 +115,7 @@ const quickAccessItems: QuickAccessItem[] = [
     label: "Gratitud",
     route: "/gratitude",
     enabledKey: "gratitude_enabled",
-    icon: "flower-outline",
+    icon: "flower",
     cardClass: "border-emerald-200 bg-emerald-100",
     iconColor: "#047857",
   }
@@ -183,69 +183,6 @@ function AnimatedDashboardCard({
   );
 }
 
-function DashboardActionButton({
-  label,
-  icon,
-  tone,
-  onPress,
-}: DashboardActionButtonProps) {
-  const toneMap: Record<
-    DashboardActionTone,
-    {
-      buttonClass: string;
-      textClass: string;
-      iconColor: string;
-      borderColor: string;
-    }
-  > = {
-    blue: {
-      buttonClass: "border-blue-200 bg-blue-50",
-      textClass: "text-blue-700",
-      iconColor: "#1d4ed8",
-      borderColor: "#bfdbfe",
-    },
-    pink: {
-      buttonClass: "border-pink-200 bg-pink-50",
-      textClass: "text-pink-700",
-      iconColor: "#be185d",
-      borderColor: "#fbcfe8",
-    },
-    teal: {
-      buttonClass: "border-teal-200 bg-teal-50",
-      textClass: "text-teal-700",
-      iconColor: "#0f766e",
-      borderColor: "#99f6e4",
-    },
-    orange: {
-      buttonClass: "border-orange-200 bg-orange-50",
-      textClass: "text-orange-700",
-      iconColor: "#c2410c",
-      borderColor: "#fed7aa",
-    },
-    indigo: {
-      buttonClass: "border-purple-200 bg-purple-50",
-      textClass: "text-purple-700",
-      iconColor: "#7c3aed",
-      borderColor: "#d8b4fe",
-    },
-  };
-
-  const current = toneMap[tone];
-
-  return (
-    <TouchableOpacity
-      className={`mt-3 w-full flex-row items-center justify-center rounded-2xl border px-4 py-3 ${current.buttonClass}`}
-      style={{ width: "100%", borderColor: current.borderColor }}
-      onPress={onPress}
-      activeOpacity={0.85}
-    >
-      <Ionicons name={icon} size={14} color={current.iconColor} />
-      <Text className={`ml-1.5 text-center text-sm font-bold ${current.textClass}`}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
 
 export function HomeDashboard({
   userName,
@@ -611,7 +548,7 @@ export function HomeDashboard({
 
   return (
     <ScrollView
-      className="flex-1 bg-blue-100 px-5 pt-12"
+      className="flex-1 bg-blue-50 px-5 pt-12"
       contentContainerStyle={{ paddingBottom: bottomSpacerHeight }}
     >
       {/* Header */}
@@ -633,7 +570,7 @@ export function HomeDashboard({
             accessibilityRole="button"
             accessibilityLabel="Ir al perfil"
           >
-            <Ionicons name="person-outline" size={16} color="#1e40af" />
+            <Ionicons name="person" size={16} color="#1e40af" />
           </TouchableOpacity>
         </View>
       </View>
@@ -760,7 +697,7 @@ export function HomeDashboard({
                 key={block.id}
                 className="mb-3 flex-row items-center justify-between rounded-2xl border border-pink-200 bg-pink-50 p-3"
                 style={{ borderColor: "#fbcfe8" }}
-                onPress={() => router.push(`/study-timer?blockId=${block.id}`)}
+                onPress={onNavigateToStudy}
               >
                 <View className="flex-row items-center">
                   <View
@@ -787,13 +724,6 @@ export function HomeDashboard({
               </TouchableOpacity>
             ))
           )}
-
-          <DashboardActionButton
-            label="Ver estudio"
-            icon="book-outline"
-            tone="pink"
-            onPress={onNavigateToStudy}
-          />
         </AnimatedDashboardCard>
       )}
 
@@ -804,7 +734,7 @@ export function HomeDashboard({
           className="mt-4 rounded-3xl border-2 border-yellow-300 bg-white p-5"
         >
           <View className="mb-3 flex-row items-center">
-            <Ionicons name="time-outline" size={18} color="#b45309" />
+            <Ionicons name="time" size={18} color="#b45309" />
             <Text className="ml-2 text-base font-bold text-yellow-900">
               Próximos exámenes
             </Text>
@@ -873,9 +803,7 @@ export function HomeDashboard({
               <TouchableOpacity
                 key={routine.id}
                 className="mb-3 rounded-2xl border border-teal-200 bg-teal-50 p-3"
-                onPress={() =>
-                  router.push(`/routine-player?routineId=${routine.id}`)
-                }
+                onPress={onNavigateToExercise}
               >
                 <Text className="text-sm font-bold text-slate-800">
                   {routine.name}
@@ -907,13 +835,6 @@ export function HomeDashboard({
               </Text>
             </TouchableOpacity>
           )}
-
-          <DashboardActionButton
-            label="Ver rutinas"
-            icon="barbell-outline"
-            tone="teal"
-            onPress={onNavigateToExercise}
-          />
         </AnimatedDashboardCard>
       )}
 
@@ -954,9 +875,7 @@ export function HomeDashboard({
             <>
               <TouchableOpacity
                 className="rounded-2xl border border-orange-200 bg-orange-50 p-3"
-                onPress={() =>
-                  router.push(`/recipe-detail?recipeId=${latestRecipe.id}`)
-                }
+                onPress={onNavigateToCooking}
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1 pr-3">
@@ -992,7 +911,7 @@ export function HomeDashboard({
                     {latestRecipe.total_time_minutes > 0 && (
                       <View className="flex-row items-center rounded-full bg-orange-200 px-2 py-0.5">
                         <Ionicons
-                          name="time-outline"
+                          name="time"
                           size={11}
                           color="#c2410c"
                         />
@@ -1009,13 +928,6 @@ export function HomeDashboard({
                   </View>
                 )}
               </TouchableOpacity>
-
-              <DashboardActionButton
-                label="Ver recetas"
-                icon="restaurant-outline"
-                tone="orange"
-                onPress={onNavigateToCooking}
-              />
             </>
           ) : (
             <TouchableOpacity
@@ -1038,7 +950,7 @@ export function HomeDashboard({
         className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-5"
       >
         <View className="mb-3 flex-row items-center">
-          <Ionicons name="stats-chart-outline" size={18} color="#6d28d9" />
+          <Ionicons name="stats-chart" size={18} color="#6d28d9" />
           <Text className="ml-2 text-base font-bold text-purple-900">
             Esta semana
           </Text>
@@ -1050,25 +962,25 @@ export function HomeDashboard({
           className="mb-3"
         >
           <View className="mr-2 flex-row items-center rounded-2xl bg-purple-50 px-3 py-2">
-            <Ionicons name="book-outline" size={14} color="#7c3aed" />
+            <Ionicons name="book" size={14} color="#7c3aed" />
             <Text className="ml-1 text-xs font-bold text-purple-900">
               {weeklySummary.studySessions} sesiones
             </Text>
           </View>
           <View className="mr-2 flex-row items-center rounded-2xl bg-pink-50 px-3 py-2">
-            <Ionicons name="flame-outline" size={14} color="#be185d" />
+            <Ionicons name="flame" size={14} color="#be185d" />
             <Text className="ml-1 text-xs font-bold text-pink-900">
               {weeklySummary.currentStreak} días
             </Text>
           </View>
           <View className="mr-2 flex-row items-center rounded-2xl bg-green-50 px-3 py-2">
-            <Ionicons name="leaf-outline" size={14} color="#15803d" />
+            <Ionicons name="leaf" size={14} color="#15803d" />
             <Text className="ml-1 text-xs font-bold text-green-900">
               {weeklySummary.habitsAverageLabel} hábitos/día
             </Text>
           </View>
           <View className="mr-2 flex-row items-center rounded-2xl bg-yellow-50 px-3 py-2">
-            <Ionicons name="star-outline" size={14} color="#a16207" />
+            <Ionicons name="star" size={14} color="#a16207" />
             <Text className="ml-1 text-xs font-bold text-yellow-900">
               {weeklySummary.pointsGained} puntos
             </Text>
@@ -1094,15 +1006,6 @@ export function HomeDashboard({
             );
           })}
         </View>
-
-        <DashboardActionButton
-          label="Ver analíticas"
-          icon="stats-chart-outline"
-          tone="indigo"
-          onPress={() => {
-            void Linking.openURL("https://mochi.siramong.tech/analytics");
-          }}
-        />
       </AnimatedDashboardCard>
 
     </ScrollView>

@@ -388,7 +388,7 @@ export function RecipePlayerScreen() {
                 onPress={() => void handleSaveRating(star)}
               >
                 <Ionicons
-                  name={rating >= star ? "star" : "star-outline"}
+                  name={rating >= star ? "star" : "star"}
                   size={32}
                   color="#f97316"
                 />
@@ -520,7 +520,7 @@ export function RecipePlayerScreen() {
                       {currentStep.duration_seconds ? (
                         <View className="flex-row items-center rounded-full bg-orange-100 px-3 py-1">
                           <Ionicons
-                            name="timer-outline"
+                            name="timer"
                             size={13}
                             color="#c2410c"
                           />
@@ -532,7 +532,7 @@ export function RecipePlayerScreen() {
                       {currentStep.temperature ? (
                         <View className="flex-row items-center rounded-full bg-red-100 px-3 py-1">
                           <Ionicons
-                            name="thermometer-outline"
+                            name="thermometer"
                             size={13}
                             color="#b91c1c"
                           />

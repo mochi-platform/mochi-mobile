@@ -879,7 +879,7 @@ export function ExamLogScreen() {
                                       name={
                                         checked
                                           ? "checkmark-circle"
-                                          : "ellipse-outline"
+                                          : "ellipse"
                                       }
                                       size={18}
                                       color={checked ? "#0f766e" : "#475569"}
@@ -925,7 +925,7 @@ export function ExamLogScreen() {
                                     name={
                                       completed
                                         ? "checkmark-circle"
-                                        : "ellipse-outline"
+                                        : "ellipse"
                                     }
                                     size={18}
                                     color={completed ? "#4338ca" : "#475569"}

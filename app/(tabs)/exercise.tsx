@@ -86,7 +86,7 @@ export function ExerciseScreen() {
 
 	return (
 		<>
-			<View className="flex-1 bg-teal-100">
+			<View className="flex-1 bg-teal-50">
 				<ScrollView
 					className="flex-1 px-5 pt-12"
 					showsVerticalScrollIndicator={false}

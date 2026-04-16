@@ -144,7 +144,7 @@ function RecipeCard({
       <View className="mt-3 flex-row flex-wrap items-center gap-2">
         {totalTime > 0 && (
           <View className="flex-row items-center rounded-full bg-orange-100 px-3 py-1">
-            <Ionicons name="time-outline" size={12} color="#c2410c" />
+            <Ionicons name="time" size={12} color="#c2410c" />
             <Text className="ml-1 text-xs font-bold text-orange-800">
               {totalTime} min
             </Text>
@@ -157,7 +157,7 @@ function RecipeCard({
         </View>
         {recipe.servings > 0 && (
           <View className="flex-row items-center rounded-full bg-orange-100 px-3 py-1">
-            <Ionicons name="people-outline" size={12} color="#c2410c" />
+            <Ionicons name="people" size={12} color="#c2410c" />
             <Text className="ml-1 text-xs font-bold text-orange-800">
               {recipe.servings} porc.
             </Text>

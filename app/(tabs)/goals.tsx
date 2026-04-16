@@ -680,7 +680,7 @@ export function GoalsScreen() {
                       disabled={savingEdit}
                     >
                       <Ionicons
-                        name={editCompleted ? "checkbox" : "square-outline"}
+                        name={editCompleted ? "checkbox" : "square"}
                         size={20}
                         color={editCompleted ? "#16a34a" : "#7c3aed"}
                       />

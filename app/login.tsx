@@ -236,7 +236,7 @@ export function LoginScreen() {
 
         {/* Heart badge — bottom-left */}
         <View className="absolute bottom-14 left-6 items-center justify-center rounded-xl bg-pink-100 p-2">
-          <Ionicons name="heart-outline" size={18} color="#db2777" />
+          <Ionicons name="heart" size={18} color="#db2777" />
         </View>
 
         <View className="w-full max-w-sm">

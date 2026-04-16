@@ -311,13 +311,13 @@ export function RecipeDetailScreen() {
               <View className="flex-row items-center gap-3">
                 <TouchableOpacity onPress={handleToggleFavorite}>
                   <Ionicons
-                    name={recipe.is_favorite ? "heart" : "heart-outline"}
+                    name={recipe.is_favorite ? "heart" : "heart"}
                     size={22}
                     color="#f97316"
                   />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleDelete}>
-                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                  <Ionicons name="trash" size={20} color="#ef4444" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -363,7 +363,7 @@ export function RecipeDetailScreen() {
               <View className="mt-4 flex-row flex-wrap gap-2">
                 {totalTime > 0 && (
                   <View className="flex-row items-center rounded-full bg-orange-100 px-3 py-1.5">
-                    <Ionicons name="time-outline" size={13} color="#c2410c" />
+                    <Ionicons name="time" size={13} color="#c2410c" />
                     <Text className="ml-1 text-xs font-bold text-orange-800">
                       {totalTime} min total
                     </Text>
@@ -371,7 +371,7 @@ export function RecipeDetailScreen() {
                 )}
                 {recipe.prep_time_minutes > 0 && (
                   <View className="flex-row items-center rounded-full bg-amber-100 px-3 py-1.5">
-                    <Ionicons name="cut-outline" size={13} color="#92400e" />
+                    <Ionicons name="cut" size={13} color="#92400e" />
                     <Text className="ml-1 text-xs font-bold text-amber-800">
                       {recipe.prep_time_minutes} min prep
                     </Text>
@@ -379,7 +379,7 @@ export function RecipeDetailScreen() {
                 )}
                 {recipe.cook_time_minutes > 0 && (
                   <View className="flex-row items-center rounded-full bg-red-100 px-3 py-1.5">
-                    <Ionicons name="flame-outline" size={13} color="#b91c1c" />
+                    <Ionicons name="flame" size={13} color="#b91c1c" />
                     <Text className="ml-1 text-xs font-bold text-red-800">
                       {recipe.cook_time_minutes} min cocción
                     </Text>
@@ -527,7 +527,7 @@ export function RecipeDetailScreen() {
                           {step.duration_seconds ? (
                             <View className="mt-1 flex-row items-center">
                               <Ionicons
-                                name="timer-outline"
+                                name="timer"
                                 size={12}
                                 color="#9a3412"
                               />
@@ -548,7 +548,7 @@ export function RecipeDetailScreen() {
                             <View className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
                               <View className="flex-row items-center">
                                 <Ionicons
-                                  name="bulb-outline"
+                                  name="bulb"
                                   size={13}
                                   color="#d97706"
                                 />
@@ -573,7 +573,7 @@ export function RecipeDetailScreen() {
             <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-4">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                  <Ionicons name="create-outline" size={18} color="#c2410c" />
+                  <Ionicons name="create" size={18} color="#c2410c" />
                   <Text className="ml-2 text-lg font-extrabold text-orange-900">
                     Mis notas
                   </Text>

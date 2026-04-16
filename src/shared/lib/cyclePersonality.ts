@@ -26,7 +26,7 @@ const cyclePersonalityMap: Record<CyclePhase, MochiCyclePersonality> = {
     emoji: "water",
     phaseLabel: "Fase menstrual",
     phaseBadgeClass: "border-rose-200 bg-rose-100",
-    phaseIconName: "water-outline",
+    phaseIconName: "water",
     phaseColor: "#fb7185",
     morningMessage: "Hoy te acompaño con calma. Descansar también cuenta.",
     motivationMessages: [
@@ -53,7 +53,7 @@ const cyclePersonalityMap: Record<CyclePhase, MochiCyclePersonality> = {
     emoji: "leaf",
     phaseLabel: "Fase folicular",
     phaseBadgeClass: "border-emerald-200 bg-emerald-100",
-    phaseIconName: "leaf-outline",
+    phaseIconName: "leaf",
     phaseColor: "#34d399",
     morningMessage:
       "Tu energía está subiendo. Es un gran momento para empezar algo nuevo.",
@@ -80,7 +80,7 @@ const cyclePersonalityMap: Record<CyclePhase, MochiCyclePersonality> = {
     emoji: "sun",
     phaseLabel: "Fase ovulatoria",
     phaseBadgeClass: "border-amber-200 bg-amber-100",
-    phaseIconName: "sunny-outline",
+    phaseIconName: "sunny",
     phaseColor: "#f59e0b",
     morningMessage: "Tu confianza está en alto. Hoy puedes brillar con fuerza.",
     motivationMessages: [
@@ -107,7 +107,7 @@ const cyclePersonalityMap: Record<CyclePhase, MochiCyclePersonality> = {
     emoji: "moon",
     phaseLabel: "Fase lútea",
     phaseBadgeClass: "border-violet-200 bg-violet-100",
-    phaseIconName: "moon-outline",
+    phaseIconName: "moon",
     phaseColor: "#8b5cf6",
     morningMessage: "Vamos con enfoque amable. Hoy priorizamos lo esencial.",
     motivationMessages: [
@@ -134,7 +134,7 @@ const cyclePersonalityMap: Record<CyclePhase, MochiCyclePersonality> = {
     emoji: "sparkles",
     phaseLabel: "Fase no disponible",
     phaseBadgeClass: "border-slate-200 bg-slate-100",
-    phaseIconName: "sparkles-outline",
+    phaseIconName: "sparkles",
     phaseColor: "#94a3b8",
     morningMessage: "Estoy contigo para construir un día bonito, paso a paso.",
     motivationMessages: [

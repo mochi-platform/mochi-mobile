@@ -127,11 +127,11 @@ function AnimatedStudyCard({
           </Text>
 
           <TouchableOpacity className="mr-2" onPress={() => onEdit(block.id)}>
-            <Ionicons name="create-outline" size={18} color="#7c3aed" />
+            <Ionicons name="create" size={18} color="#7c3aed" />
           </TouchableOpacity>
 
           <TouchableOpacity className="mr-2" onPress={() => onDelete(block.id)}>
-            <Ionicons name="trash-outline" size={18} color="#7c3aed" />
+            <Ionicons name="trash" size={18} color="#7c3aed" />
           </TouchableOpacity>
 
           <TouchableOpacity

@@ -40,12 +40,13 @@ export function FloatingActionButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      <Ionicons name={iconName} size={26} color="white" />
       {showSparkles ? (
-        <View className="absolute -right-1 -top-1 h-6 w-6 items-center justify-center rounded-full border border-orange-200 bg-orange-100">
-          <Ionicons name="sparkles" size={12} color="#c2410c" />
+        <View className="absolute inset-0 items-center justify-center">
+          <Ionicons name="sparkles" size={18} color="white" />
         </View>
-      ) : null}
+      ) : (
+        <Ionicons name={iconName} size={26} color="white" />
+      )}
     </TouchableOpacity>
   );
 }

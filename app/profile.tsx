@@ -2,8 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -49,6 +51,10 @@ export function ProfileScreen() {
   const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isNameModalVisible, setIsNameModalVisible] = useState(false);
+  const [draftMochiName, setDraftMochiName] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [savingName, setSavingName] = useState(false);
 
   const loadingScale = useSharedValue(1);
 
@@ -125,6 +131,56 @@ export function ProfileScreen() {
     }
   }, [session?.user.id]);
 
+  const openEditNameModal = useCallback(() => {
+    setDraftMochiName((profile?.mochi_name ?? "").trim());
+    setNameError(null);
+    setIsNameModalVisible(true);
+  }, [profile?.mochi_name]);
+
+  const closeEditNameModal = useCallback(() => {
+    if (savingName) return;
+    setIsNameModalVisible(false);
+    setNameError(null);
+  }, [savingName]);
+
+  const saveMochiName = useCallback(async () => {
+    const userId = session?.user.id;
+    if (!userId) return;
+
+    const trimmedName = draftMochiName.trim();
+    if (trimmedName.length > 24) {
+      setNameError("El nombre no puede superar 24 caracteres.");
+      return;
+    }
+
+    try {
+      setSavingName(true);
+      setNameError(null);
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ mochi_name: trimmedName.length > 0 ? trimmedName : null })
+        .eq("id", userId);
+
+      if (updateError) throw updateError;
+
+      setProfile((prev) =>
+        prev
+          ? { ...prev, mochi_name: trimmedName.length > 0 ? trimmedName : null }
+          : prev,
+      );
+      setIsNameModalVisible(false);
+    } catch (err) {
+      setNameError(
+        err instanceof Error
+          ? err.message
+          : "No pudimos actualizar el nombre. Intenta de nuevo.",
+      );
+    } finally {
+      setSavingName(false);
+    }
+  }, [draftMochiName, session?.user.id]);
+
   useFocusEffect(
     useCallback(() => {
       void loadProfile();
@@ -188,20 +244,17 @@ export function ProfileScreen() {
         <View className="mt-6 items-center">
           <MochiCharacter mood="happy" size={80} />
           <Text className="mt-4 text-2xl font-extrabold text-purple-900">
-            {profile?.full_name ?? session?.user.email ?? "Mochi Student"}
-          </Text>
-          <Text className="mt-1 text-sm font-semibold text-purple-700">
-            Tu Mochi: {(profile?.mochi_name ?? "").trim() || "Mochi"}
+            {(profile?.mochi_name ?? "").trim() || "Mochi"}
           </Text>
 
           <TouchableOpacity
-            className="mt-3 flex-row items-center rounded-full border border-purple-200 bg-white px-4 py-2"
-            onPress={() => router.push("/settings")}
+            className="mt-2 flex-row items-center rounded-full border border-purple-200 bg-white px-4 py-2"
+            onPress={openEditNameModal}
             activeOpacity={0.85}
           >
-            <Ionicons name="settings-outline" size={14} color="#7c3aed" />
+            <Ionicons name="create" size={14} color="#7c3aed" />
             <Text className="ml-1.5 text-xs font-bold text-purple-800">
-              Configuración
+              Renombrar
             </Text>
           </TouchableOpacity>
 
@@ -247,6 +300,17 @@ export function ProfileScreen() {
             </Text>
           )}
         </View>
+
+        <TouchableOpacity
+            className="mt-3 w-full flex-row items-center justify-center rounded-full border border-purple-200 bg-white px-4 py-2"
+            onPress={() => router.push("/settings")}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="settings" size={14} color="#7c3aed" />
+            <Text className="ml-1.5 text-xs font-bold text-purple-800">
+              Configuración
+            </Text>
+          </TouchableOpacity>
 
         <View className="mt-8">
           <Text className="mb-4 text-lg font-extrabold text-purple-900">
@@ -321,6 +385,73 @@ export function ProfileScreen() {
 
         <View className="h-16" />
       </ScrollView>
+
+      <Modal
+        visible={isNameModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeEditNameModal}
+      >
+        <View className="flex-1 items-center justify-center bg-black/30 px-6">
+          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
+            <Text className="text-center text-2xl font-extrabold text-purple-700">
+              Cambiar nombre
+            </Text>
+            <Text className="mt-2 text-center text-sm font-semibold text-slate-600">
+              Elige cómo quieres llamar a Mochi.
+            </Text>
+
+            <TextInput
+              value={draftMochiName}
+              onChangeText={setDraftMochiName}
+              placeholder="Ej: Mochi Estrella"
+              placeholderTextColor="#94a3b8"
+              autoCapitalize="words"
+              maxLength={24}
+              editable={!savingName}
+              className="mt-5 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-base font-semibold text-purple-900"
+            />
+
+            {nameError ? (
+              <Text className="mt-2 text-center text-xs font-semibold text-red-600">
+                {nameError}
+              </Text>
+            ) : (
+              <Text className="mt-2 text-center text-xs font-semibold text-purple-500">
+                Deja el campo vacío para volver al nombre por defecto.
+              </Text>
+            )}
+
+            <View className="mt-6 flex-row">
+              <TouchableOpacity
+                className="mr-2 flex-1 rounded-2xl border-2 border-purple-200 bg-white px-4 py-3"
+                onPress={closeEditNameModal}
+                activeOpacity={0.85}
+                disabled={savingName}
+              >
+                <Text className="text-center text-base font-extrabold text-purple-700">
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="ml-2 flex-1 rounded-2xl bg-purple-500 px-4 py-3"
+                onPress={() => void saveMochiName()}
+                activeOpacity={0.85}
+                disabled={savingName}
+              >
+                {savingName ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text className="text-center text-base font-extrabold text-white">
+                    Guardar
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

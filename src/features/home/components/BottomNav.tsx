@@ -160,7 +160,7 @@ export function BottomNav({
 
   return (
     <View
-      className={`border-t px-3 pt-3 ${palette.border} ${palette.container}`}
+      className={`px-3 pt-3 ${palette.border} ${palette.container}`}
       style={{ paddingBottom: getBottomNavPaddingBottom(insets.bottom) }}
     >
       <View className="flex-row items-center justify-between">

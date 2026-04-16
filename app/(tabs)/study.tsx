@@ -213,7 +213,7 @@ export function StudyScreen() {
 										className="mb-2 flex-row items-center rounded-2xl border-2 border-pink-100 bg-white p-3"
 									>
 										<View className="h-10 w-10 items-center justify-center rounded-xl bg-pink-100">
-											<Ionicons name="book-outline" size={18} color="#be185d" />
+											<Ionicons name="book" size={18} color="#be185d" />
 										</View>
 										<View className="ml-3 flex-1">
 											<Text className="text-sm font-bold text-slate-800">

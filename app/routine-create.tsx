@@ -314,7 +314,7 @@ export function RoutineCreateScreen() {
                         disabled={saving}
                       >
                         <Ionicons
-                          name={isSelected ? "checkbox" : "square-outline"}
+                          name={isSelected ? "checkbox" : "square"}
                           size={22}
                           color={isSelected ? "#0d9488" : "#94a3b8"}
                         />
