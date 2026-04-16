@@ -24,6 +24,7 @@ import {
   checkCookingRecipeAchievements,
 } from "@/src/shared/lib/gamification";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
 import type {
@@ -396,17 +397,6 @@ export function CookingScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            className="mb-5 flex-row items-center justify-center rounded-3xl bg-orange-500 py-4"
-            onPress={() => setShowGenerateModal(true)}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="sparkles" size={18} color="white" />
-            <Text className="ml-2 text-base font-extrabold text-white">
-              Generar receta con IA
-            </Text>
-          </TouchableOpacity>
-
           {loading ? (
             <View className="items-center py-12">
               <MochiCharacter mood="thinking" size={88} />
@@ -456,8 +446,14 @@ export function CookingScreen() {
               />
             ))
           )}
-          <View className="h-6" />
+          <View className="h-24" />
         </ScrollView>
+        <FloatingActionButton
+          onPress={() => setShowGenerateModal(true)}
+          containerClassName="bg-orange-500"
+          accessibilityLabel="Generar receta con IA"
+          showSparkles
+        />
       </View>
 
       <Modal

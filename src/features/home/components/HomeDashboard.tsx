@@ -744,16 +744,6 @@ export function HomeDashboard({
         </AnimatedDashboardCard>
       )}
 
-      {moduleVisibility.study_enabled && (
-        <TouchableOpacity
-          className="mt-4 flex-row items-center justify-center rounded-2xl border-2 border-pink-300 bg-pink-200 py-4"
-          onPress={() => router.push("/exam-log")}
-        >
-          <Ionicons name="document-text" size={18} color="#9d174d" />
-          <Text className="ml-2 font-bold text-pink-900">Registrar examen</Text>
-        </TouchableOpacity>
-      )}
-
       {moduleVisibility.study_enabled && upcomingExams.length > 0 && (
         <AnimatedDashboardCard
           delay={80}
@@ -962,11 +952,11 @@ export function HomeDashboard({
 
               {/* FIX: navega a la tab de Cocina, no a una ruta de Expo Router */}
               <TouchableOpacity
-                className="mt-3 flex-row items-center justify-center rounded-2xl border border-orange-200 py-2"
+                className="mt-3 flex-row items-center justify-center rounded-2xl border border-orange-200 px-3 py-2.5"
                 onPress={onNavigateToCooking}
               >
                 <Ionicons name="restaurant-outline" size={14} color="#c2410c" />
-                <Text className="ml-1.5 text-xs font-bold text-orange-700">
+                <Text className="ml-1.5 flex-shrink text-xs font-bold text-orange-700">
                   Ver todas las recetas
                 </Text>
               </TouchableOpacity>

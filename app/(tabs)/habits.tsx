@@ -23,6 +23,7 @@ import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
 import { HabitCard } from "@/src/features/habits/components/HabitCard";
 import type { Habit } from "@/src/shared/types/database";
 import { useCycleRecommendation } from "@/src/shared/hooks/useCycleRecommendation";
@@ -518,13 +519,11 @@ export function HabitsScreen() {
         </View>
       )}
 
-      {/* FAB */}
-      <TouchableOpacity
-        className="absolute bottom-8 right-6 h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-purple-500"
+      <FloatingActionButton
         onPress={() => setShowModal(true)}
-      >
-        <Ionicons name="add" size={26} color="white" />
-      </TouchableOpacity>
+        containerClassName="bg-purple-500"
+        accessibilityLabel="Crear hábito"
+      />
 
       {/* Create Habit Modal */}
       <Modal visible={showModal} transparent animationType="slide">

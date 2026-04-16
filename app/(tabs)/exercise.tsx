@@ -12,6 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
 import type { Exercise } from "@/src/shared/types/database";
 
 export function ExerciseScreen() {
@@ -90,22 +91,13 @@ export function ExerciseScreen() {
 					className="flex-1 px-5 pt-12"
 					showsVerticalScrollIndicator={false}
 				>
-					<View className="mb-5 flex-row items-center justify-between">
+					<View className="mb-5 flex-row items-center">
 						<View className="flex-row items-center">
 							<Ionicons name="barbell" size={20} color="#0f766e" />
 							<Text className="ml-2 text-2xl font-extrabold text-teal-900">
 								Ejercicio
 							</Text>
 						</View>
-
-						<TouchableOpacity
-							className="rounded-2xl bg-teal-500 px-4 py-3"
-							onPress={() =>
-								router.push("/exercise-create?returnTo=/exercise-list")
-							}
-						>
-							<Text className="text-sm font-bold text-white">Nuevo</Text>
-						</TouchableOpacity>
 					</View>
 
 					<Text className="text-sm font-semibold text-teal-600">
@@ -186,9 +178,14 @@ export function ExerciseScreen() {
 							))}
 						</View>
 					)}
-					<View className="h-6" />
+					<View className="h-24" />
 				</ScrollView>
 			</View>
+			<FloatingActionButton
+				onPress={() => router.push("/exercise-create?returnTo=/exercise-list")}
+				containerClassName="bg-teal-500"
+				accessibilityLabel="Crear ejercicio"
+			/>
 			{AlertComponent}
 		</>
 	);

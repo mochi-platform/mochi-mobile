@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
 import Animated, {
 	Easing,
 	useAnimatedStyle,
@@ -13,6 +14,7 @@ import Animated, {
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
 import type { StudySession } from "@/src/shared/types/database";
 
 function formatDuration(seconds: number): string {
@@ -241,8 +243,13 @@ export function StudyScreen() {
 					</View>
 				)}
 
-				<View className="h-14" />
+				<View className="h-24" />
 			</ScrollView>
+			<FloatingActionButton
+				onPress={() => router.push("/exam-log")}
+				containerClassName="bg-pink-500"
+				accessibilityLabel="Registrar examen"
+			/>
 		</View>
 	);
 }
