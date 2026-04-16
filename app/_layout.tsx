@@ -1,9 +1,10 @@
 import "../global.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   Stack,
   router,
   usePathname,
+  useSegments,
   type ErrorBoundaryProps,
 } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +24,10 @@ import {
   useSession,
 } from "@/src/core/providers/SessionContext";
 import {
+  ModuleVisibilityProvider,
+  useModuleVisibility,
+} from "@/src/core/providers/ModuleVisibilityContext";
+import {
   SystemBarsProvider,
   useSystemBars,
 } from "@/src/core/providers/SystemBarsContext";
@@ -33,7 +38,6 @@ import {
   type MobileScreen,
 } from "@/src/features/home/components/BottomNav";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import { supabase } from "@/src/shared/lib/supabase";
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
@@ -67,68 +71,20 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   );
 }
 
-type ModuleVisibility = {
-  partner_features_enabled: boolean;
-  study_enabled: boolean;
-  exercise_enabled: boolean;
-  habits_enabled: boolean;
-  goals_enabled: boolean;
-  mood_enabled: boolean;
-  gratitude_enabled: boolean;
-  vouchers_enabled: boolean;
-  cooking_enabled: boolean;
-  notes_enabled: boolean;
-};
-
-const defaultModuleVisibility: ModuleVisibility = {
-  partner_features_enabled: false,
-  study_enabled: true,
-  exercise_enabled: true,
-  habits_enabled: true,
-  goals_enabled: true,
-  mood_enabled: true,
-  gratitude_enabled: true,
-  vouchers_enabled: false,
-  cooking_enabled: true,
-  notes_enabled: true,
-};
-
 const bottomNavRoutes: Record<MobileScreen, string> = {
-  home: "/",
-  study: "/study-history",
-  exercise: "/exercise-list",
-  habits: "/habits",
-  cooking: "/cooking",
+  home: "/(tabs)",
+  study: "/(tabs)/study",
+  exercise: "/(tabs)/exercise",
+  habits: "/(tabs)/habits",
+  cooking: "/(tabs)/cooking",
 };
 
 function getBottomNavScreen(pathname: string): MobileScreen {
-  if (
-    pathname === "/" ||
-    pathname === "/settings" ||
-    pathname === "/profile" ||
-    pathname === "/weekly-summary" ||
-    pathname === "/flashcards" ||
-    pathname.startsWith("/auth")
-  ) {
-    return "home";
-  }
-
-  if (
-    pathname === "/study-history" ||
-    pathname === "/study-create" ||
-    pathname === "/study-edit" ||
-    pathname === "/study-timer" ||
-    pathname === "/exam-log"
-  ) {
+  if (pathname === "/study") {
     return "study";
   }
 
-  if (
-    pathname === "/exercise-list" ||
-    pathname === "/exercise-create" ||
-    pathname === "/routine-create" ||
-    pathname === "/routine-player"
-  ) {
+  if (pathname === "/exercise") {
     return "exercise";
   }
 
@@ -136,18 +92,19 @@ function getBottomNavScreen(pathname: string): MobileScreen {
     return "habits";
   }
 
-  if (
-    pathname === "/cooking" ||
-    pathname === "/recipe-detail" ||
-    pathname === "/recipe-player"
-  ) {
+  if (pathname === "/cooking") {
     return "cooking";
   }
 
   return "home";
 }
 
-function getVisibleTabs(settings: ModuleVisibility): MobileScreen[] {
+function getVisibleTabs(settings: {
+  study_enabled: boolean;
+  exercise_enabled: boolean;
+  habits_enabled: boolean;
+  cooking_enabled: boolean;
+}): MobileScreen[] {
   return [
     "home",
     ...(settings.study_enabled ? (["study"] as const) : []),
@@ -157,7 +114,21 @@ function getVisibleTabs(settings: ModuleVisibility): MobileScreen[] {
   ];
 }
 
-function isRouteAllowed(pathname: string, settings: ModuleVisibility): boolean {
+function isRouteAllowed(
+  pathname: string,
+  settings: {
+    partner_features_enabled: boolean;
+    study_enabled: boolean;
+    exercise_enabled: boolean;
+    habits_enabled: boolean;
+    goals_enabled: boolean;
+    mood_enabled: boolean;
+    gratitude_enabled: boolean;
+    vouchers_enabled: boolean;
+    cooking_enabled: boolean;
+    notes_enabled: boolean;
+  },
+): boolean {
   if (
     pathname === "/" ||
     pathname === "/login" ||
@@ -177,6 +148,14 @@ function isRouteAllowed(pathname: string, settings: ModuleVisibility): boolean {
 
   if (pathname === "/habits") {
     return settings.habits_enabled;
+  }
+
+  if (pathname === "/study") {
+    return settings.study_enabled;
+  }
+
+  if (pathname === "/exercise") {
+    return settings.exercise_enabled;
   }
 
   if (pathname === "/goals") {
@@ -238,58 +217,13 @@ Notifications.setNotificationHandler({
 function RootLayoutNavigator() {
   const { session, loading, requiresOnboarding, profileError, refreshProfile } =
     useSession();
+  const { moduleVisibility, moduleVisibilityLoaded } = useModuleVisibility();
   const { theme } = useSystemBars();
   const pathname = usePathname();
-  const [moduleVisibility, setModuleVisibility] = useState<ModuleVisibility>(
-    defaultModuleVisibility,
-  );
-  const [moduleVisibilityLoaded, setModuleVisibilityLoaded] = useState(false);
+  const segments = useSegments();
   const loadingScale = useSharedValue(1);
   const notificationResponseListener =
     useRef<Notifications.EventSubscription | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadModuleVisibility(): Promise<void> {
-      if (!session?.user.id) {
-        if (mounted) {
-          setModuleVisibility(defaultModuleVisibility);
-          setModuleVisibilityLoaded(true);
-        }
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("user_settings")
-        .select(
-          "partner_features_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled, notes_enabled",
-        )
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-
-      if (!mounted) return;
-
-      if (error) {
-        setModuleVisibility(defaultModuleVisibility);
-        setModuleVisibilityLoaded(true);
-        return;
-      }
-
-      setModuleVisibility({
-        ...defaultModuleVisibility,
-        ...((data as Partial<ModuleVisibility> | null) ?? {}),
-      });
-      setModuleVisibilityLoaded(true);
-    }
-
-    setModuleVisibilityLoaded(false);
-    void loadModuleVisibility();
-
-    return () => {
-      mounted = false;
-    };
-  }, [session?.user.id]);
 
   useEffect(() => {
     if (loading) {
@@ -331,9 +265,9 @@ function RootLayoutNavigator() {
         > | null;
         const screen = typeof data?.screen === "string" ? data.screen : null;
 
-        if (screen === "habits") router.push("/habits");
-        else if (screen === "study") router.push("/");
-        else if (screen === "cooking") router.push("/?tab=cooking");
+        if (screen === "habits") router.push("/(tabs)/habits");
+        else if (screen === "study") router.push("/(tabs)/study");
+        else if (screen === "cooking") router.push("/(tabs)/cooking");
         else if (screen === "weekly-summary") router.push("/weekly-summary");
         else if (screen === "exam-log") router.push("/exam-log");
       });
@@ -400,8 +334,28 @@ function RootLayoutNavigator() {
     );
   }
 
+  if (
+    !process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() ||
+    !process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  ) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white px-8">
+        <Text className="text-center text-lg font-semibold text-gray-800">
+          Error de configuracion
+        </Text>
+        <Text className="mt-2 text-center text-sm text-gray-500">
+          Faltan variables de entorno requeridas. Revisa tu archivo .env
+        </Text>
+      </View>
+    );
+  }
+
   const showBottomNav =
-    Boolean(session) && !requiresOnboarding && !pathname.startsWith("/auth") && pathname !== "/login";
+    (pathname.startsWith("/(tabs)") || pathname === "/" || segments[0] === "(tabs)") &&
+    Boolean(session) &&
+    !requiresOnboarding &&
+    !pathname.startsWith("/auth") &&
+    pathname !== "/login";
   const currentScreen = getBottomNavScreen(pathname);
   const visibleTabs = getVisibleTabs(moduleVisibility);
 
@@ -414,14 +368,17 @@ function RootLayoutNavigator() {
         }}
       />
       <View className="flex-1">
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
       </View>
       {showBottomNav ? (
         <BottomNav
           currentScreen={currentScreen}
           onNavigate={(screen) => {
             const targetRoute = bottomNavRoutes[screen];
-            if (pathname === targetRoute) return;
+            const normalizedTarget = targetRoute.replace("/(tabs)", "") || "/";
+            if (pathname === normalizedTarget) return;
             router.replace(targetRoute);
           }}
           visibleTabs={visibleTabs}
@@ -435,11 +392,13 @@ export function RootLayout() {
   return (
     <SystemBarsProvider>
       <SessionProvider>
-        <AchievementProvider>
-          <CycleProvider>
-            <RootLayoutNavigator />
-          </CycleProvider>
-        </AchievementProvider>
+        <ModuleVisibilityProvider>
+          <AchievementProvider>
+            <CycleProvider>
+              <RootLayoutNavigator />
+            </CycleProvider>
+          </AchievementProvider>
+        </ModuleVisibilityProvider>
       </SessionProvider>
     </SystemBarsProvider>
   );

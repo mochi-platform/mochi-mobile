@@ -14,6 +14,15 @@ export function useEnergyDaily() {
     void (async () => {
       try {
         setIsLoading(true);
+        const user = await supabase.auth.getUser();
+        const userId = user.data?.user?.id;
+
+        if (!userId) {
+          setTodayEnergy(null);
+          setTrend("stable");
+          setError(null);
+          return;
+        }
 
         // Get today's date
         const today = new Date().toISOString().split("T")[0];
@@ -22,6 +31,7 @@ export function useEnergyDaily() {
         const { data: todayData, error: todayError } = await supabase
           .from("energy_levels")
           .select("*")
+          .eq("user_id", userId)
           .eq("logged_date", today)
           .maybeSingle();
 
@@ -41,7 +51,7 @@ export function useEnergyDaily() {
         const { data: pastData, error: pastError } = await supabase
           .from("energy_levels")
           .select("overall_rating")
-          .eq("user_id", (await supabase.auth.getUser()).data?.user?.id ?? "")
+          .eq("user_id", userId)
           .gte("logged_date", pastDateStr)
           .lt("logged_date", today)
           .order("logged_date", { ascending: true });

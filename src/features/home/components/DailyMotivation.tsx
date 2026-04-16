@@ -49,16 +49,31 @@ export function DailyMotivation({
   useEffect(() => {
     let mounted = true;
     async function load() {
-      const msg = await getDailyMotivation(
-        studyBlockCount,
-        hasRoutine,
-        timeOfDay,
-        personality?.phaseLabel,
-      );
-      if (mounted) {
-        setMessage(msg);
-        setLoading(false);
-        shimmerOpacity.value = withTiming(1, { duration: 200 });
+      try {
+        const msg = await getDailyMotivation(
+          studyBlockCount,
+          hasRoutine,
+          timeOfDay,
+          personality?.phaseLabel,
+        );
+
+        if (mounted) {
+          setMessage(msg);
+        }
+      } catch (error) {
+        console.error(
+          "[DailyMotivation] Error al obtener mensaje:",
+          error instanceof Error ? error.message : String(error),
+        );
+
+        if (mounted) {
+          setMessage("Hoy es un buen dia para avanzar un paso mas.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          shimmerOpacity.value = withTiming(1, { duration: 200 });
+        }
       }
     }
     void load();

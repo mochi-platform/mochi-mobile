@@ -227,7 +227,9 @@ export function HomeDashboard({
     moodDots: [] as Array<number | null>,
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [studyError, setStudyError] = useState<string | null>(null);
+  const [routineError, setRoutineError] = useState<string | null>(null);
+  const [recipeError, setRecipeError] = useState<string | null>(null);
   const [animationSeed, setAnimationSeed] = useState(0);
   const [isCyclePromptDismissed, setIsCyclePromptDismissed] = useState(false);
 
@@ -313,7 +315,9 @@ export function HomeDashboard({
     async function loadTodayData() {
       try {
         setLoading(true);
-        setError(null);
+        setStudyError(null);
+        setRoutineError(null);
+        setRecipeError(null);
 
         const todayDate = new Date();
         const todayDayOfWeek = todayDate.getDay();
@@ -414,19 +418,38 @@ export function HomeDashboard({
             .maybeSingle(),
         ]);
 
-        if (blocksRes.error) throw blocksRes.error;
-        if (routinesRes.error) throw routinesRes.error;
+        if (blocksRes.error) {
+          setStudyError("No se pudo cargar. Intenta de nuevo.");
+          setTodayBlocks([]);
+        } else {
+          setTodayBlocks(blocksRes.data ?? []);
+        }
 
-        setTodayBlocks(blocksRes.data ?? []);
-        setTodayRoutines(
-          (routinesRes.data ?? []).filter((r) =>
-            r.days.includes(todayDayOfWeek),
-          ),
-        );
+        if (routinesRes.error) {
+          setRoutineError("No se pudo cargar. Intenta de nuevo.");
+          setTodayRoutines([]);
+        } else {
+          setTodayRoutines(
+            (routinesRes.data ?? []).filter((r) =>
+              r.days.includes(todayDayOfWeek),
+            ),
+          );
+        }
+
         setHabitCount(habitsCountRes.count ?? 0);
         setHabitLogsCount(habitsLogsRes.count ?? 0);
-        setLatestRecipe((latestRecipeRes.data as Recipe | null) ?? null);
-        setRecipeCount(recipeCountRes.count ?? 0);
+
+        const hasRecipeError =
+          Boolean(latestRecipeRes.error) || Boolean(recipeCountRes.error);
+        if (hasRecipeError) {
+          setRecipeError("No se pudo cargar. Intenta de nuevo.");
+          setLatestRecipe(null);
+          setRecipeCount(0);
+        } else {
+          setLatestRecipe((latestRecipeRes.data as Recipe | null) ?? null);
+          setRecipeCount(recipeCountRes.count ?? 0);
+        }
+
         setUpcomingExams(
           (upcomingExamsRes.data as UpcomingExam[] | null) ?? [],
         );
@@ -466,7 +489,11 @@ export function HomeDashboard({
         });
         setAnimationSeed((prev) => prev + 1);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error cargando datos");
+        const fallbackError =
+          err instanceof Error ? err.message : "No se pudo cargar. Intenta de nuevo.";
+        setStudyError((prev) => prev ?? fallbackError);
+        setRoutineError((prev) => prev ?? fallbackError);
+        setRecipeError((prev) => prev ?? fallbackError);
       } finally {
         setLoading(false);
       }
@@ -664,8 +691,10 @@ export function HomeDashboard({
                 Cargando tu agenda...
               </Text>
             </View>
-          ) : error ? (
-            <Text className="text-sm font-semibold text-red-600">{error}</Text>
+          ) : studyError ? (
+            <Text className="text-sm font-semibold text-red-600">
+              {studyError}
+            </Text>
           ) : todayBlocks.length === 0 ? (
             <TouchableOpacity
               className="items-center py-2"
@@ -816,6 +845,10 @@ export function HomeDashboard({
                 </View>
               </TouchableOpacity>
             ))
+          ) : routineError ? (
+            <Text className="text-xs font-semibold text-red-500">
+              {routineError}
+            </Text>
           ) : (
             <TouchableOpacity
               className="items-center py-2"
@@ -860,6 +893,10 @@ export function HomeDashboard({
                 <MochiCharacter mood="thinking" size={72} />
               </Animated.View>
             </View>
+          ) : recipeError ? (
+            <Text className="text-xs font-semibold text-red-500">
+              {recipeError}
+            </Text>
           ) : latestRecipe ? (
             <>
               <TouchableOpacity
