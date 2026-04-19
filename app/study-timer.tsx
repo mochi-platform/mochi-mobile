@@ -37,9 +37,12 @@ import {
   updateStreak,
 } from "@/src/shared/lib/gamification";
 import { supabase } from "@/src/shared/lib/supabase";
+import { sendPomodoroPhaseNotification } from "@/src/shared/lib/notifications";
 import type { StudyBlock } from "@/src/shared/types/database";
 
 type StudyPhase = "setup" | "studying" | "complete";
+type TimerMode = "regular" | "pomodoro";
+type PomodoroPhase = "focus" | "break";
 
 type StudyMessage = {
   role: "user" | "assistant";
@@ -122,6 +125,9 @@ const colorBorderMap: Record<string, string> = {
   green: "border-green-300",
 };
 
+const POMODORO_FOCUS_SECONDS = 25 * 60;
+const POMODORO_BREAK_SECONDS = 5 * 60;
+
 export function StudyTimerScreen() {
   const { blockId } = useLocalSearchParams<{ blockId: string }>();
   const { session } = useSession();
@@ -139,6 +145,9 @@ export function StudyTimerScreen() {
     null,
   );
   const [didAwardGamification, setDidAwardGamification] = useState(false);
+  const [timerMode, setTimerMode] = useState<TimerMode>("regular");
+  const [pomodoroPhase, setPomodoroPhase] = useState<PomodoroPhase>("focus");
+  const [pomodoroCycle, setPomodoroCycle] = useState(1);
 
   const [phase, setPhase] = useState<StudyPhase>("setup");
   const [specificTopic, setSpecificTopic] = useState("");
@@ -162,6 +171,16 @@ export function StudyTimerScreen() {
   const completionMutexRef = useRef(false);
   const sessionPersistedRef = useRef(false);
   const progress = useSharedValue(1);
+
+  const activeTimerDuration = useMemo(() => {
+    if (timerMode !== "pomodoro") {
+      return totalSeconds;
+    }
+
+    return pomodoroPhase === "focus"
+      ? POMODORO_FOCUS_SECONDS
+      : POMODORO_BREAK_SECONDS;
+  }, [pomodoroPhase, timerMode, totalSeconds]);
 
   const blockColor = block?.color ?? "purple";
   const summaryText = useMemo(
@@ -213,6 +232,10 @@ export function StudyTimerScreen() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(intervalRef.current!);
+          if (timerMode === "pomodoro") {
+            void handlePomodoroPhaseEnd();
+            return 0;
+          }
           void handleComplete();
           return 0;
         }
@@ -223,16 +246,16 @@ export function StudyTimerScreen() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, phase]);
+  }, [isRunning, phase, timerMode]);
 
   useEffect(() => {
-    if (totalSeconds > 0) {
-      progress.value = withTiming(timeLeft / totalSeconds, {
+    if (activeTimerDuration > 0) {
+      progress.value = withTiming(timeLeft / activeTimerDuration, {
         duration: 900,
         easing: Easing.linear,
       });
     }
-  }, [timeLeft, totalSeconds, progress]);
+  }, [activeTimerDuration, progress, timeLeft]);
 
   const progressStyle = useAnimatedStyle(() => ({
     width: `${progress.value * 100}%` as `${number}%`,
@@ -351,6 +374,29 @@ export function StudyTimerScreen() {
       if (!sessionPersistedRef.current) {
         completionMutexRef.current = false;
       }
+    }
+  }
+
+  async function handlePomodoroPhaseEnd() {
+    setIsRunning(false);
+
+    const isFocusPhase = pomodoroPhase === "focus";
+    const nextPhase: PomodoroPhase = isFocusPhase ? "break" : "focus";
+    const nextCycle = isFocusPhase ? pomodoroCycle : pomodoroCycle + 1;
+
+    setPomodoroPhase(nextPhase);
+    if (!isFocusPhase) {
+      setPomodoroCycle((current) => current + 1);
+    }
+
+    setTimeLeft(
+      nextPhase === "focus" ? POMODORO_FOCUS_SECONDS : POMODORO_BREAK_SECONDS,
+    );
+
+    try {
+      await sendPomodoroPhaseNotification(nextPhase, nextCycle);
+    } catch {
+      // Si falla la notificación no detenemos la sesión.
     }
   }
 
@@ -516,6 +562,13 @@ export function StudyTimerScreen() {
     if (!specificTopic.trim()) return;
 
     setPhase("studying");
+    if (timerMode === "pomodoro") {
+      setPomodoroPhase("focus");
+      setPomodoroCycle(1);
+      setTimeLeft(POMODORO_FOCUS_SECONDS);
+    } else {
+      setTimeLeft(totalSeconds);
+    }
     setIsRunning(true);
 
     if (!discipline || discipline === "estudio general") {
@@ -525,6 +578,22 @@ export function StudyTimerScreen() {
         // Se mantiene el valor por defecto para no bloquear inicio de sesión.
       }
     }
+  }
+
+  function handleTimerModeChange(mode: TimerMode) {
+    if (mode === timerMode) return;
+
+    setTimerMode(mode);
+    setIsRunning(false);
+
+    if (mode === "pomodoro") {
+      setPomodoroPhase("focus");
+      setPomodoroCycle(1);
+      setTimeLeft(POMODORO_FOCUS_SECONDS);
+      return;
+    }
+
+    setTimeLeft(totalSeconds);
   }
 
   async function handleAskCompanion() {
@@ -682,6 +751,52 @@ export function StudyTimerScreen() {
 
           {phase === "setup" ? (
             <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4">
+              <Text className="text-xs font-bold uppercase text-purple-700">
+                Modo de sesion
+              </Text>
+              <View className="mt-2 flex-row gap-2">
+                <TouchableOpacity
+                  className={`flex-1 rounded-xl border px-3 py-2 ${
+                    timerMode === "regular"
+                      ? "border-purple-500 bg-purple-500"
+                      : "border-purple-200 bg-purple-50"
+                  }`}
+                  onPress={() => handleTimerModeChange("regular")}
+                >
+                  <Text
+                    className={`text-center text-xs font-bold ${
+                      timerMode === "regular" ? "text-white" : "text-purple-700"
+                    }`}
+                  >
+                    Regular
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className={`flex-1 rounded-xl border px-3 py-2 ${
+                    timerMode === "pomodoro"
+                      ? "border-emerald-500 bg-emerald-500"
+                      : "border-emerald-200 bg-emerald-50"
+                  }`}
+                  onPress={() => handleTimerModeChange("pomodoro")}
+                >
+                  <Text
+                    className={`text-center text-xs font-bold ${
+                      timerMode === "pomodoro"
+                        ? "text-white"
+                        : "text-emerald-700"
+                    }`}
+                  >
+                    Pomodoro 25/5
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {timerMode === "pomodoro" ? (
+                <Text className="mt-2 text-xs font-semibold text-emerald-700">
+                  Alterna foco y descanso con aviso automatico en cada cambio de fase.
+                </Text>
+              ) : null}
+
               <Text className="text-sm font-bold text-purple-800">
                 ¿Qué vas a estudiar específicamente hoy?
               </Text>
@@ -811,6 +926,14 @@ export function StudyTimerScreen() {
               </View>
 
               <View className="mt-5 items-center">
+                {timerMode === "pomodoro" ? (
+                  <View className="mb-3 rounded-full bg-emerald-100 px-4 py-1.5">
+                    <Text className="text-xs font-extrabold text-emerald-700">
+                      Pomodoro · Ciclo {pomodoroCycle} ·{" "}
+                      {pomodoroPhase === "focus" ? "Foco" : "Descanso"}
+                    </Text>
+                  </View>
+                ) : null}
                 <View
                   className={`h-52 w-52 items-center justify-center rounded-full border-8 ${colorBorderMap[blockColor] ?? "border-purple-300"} ${colorMap[blockColor] ?? "bg-purple-100"}`}
                 >
@@ -835,7 +958,7 @@ export function StudyTimerScreen() {
                     0:00
                   </Text>
                   <Text className="text-xs font-semibold text-purple-400">
-                    {formatTime(totalSeconds)}
+                    {formatTime(activeTimerDuration)}
                   </Text>
                 </View>
               </View>

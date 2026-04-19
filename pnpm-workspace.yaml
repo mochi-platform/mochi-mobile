@@ -1,3 +1,6 @@
 packages:
   # Main application - single monolith with internal structure
   - '.'
+allowBuilds:
+  '@shopify/react-native-skia': true
+  supabase: true

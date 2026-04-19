@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -71,6 +71,40 @@ const complexityOptions: Array<{ value: RecipeDifficulty; label: string }> = [
   { value: "media", label: "Media" },
   { value: "difícil", label: "Difícil" },
 ];
+
+const listRecipeTypeOptions: Array<
+  { value: "all"; label: string } | { value: RecipeGenerationType; label: string }
+> = [{ value: "all", label: "Todos" }, ...recipeTypeOptions];
+
+const listDifficultyOptions: Array<
+  { value: "all"; label: string } | { value: RecipeDifficulty; label: string }
+> = [
+  { value: "all", label: "Todas" },
+  { value: "fácil", label: "Fácil" },
+  { value: "media", label: "Media" },
+  { value: "difícil", label: "Difícil" },
+];
+
+const generationTypeValues: RecipeGenerationType[] = [
+  "normal",
+  "keto",
+  "vegetariana",
+  "vegana",
+  "alta_proteina",
+];
+
+function getRecipeGenerationType(
+  userPrompt: string | null,
+): RecipeGenerationType | "normal" {
+  const match = userPrompt?.match(/Tipo:\s*([a-z_]+)/i);
+  const candidate = match?.[1]?.toLowerCase() as RecipeGenerationType | undefined;
+
+  if (!candidate || !generationTypeValues.includes(candidate)) {
+    return "normal";
+  }
+
+  return candidate;
+}
 
 function RecipeCard({
   recipe,
@@ -216,6 +250,14 @@ export function CookingScreen() {
   const [recipeImageLoadingMap, setRecipeImageLoadingMap] = useState<
     Record<string, boolean>
   >({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<
+    RecipeDifficulty | "all"
+  >("all");
+  const [typeFilter, setTypeFilter] = useState<RecipeGenerationType | "all">(
+    "all",
+  );
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const userId = session?.user.id;
 
@@ -286,6 +328,42 @@ export function CookingScreen() {
     },
     [recipeImageLoadingMap, recipeImageMap],
   );
+
+  const filteredRecipes = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return recipes.filter((recipe) => {
+      if (favoritesOnly && !recipe.is_favorite) {
+        return false;
+      }
+
+      if (difficultyFilter !== "all" && recipe.difficulty !== difficultyFilter) {
+        return false;
+      }
+
+      if (
+        typeFilter !== "all" &&
+        getRecipeGenerationType(recipe.user_prompt) !== typeFilter
+      ) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const haystack = [
+        recipe.title,
+        recipe.description ?? "",
+        recipe.cuisine_type ?? "",
+        recipe.tags.join(" "),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(normalizedSearch);
+    });
+  }, [difficultyFilter, favoritesOnly, recipes, searchQuery, typeFilter]);
 
   const handleGenerate = async () => {
     if (!userId || !prompt.trim()) return;
@@ -400,6 +478,105 @@ export function CookingScreen() {
             subtitleClassName="text-sm font-semibold text-orange-700"
           />
 
+          <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-4">
+            <View className="flex-row items-center rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2">
+              <Ionicons name="search" size={15} color="#c2410c" />
+              <TextInput
+                className="ml-2 flex-1 text-sm font-semibold text-orange-900"
+                placeholder="Buscar por nombre, tipo o etiqueta"
+                placeholderTextColor="#f97316"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+
+            <Text className="mt-3 text-xs font-bold text-orange-700">
+              Dificultad
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="mt-2"
+            >
+              {listDifficultyOptions.map((option) => {
+                const active = difficultyFilter === option.value;
+
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    className={`mr-2 rounded-full border px-3 py-1.5 ${
+                      active
+                        ? "border-orange-500 bg-orange-500"
+                        : "border-orange-200 bg-white"
+                    }`}
+                    onPress={() => setDifficultyFilter(option.value)}
+                  >
+                    <Text
+                      className={`text-xs font-bold ${
+                        active ? "text-white" : "text-orange-700"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <Text className="mt-3 text-xs font-bold text-orange-700">Tipo</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="mt-2"
+            >
+              {listRecipeTypeOptions.map((option) => {
+                const active = typeFilter === option.value;
+
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    className={`mr-2 rounded-full border px-3 py-1.5 ${
+                      active
+                        ? "border-orange-500 bg-orange-500"
+                        : "border-orange-200 bg-white"
+                    }`}
+                    onPress={() => setTypeFilter(option.value)}
+                  >
+                    <Text
+                      className={`text-xs font-bold ${
+                        active ? "text-white" : "text-orange-700"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              className={`mt-3 flex-row items-center justify-center rounded-2xl border px-3 py-2 ${
+                favoritesOnly
+                  ? "border-pink-400 bg-pink-100"
+                  : "border-orange-200 bg-orange-50"
+              }`}
+              onPress={() => setFavoritesOnly((prev) => !prev)}
+            >
+              <Ionicons
+                name={favoritesOnly ? "heart" : "heart-outline"}
+                size={14}
+                color={favoritesOnly ? "#db2777" : "#c2410c"}
+              />
+              <Text
+                className={`ml-2 text-xs font-bold ${
+                  favoritesOnly ? "text-pink-700" : "text-orange-700"
+                }`}
+              >
+                Solo favoritas
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {loading ? (
             <View className="items-center py-12">
               <MochiCharacter mood="thinking" size={88} />
@@ -435,8 +612,18 @@ export function CookingScreen() {
                   "Cuéntame qué quieres cocinar y lo creo para ti"}
               </Text>
             </View>
+          ) : filteredRecipes.length === 0 ? (
+            <View className="items-center rounded-3xl border-2 border-orange-200 bg-white p-8">
+              <MochiCharacter mood="thinking" size={88} />
+              <Text className="mt-3 text-center text-base font-extrabold text-orange-900">
+                No encontramos recetas con esos filtros
+              </Text>
+              <Text className="mt-2 text-center text-sm font-semibold text-orange-600">
+                Ajusta la busqueda o desactiva algun filtro para ver mas opciones.
+              </Text>
+            </View>
           ) : (
-            recipes.map((recipe) => (
+            filteredRecipes.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}

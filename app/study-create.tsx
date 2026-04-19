@@ -15,12 +15,18 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import * as Calendar from "expo-calendar";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useCycle } from "@/src/core/providers/CycleContext";
 import TimePickerModal from "@/src/shared/components/TimePickerModal";
 import { suggestStudyDuration } from "@/src/shared/lib/ai";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import {
+  createDeviceCalendarEvent,
+  getDateFromISOAndTime,
+  getNextDateForWeekday,
+} from "@/src/shared/lib/deviceCalendar";
 
 const daysOfWeek = [
   { value: 0, label: "Domingo" },
@@ -108,6 +114,7 @@ export function CreateStudyBlockScreen() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [addToCalendar, setAddToCalendar] = useState(true);
   const [moodValue, setMoodValue] = useState<number | null>(null);
   const [energyLoading, setEnergyLoading] = useState(false);
   const [energyError, setEnergyError] = useState<string | null>(null);
@@ -260,9 +267,52 @@ export function CreateStudyBlockScreen() {
 
       if (error) throw error;
 
+      let calendarWarning: string | null = null;
+
+      if (addToCalendar) {
+        try {
+          const nextStartDate = getNextDateForWeekday(dayOfWeek, startTime);
+          const nextDateISO = nextStartDate.toISOString().slice(0, 10);
+          const nextEndDate = getDateFromISOAndTime(nextDateISO, endTime);
+
+          if (nextEndDate.getTime() <= nextStartDate.getTime()) {
+            nextEndDate.setDate(nextEndDate.getDate() + 1);
+          }
+
+          const recurrenceRule: Calendar.RecurrenceRule = {
+            frequency: Calendar.Frequency.WEEKLY,
+            interval: 1,
+          };
+
+          if (Platform.OS === "ios") {
+            recurrenceRule.daysOfTheWeek = [
+              {
+                dayOfTheWeek: (dayOfWeek + 1) as Calendar.DayOfTheWeek,
+              },
+            ];
+          }
+
+          await createDeviceCalendarEvent({
+            title: `Estudio: ${subject.trim()}`,
+            startDate: nextStartDate,
+            endDate: nextEndDate,
+            notes: "Evento creado desde Mochi",
+            recurrenceRule,
+            alarmsMinutesBefore: [10],
+          });
+        } catch {
+          calendarWarning =
+            "El bloque se guardo, pero no pudimos exportarlo al calendario.";
+        }
+      }
+
       showAlert({
         title: "¡Éxito!",
-        message: "Bloque de estudio creado",
+        message: calendarWarning
+          ? `Bloque de estudio creado.\n\n${calendarWarning}`
+          : addToCalendar
+            ? "Bloque de estudio creado y agregado a tu calendario"
+            : "Bloque de estudio creado",
         buttons: [
           {
             text: "OK",
@@ -458,6 +508,32 @@ export function CreateStudyBlockScreen() {
                   <Text className="font-extrabold text-white">
                     Aplicar plan recomendado
                   </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View className="mt-4 rounded-3xl border-2 border-indigo-200 bg-white p-4">
+                <TouchableOpacity
+                  className="flex-row items-center justify-between"
+                  onPress={() => setAddToCalendar((prev) => !prev)}
+                  activeOpacity={0.85}
+                >
+                  <View className="flex-1 pr-3">
+                    <Text className="text-sm font-bold text-indigo-900">
+                      Exportar al calendario
+                    </Text>
+                    <Text className="mt-1 text-xs font-semibold text-indigo-700">
+                      Crea un evento semanal en tu calendario del dispositivo.
+                    </Text>
+                  </View>
+                  <View
+                    className={`h-7 w-7 items-center justify-center rounded-full ${addToCalendar ? "bg-indigo-600" : "bg-indigo-100"}`}
+                  >
+                    <Ionicons
+                      name={addToCalendar ? "checkmark" : "remove"}
+                      size={16}
+                      color={addToCalendar ? "white" : "#4338ca"}
+                    />
+                  </View>
                 </TouchableOpacity>
               </View>
 

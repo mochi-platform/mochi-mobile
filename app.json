@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.siramong.mochi"
     },
     "android": {
       "package": "com.siramong.mochi",
@@ -58,6 +59,23 @@
           "defaultChannel": "default",
           "sounds": [],
           "iosDisplayInForeground": true
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "MochiResumenWidget",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ],
+              "displayName": "Resumen Mochi",
+              "description": "Puntos, racha y bloque del dia",
+              "contentMarginsDisabled": false
+            }
+          ]
         }
       ],
       [

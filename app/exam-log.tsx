@@ -26,7 +26,15 @@ import {
   trackEngagementEvent,
   unlockAchievement,
 } from "@/src/shared/lib/gamification";
-import { scheduleExamReminder } from "@/src/shared/lib/notifications";
+import {
+  cancelExamReminder,
+  loadExamReminderDays,
+  scheduleExamReminder,
+} from "@/src/shared/lib/notifications";
+import {
+  createDeviceCalendarEvent,
+  getDateFromISOAndTime,
+} from "@/src/shared/lib/deviceCalendar";
 
 type TabId = "results" | "upcoming";
 
@@ -91,6 +99,8 @@ const CALM_ORDER: Array<{ key: keyof CalmChecklistState; label: string }> = [
   { key: "rest", label: "Descanso" },
 ];
 
+const EXAM_REMINDER_OPTIONS = [7, 3, 1] as const;
+
 function createDefaultPreparationState(): ExamPreparationState {
   return {
     calm: { ...DEFAULT_CALM_CHECKLIST },
@@ -119,9 +129,18 @@ export function ExamLogScreen() {
   const [upcomingSubject, setUpcomingSubject] = useState("");
   const [upcomingDate, setUpcomingDate] = useState("");
   const [upcomingNotes, setUpcomingNotes] = useState("");
+  const [selectedReminderDays, setSelectedReminderDays] = useState<number[]>([
+    7,
+    3,
+    1,
+  ]);
+  const [addUpcomingToCalendar, setAddUpcomingToCalendar] = useState(true);
 
   const [examHistory, setExamHistory] = useState<ExamResultItem[]>([]);
   const [upcomingExams, setUpcomingExams] = useState<UpcomingExamItem[]>([]);
+  const [upcomingReminderMap, setUpcomingReminderMap] = useState<
+    Record<string, number[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingUpcoming, setSavingUpcoming] = useState(false);
@@ -235,6 +254,49 @@ export function ExamLogScreen() {
     if (days === 1) return "Mañana";
     return `En ${days} días`;
   }
+
+  function formatReminderDays(days: number[]): string {
+    if (days.length === 0) return "Sin recordatorios";
+
+    if (days.length === 1) {
+      return days[0] === 1 ? "1 día antes" : `${days[0]} días antes`;
+    }
+
+    const sorted = [...days].sort((left, right) => right - left);
+    const allButLast = sorted.slice(0, -1).join(", ");
+    const last = sorted[sorted.length - 1];
+    return `${allButLast} y ${last} días antes`;
+  }
+
+  useEffect(() => {
+    if (upcomingExams.length === 0) {
+      setUpcomingReminderMap({});
+      return;
+    }
+
+    let mounted = true;
+
+    void (async () => {
+      const entries = await Promise.all(
+        upcomingExams.map(async (exam) => {
+          const days = await loadExamReminderDays(exam.id);
+          return [exam.id, days] as const;
+        }),
+      );
+
+      if (!mounted) return;
+
+      const nextReminderMap: Record<string, number[]> = {};
+      entries.forEach(([examId, days]) => {
+        nextReminderMap[examId] = days;
+      });
+      setUpcomingReminderMap(nextReminderMap);
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [upcomingExams]);
 
   useEffect(() => {
     if (!session?.user.id || upcomingExams.length === 0) {
@@ -421,6 +483,12 @@ export function ExamLogScreen() {
           .eq("user_id", session.user.id);
 
         if (updateError) throw updateError;
+
+        try {
+          await cancelExamReminder(selectedUpcomingId);
+        } catch {
+          // No bloqueamos el guardado del resultado por fallas de notificación.
+        }
       } else {
         const { data: insertedExam, error: insertError } = await supabase
           .from("exam_logs")
@@ -531,6 +599,11 @@ export function ExamLogScreen() {
       return;
     }
 
+    if (selectedReminderDays.length === 0) {
+      setError("Selecciona al menos un recordatorio (7, 3 o 1 días)");
+      return;
+    }
+
     setSavingUpcoming(true);
     setError(null);
     setGamificationWarning(null);
@@ -568,23 +641,48 @@ export function ExamLogScreen() {
     }
 
     if (createdExam) {
+      const warnings: string[] = [];
+
       try {
         await scheduleExamReminder(
           createdExam.id,
           createdExam.subject,
           createdExam.exam_date,
+          { daysBefore: selectedReminderDays },
         );
-      } catch (err) {
-        setGamificationWarning(
-          "El examen se guardó correctamente, pero no pudimos programar el recordatorio. Puedes intentarlo más tarde.",
-        );
-        console.warn("No se pudo programar el recordatorio del examen:", err);
+      } catch {
+        warnings.push("No pudimos programar todos los recordatorios.");
+      }
+
+      if (addUpcomingToCalendar) {
+        try {
+          const startDate = getDateFromISOAndTime(createdExam.exam_date, "08:00");
+          const endDate = getDateFromISOAndTime(createdExam.exam_date, "10:00");
+
+          await createDeviceCalendarEvent({
+            title: `Examen: ${createdExam.subject}`,
+            startDate,
+            endDate,
+            notes: upcomingNotes.trim() || "Evento creado desde Mochi",
+            alarmsMinutesBefore: selectedReminderDays.map(
+              (days) => days * 24 * 60,
+            ),
+          });
+        } catch {
+          warnings.push("No pudimos agregar el examen al calendario.");
+        }
+      }
+
+      if (warnings.length > 0) {
+        setGamificationWarning(`El examen se guardó. ${warnings.join(" ")}`);
       }
     }
 
     setUpcomingSubject("");
     setUpcomingDate("");
     setUpcomingNotes("");
+    setSelectedReminderDays([7, 3, 1]);
+    setAddUpcomingToCalendar(true);
     await loadExams();
     setSavingUpcoming(false);
   }
@@ -853,6 +951,9 @@ export function ExamLogScreen() {
                           <Text className="mt-1 text-xs font-semibold uppercase text-pink-500">
                             {formatExamDate(exam.exam_date)}
                           </Text>
+                          <Text className="mt-1 text-[11px] font-bold text-indigo-700">
+                            Recordatorios: {formatReminderDays(upcomingReminderMap[exam.id] ?? [1])}
+                          </Text>
                           {exam.preparation_notes ? (
                             <Text className="mt-1 text-xs font-semibold text-pink-700">
                               {exam.preparation_notes}
@@ -1016,6 +1117,69 @@ export function ExamLogScreen() {
                   numberOfLines={3}
                   style={{ textAlignVertical: "top", minHeight: 80 }}
                 />
+              </View>
+
+              <View className="mt-4 rounded-2xl border border-pink-200 bg-white p-3">
+                <Text className="text-xs font-bold uppercase tracking-wide text-pink-700">
+                  Recordatorios personalizados
+                </Text>
+                <Text className="mt-1 text-xs font-semibold text-pink-600">
+                  Elige cuándo quieres recibir aviso antes del examen.
+                </Text>
+
+                <View className="mt-3 flex-row gap-2">
+                  {EXAM_REMINDER_OPTIONS.map((day) => {
+                    const active = selectedReminderDays.includes(day);
+
+                    return (
+                      <TouchableOpacity
+                        key={day}
+                        className={`rounded-full border px-3 py-1.5 ${
+                          active
+                            ? "border-pink-500 bg-pink-500"
+                            : "border-pink-200 bg-pink-50"
+                        }`}
+                        onPress={() => {
+                          setSelectedReminderDays((prev) => {
+                            if (prev.includes(day)) {
+                              return prev.filter((value) => value !== day);
+                            }
+
+                            return [...prev, day].sort(
+                              (left, right) => right - left,
+                            );
+                          });
+                        }}
+                      >
+                        <Text
+                          className={`text-xs font-bold ${
+                            active ? "text-white" : "text-pink-700"
+                          }`}
+                        >
+                          {day} días
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <TouchableOpacity
+                  className="mt-3 flex-row items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2"
+                  onPress={() => setAddUpcomingToCalendar((prev) => !prev)}
+                >
+                  <Text className="text-xs font-bold text-indigo-700">
+                    Agregar también al calendario
+                  </Text>
+                  <Ionicons
+                    name={
+                      addUpcomingToCalendar
+                        ? "checkmark-circle"
+                        : "ellipse-outline"
+                    }
+                    size={18}
+                    color={addUpcomingToCalendar ? "#4f46e5" : "#94a3b8"}
+                  />
+                </TouchableOpacity>
               </View>
 
               <TouchableOpacity

@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
+  Share,
   ScrollView,
   Text,
   TextInput,
@@ -12,6 +13,8 @@ import {
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -55,6 +58,11 @@ export function ProfileScreen() {
   const [draftMochiName, setDraftMochiName] = useState("");
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
+  const [shareAchievement, setShareAchievement] = useState<Achievement | null>(
+    null,
+  );
+  const [sharingAchievement, setSharingAchievement] = useState(false);
+  const shareCardRef = useRef<View | null>(null);
 
   const loadingScale = useSharedValue(1);
 
@@ -180,6 +188,36 @@ export function ProfileScreen() {
       setSavingName(false);
     }
   }, [draftMochiName, session?.user.id]);
+
+  const handleShareAchievement = useCallback(async () => {
+    if (!shareAchievement) return;
+
+    try {
+      setSharingAchievement(true);
+
+      const canShare = await Sharing.isAvailableAsync();
+
+      if (canShare && shareCardRef.current) {
+        const uri = await captureRef(shareCardRef, {
+          format: "png",
+          quality: 1,
+          result: "tmpfile",
+        });
+
+        await Sharing.shareAsync(uri, {
+          mimeType: "image/png",
+          dialogTitle: shareAchievement.title,
+        });
+      } else {
+        await Share.share({
+          title: shareAchievement.title,
+          message: `${shareAchievement.title}\n${shareAchievement.description}\n\n+${shareAchievement.points} puntos en Mochi`,
+        });
+      }
+    } finally {
+      setSharingAchievement(false);
+    }
+  }, [shareAchievement]);
 
   useFocusEffect(
     useCallback(() => {
@@ -312,6 +350,17 @@ export function ProfileScreen() {
             </Text>
           </TouchableOpacity>
 
+        <TouchableOpacity
+          className="mt-3 w-full flex-row items-center justify-center rounded-full border border-sky-200 bg-sky-50 px-4 py-2"
+          onPress={() => router.push("/analytics")}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="stats-chart" size={14} color="#0369a1" />
+          <Text className="ml-1.5 text-xs font-bold text-sky-800">
+            Ver analíticas
+          </Text>
+        </TouchableOpacity>
+
         <View className="mt-8">
           <Text className="mb-4 text-lg font-extrabold text-purple-900">
             Logros
@@ -350,13 +399,26 @@ export function ProfileScreen() {
                             color={isUnlocked ? "#7c3aed" : "#9ca3af"}
                           />
                         </View>
-                        {isUnlocked && (
-                          <View className="rounded-full bg-purple-200 px-2 py-0.5">
-                            <Text className="text-xs font-bold text-purple-800">
-                              +{achievement.points}
-                            </Text>
+                        {isUnlocked ? (
+                          <View className="flex-row items-center">
+                            <View className="rounded-full bg-purple-200 px-2 py-0.5">
+                              <Text className="text-xs font-bold text-purple-800">
+                                +{achievement.points}
+                              </Text>
+                            </View>
+                            <TouchableOpacity
+                              className="ml-2 h-7 w-7 items-center justify-center rounded-full bg-purple-200"
+                              onPress={() => setShareAchievement(achievement)}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <Ionicons
+                                name="share-social"
+                                size={13}
+                                color="#5b21b6"
+                              />
+                            </TouchableOpacity>
                           </View>
-                        )}
+                        ) : null}
                       </View>
                       <Text
                         className={`mt-2 text-xs font-bold ${isUnlocked ? "text-purple-900" : "text-gray-500"}`}
@@ -445,6 +507,79 @@ export function ProfileScreen() {
                 ) : (
                   <Text className="text-center text-base font-extrabold text-white">
                     Guardar
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={Boolean(shareAchievement)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!sharingAchievement) {
+            setShareAchievement(null);
+          }
+        }}
+      >
+        <View className="flex-1 items-center justify-center bg-black/30 px-6">
+          <View className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl">
+            <View
+              ref={shareCardRef}
+              collapsable={false}
+              className="rounded-3xl border-2 border-purple-200 bg-purple-50 p-5"
+            >
+              <View className="items-center">
+                <MochiCharacter mood="excited" size={76} />
+                <Text className="mt-3 text-xs font-bold uppercase text-purple-600">
+                  Logro desbloqueado
+                </Text>
+                <Text className="mt-1 text-center text-lg font-extrabold text-purple-900">
+                  {shareAchievement?.title}
+                </Text>
+              </View>
+
+              <Text className="mt-3 text-center text-sm font-semibold text-purple-700">
+                {shareAchievement?.description}
+              </Text>
+
+              <View className="mt-4 self-center rounded-full bg-yellow-200 px-4 py-1.5">
+                <Text className="text-xs font-extrabold text-yellow-900">
+                  +{shareAchievement?.points ?? 0} puntos
+                </Text>
+              </View>
+
+              <Text className="mt-4 text-center text-xs font-semibold text-purple-600">
+                {(profile?.full_name ?? "Mi progreso") + " en Mochi"}
+              </Text>
+            </View>
+
+            <View className="mt-4 flex-row">
+              <TouchableOpacity
+                className="mr-2 flex-1 rounded-2xl border-2 border-purple-200 bg-white px-4 py-3"
+                onPress={() => setShareAchievement(null)}
+                disabled={sharingAchievement}
+              >
+                <Text className="text-center text-base font-extrabold text-purple-700">
+                  Cerrar
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="ml-2 flex-1 rounded-2xl bg-purple-500 px-4 py-3"
+                onPress={() => {
+                  void handleShareAchievement();
+                }}
+                disabled={sharingAchievement}
+              >
+                {sharingAchievement ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text className="text-center text-base font-extrabold text-white">
+                    Compartir
                   </Text>
                 )}
               </TouchableOpacity>

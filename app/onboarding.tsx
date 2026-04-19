@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -23,6 +23,7 @@ import {
   saveNotificationPrefs,
   scheduleMorningReminder,
 } from "@/src/shared/lib/notifications";
+import { TourProvider, TourZone, useTour } from "react-native-lumen";
 
 type Step = "profile" | "modules";
 
@@ -132,8 +133,11 @@ const moduleOptions: ModuleOption[] = [
   },
 ];
 
-export function OnboardingScreen() {
+const moduleTourOrder = moduleOptions.map((module) => `module-${module.key}`);
+
+function OnboardingScreenContent() {
   const insets = useSafeAreaInsets();
+  const { start: startTour } = useTour();
   const [step, setStep] = useState<Step>("profile");
   const [fullName, setFullName] = useState("");
   const [wakeUpTime, setWakeUpTime] = useState("05:20");
@@ -143,6 +147,7 @@ export function OnboardingScreen() {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasStartedModuleTour, setHasStartedModuleTour] = useState(false);
 
   const formIsValid = useMemo(() => fullName.trim().length > 1, [fullName]);
 
@@ -171,6 +176,21 @@ export function OnboardingScreen() {
     setError(null);
     setStep("modules");
   };
+
+  useEffect(() => {
+    if (step !== "modules" || hasStartedModuleTour || loading) {
+      return;
+    }
+
+    setHasStartedModuleTour(true);
+    const timeoutId = setTimeout(() => {
+      startTour("module-study_enabled");
+    }, 260);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [hasStartedModuleTour, loading, startTour, step]);
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -387,65 +407,73 @@ export function OnboardingScreen() {
           </View>
 
           <View className="gap-3">
-            {moduleOptions.map((module) => {
+            {moduleOptions.map((module, index) => {
               const isSelected = selectedModules.has(module.key);
               const isReadOnly = module.editable === false;
               return (
-                <TouchableOpacity
+                <TourZone
                   key={module.key}
-                  className={`flex-row items-center rounded-2xl border-2 p-4 ${
-                    isSelected
-                      ? `${module.borderColor} ${module.selectedBg}`
-                      : "border-slate-200 bg-white"
-                  }`}
-                  onPress={() => toggleModule(module.key)}
-                  activeOpacity={0.85}
-                  disabled={isReadOnly}
+                  stepKey={`module-${module.key}`}
+                  name={module.label}
+                  description={module.description}
+                  order={index + 1}
+                  zonePadding={6}
                 >
-                  <View
-                    className={`mr-4 h-11 w-11 items-center justify-center rounded-xl ${
-                      isSelected ? "bg-white" : "bg-slate-100"
-                    }`}
-                  >
-                    <Ionicons
-                      name={module.icon}
-                      size={22}
-                      color={isSelected ? module.iconColor : "#94a3b8"}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className={`text-sm font-extrabold ${
-                        isSelected ? "text-slate-900" : "text-slate-500"
-                      }`}
-                    >
-                      {module.label}
-                    </Text>
-                    <Text
-                      className={`mt-0.5 text-xs font-semibold ${
-                        isSelected ? "text-slate-600" : "text-slate-400"
-                      }`}
-                    >
-                      {module.description}
-                    </Text>
-                    {isReadOnly ? (
-                      <Text className="mt-1 text-[11px] font-bold text-amber-700">
-                        Solo informativo
-                      </Text>
-                    ) : null}
-                  </View>
-                  <View
-                    className={`h-6 w-6 items-center justify-center rounded-full border-2 ${
+                  <TouchableOpacity
+                    className={`flex-row items-center rounded-2xl border-2 p-4 ${
                       isSelected
-                        ? "border-purple-500 bg-purple-500"
-                        : "border-slate-300 bg-white"
+                        ? `${module.borderColor} ${module.selectedBg}`
+                        : "border-slate-200 bg-white"
                     }`}
+                    onPress={() => toggleModule(module.key)}
+                    activeOpacity={0.85}
+                    disabled={isReadOnly}
                   >
-                    {isSelected && !isReadOnly ? (
-                      <Ionicons name="checkmark" size={14} color="white" />
-                    ) : null}
-                  </View>
-                </TouchableOpacity>
+                    <View
+                      className={`mr-4 h-11 w-11 items-center justify-center rounded-xl ${
+                        isSelected ? "bg-white" : "bg-slate-100"
+                      }`}
+                    >
+                      <Ionicons
+                        name={module.icon}
+                        size={22}
+                        color={isSelected ? module.iconColor : "#94a3b8"}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text
+                        className={`text-sm font-extrabold ${
+                          isSelected ? "text-slate-900" : "text-slate-500"
+                        }`}
+                      >
+                        {module.label}
+                      </Text>
+                      <Text
+                        className={`mt-0.5 text-xs font-semibold ${
+                          isSelected ? "text-slate-600" : "text-slate-400"
+                        }`}
+                      >
+                        {module.description}
+                      </Text>
+                      {isReadOnly ? (
+                        <Text className="mt-1 text-[11px] font-bold text-amber-700">
+                          Solo informativo
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View
+                      className={`h-6 w-6 items-center justify-center rounded-full border-2 ${
+                        isSelected
+                          ? "border-purple-500 bg-purple-500"
+                          : "border-slate-300 bg-white"
+                      }`}
+                    >
+                      {isSelected && !isReadOnly ? (
+                        <Ionicons name="checkmark" size={14} color="white" />
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                </TourZone>
               );
             })}
           </View>
@@ -496,6 +524,26 @@ export function OnboardingScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+export function OnboardingScreen() {
+  return (
+    <TourProvider
+      stepsOrder={moduleTourOrder}
+      config={{
+        backdropOpacity: 0.58,
+        enableGlow: true,
+        labels: {
+          next: "Siguiente",
+          previous: "Atras",
+          finish: "Listo",
+          skip: "Cerrar",
+        },
+      }}
+    >
+      <OnboardingScreenContent />
+    </TourProvider>
   );
 }
 

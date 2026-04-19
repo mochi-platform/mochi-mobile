@@ -30,6 +30,7 @@ const STORAGE_KEY = {
   HABIT_ITEM_PREFIX: "notifications:habit_item:",
   COOKING_ENABLED: "notifications:cooking_enabled",
   COOKING_TIME: "notifications:cooking_time",
+  EXAM_REMINDER_PREFIX: "notifications:exam_reminder:",
 } as const;
 
 // ─── Notification identifiers ────────────────────────────────────────────────
@@ -59,7 +60,7 @@ export type NotificationPrefs = {
 
 export async function requestNotificationPermissions(): Promise<PermissionStatus> {
   const Notifications = await getNotificationsModule();
-  if (!Notifications) return "undetermined";
+  if (!Notifications) return "denied" as PermissionStatus;
 
   const { status } = await Notifications.requestPermissionsAsync({
     ios: {
@@ -73,7 +74,7 @@ export async function requestNotificationPermissions(): Promise<PermissionStatus
 
 export async function getNotificationPermissionStatus(): Promise<PermissionStatus> {
   const Notifications = await getNotificationsModule();
-  if (!Notifications) return "undetermined";
+  if (!Notifications) return "denied" as PermissionStatus;
 
   const { status } = await Notifications.getPermissionsAsync();
   return status;
@@ -158,6 +159,23 @@ function habitNotificationStorageKey(habitId: string): string {
   return `${STORAGE_KEY.HABIT_ITEM_PREFIX}${habitId}`;
 }
 
+function examReminderStorageKey(examId: string): string {
+  return `${STORAGE_KEY.EXAM_REMINDER_PREFIX}${examId}`;
+}
+
+function sanitizeExamReminderDays(days: number[] | undefined): number[] {
+  const safeDays = (days ?? [1])
+    .filter((day) => Number.isFinite(day))
+    .map((day) => Math.round(day))
+    .filter((day) => day >= 1 && day <= 30);
+
+  if (safeDays.length === 0) {
+    return [1];
+  }
+
+  return Array.from(new Set(safeDays)).sort((left, right) => right - left);
+}
+
 export async function loadHabitNotificationMap(): Promise<
   Record<string, boolean>
 > {
@@ -194,6 +212,36 @@ export async function removeHabitNotificationPreference(
   habitId: string,
 ): Promise<void> {
   await AsyncStorage.removeItem(habitNotificationStorageKey(habitId));
+}
+
+export async function loadExamReminderDays(examId: string): Promise<number[]> {
+  try {
+    const raw = await AsyncStorage.getItem(examReminderStorageKey(examId));
+    if (!raw) {
+      return [1];
+    }
+
+    const parsed = JSON.parse(raw) as { days?: unknown };
+    if (!Array.isArray(parsed.days)) {
+      return [1];
+    }
+
+    return sanitizeExamReminderDays(
+      parsed.days.filter((value): value is number => typeof value === "number"),
+    );
+  } catch {
+    return [1];
+  }
+}
+
+export async function saveExamReminderDays(
+  examId: string,
+  days: number[],
+): Promise<void> {
+  await AsyncStorage.setItem(
+    examReminderStorageKey(examId),
+    JSON.stringify({ days: sanitizeExamReminderDays(days) }),
+  );
 }
 
 // ─── Parse helpers ───────────────────────────────────────────────────────────
@@ -363,51 +411,99 @@ export async function scheduleExamReminder(
   examId: string,
   subject: string,
   examDate: string,
+  options?: { daysBefore?: number[] },
 ): Promise<void> {
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
 
-  const identifier = `exam-${examId}`;
-  await Notifications.cancelScheduledNotificationAsync(identifier).catch(
-    (error) =>
-      console.error(
-        "[Notifications] error cancelando recordatorio de examen previo:",
-        error instanceof Error ? error.message : String(error),
-      ),
-  );
+  const reminderDays = sanitizeExamReminderDays(options?.daysBefore);
+  await cancelExamReminder(examId);
+  await saveExamReminderDays(examId, reminderDays);
 
-  const exam = new Date(`${examDate}T20:00:00`);
-  exam.setDate(exam.getDate() - 1);
-  if (Number.isNaN(exam.getTime()) || exam.getTime() <= Date.now()) {
-    return;
+  for (const daysBefore of reminderDays) {
+    const reminderDate = new Date(`${examDate}T20:00:00`);
+    reminderDate.setDate(reminderDate.getDate() - daysBefore);
+
+    if (
+      Number.isNaN(reminderDate.getTime()) ||
+      reminderDate.getTime() <= Date.now()
+    ) {
+      continue;
+    }
+
+    const title =
+      daysBefore === 1
+        ? `Examen de ${subject} manana`
+        : `Examen de ${subject} en ${daysBefore} dias`;
+    const body =
+      daysBefore === 1
+        ? "Prepara tu repaso final para llegar con confianza."
+        : "Organiza tus bloques para llegar tranquila y preparada.";
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: `exam-${examId}-${daysBefore}d`,
+      content: {
+        title,
+        body,
+        sound: true,
+        data: { screen: "exam-log", examId },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: reminderDate,
+      },
+    });
   }
-
-  await Notifications.scheduleNotificationAsync({
-    identifier,
-    content: {
-      title: `Examen de ${subject} mañana`,
-      body: "Prepara tu repaso final para llegar con confianza.",
-      sound: true,
-      data: { screen: "exam-log", examId },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: exam,
-    },
-  });
 }
 
 export async function cancelExamReminder(examId: string): Promise<void> {
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
 
-  await Notifications.cancelScheduledNotificationAsync(`exam-${examId}`).catch(
-    (error) =>
-      console.error(
-        "[Notifications] error cancelando recordatorio de examen:",
-        error instanceof Error ? error.message : String(error),
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const identifiers = scheduled
+    .map((notification) => notification.identifier)
+    .filter((identifier) => identifier.startsWith(`exam-${examId}-`));
+
+  await Promise.all(
+    identifiers.map((identifier) =>
+      Notifications.cancelScheduledNotificationAsync(identifier).catch((error) =>
+        console.error(
+          "[Notifications] error cancelando recordatorio de examen:",
+          error instanceof Error ? error.message : String(error),
+        ),
       ),
+    ),
   );
+
+  await AsyncStorage.removeItem(examReminderStorageKey(examId));
+}
+
+export async function sendPomodoroPhaseNotification(
+  phase: "focus" | "break",
+  cycle: number,
+): Promise<void> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
+  const title =
+    phase === "focus"
+      ? "Pomodoro: vuelve al enfoque"
+      : "Pomodoro: hora de descanso";
+  const body =
+    phase === "focus"
+      ? `Inicia el ciclo ${cycle}. Tu progreso cuenta.`
+      : "Respira, estira el cuerpo y recarga energia.";
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      sound: true,
+      data: { screen: "study" },
+    },
+    trigger: null,
+  });
 }
 
 // ─── Habit reminder ──────────────────────────────────────────────────────────
@@ -552,7 +648,7 @@ export async function scheduleCookingReminder(time: string): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIFICATION_ID.COOKING,
     content: {
-      title: "¿Qué vas a cocinar hoy? 🍳",
+      title: "Que vas a cocinar hoy?",
       body: "Mochi tiene ideas deliciosas esperándote",
       sound: true,
       data: { screen: "cooking" },

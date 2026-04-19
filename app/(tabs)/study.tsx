@@ -368,6 +368,26 @@ export function StudyScreen() {
 					subtitleClassName="text-sm font-semibold text-pink-500"
 				/>
 
+				<TouchableOpacity
+					className="mt-4 rounded-3xl border-2 border-indigo-200 bg-indigo-50 p-4"
+					onPress={() => router.push("/weekly-planner")}
+					activeOpacity={0.85}
+				>
+					<View className="flex-row items-center justify-between">
+						<View className="flex-1 pr-3">
+							<Text className="text-base font-extrabold text-indigo-900">
+								Planner semanal con IA
+							</Text>
+							<Text className="mt-1 text-xs font-semibold text-indigo-700">
+								Genera bloques proactivos segun examenes, ciclo y tu energia.
+							</Text>
+						</View>
+						<View className="h-10 w-10 items-center justify-center rounded-2xl bg-indigo-200">
+							<Ionicons name="sparkles" size={18} color="#4338ca" />
+						</View>
+					</View>
+				</TouchableOpacity>
+
 				{!loading && (totalSessions > 0 || totalExams > 0) && (
 					<View className="mt-4 flex-row gap-3">
 						<View className="flex-1 rounded-2xl border-2 border-fuchsia-200 bg-fuchsia-100 p-4">
