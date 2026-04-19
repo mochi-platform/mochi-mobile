@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { MergedTask } from "@/src/shared/lib/plannerLogic";
-import type { StudyBlock, Routine, Goal, Habit } from "@mochi/supabase/types";
+import type { StudyBlock, Routine, Goal, Habit } from "@/src/shared/types/database";
 
-export function useTodaysPlannedTasks() {
+interface UseTodaysPlannedTasksResult {
+  tasks: MergedTask[];
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export function useTodaysPlannedTasks(): UseTodaysPlannedTasksResult {
   const [tasks, setTasks] = useState<MergedTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -30,7 +36,8 @@ export function useTodaysPlannedTasks() {
           .from("study_blocks")
           .select("*")
           .eq("user_id", userId)
-          .eq("day_of_week", today);
+          .eq("day_of_week", today)
+          .returns<StudyBlock[]>();
 
         if (studyError && studyError.code !== "PGRST116") {
           throw studyError;
@@ -40,7 +47,8 @@ export function useTodaysPlannedTasks() {
         const { data: routines, error: routinesError } = await supabase
           .from("routines")
           .select("*")
-          .eq("user_id", userId);
+          .eq("user_id", userId)
+          .returns<Routine[]>();
 
         if (routinesError && routinesError.code !== "PGRST116") {
           throw routinesError;
@@ -48,14 +56,15 @@ export function useTodaysPlannedTasks() {
 
         // Filter routines by today's day of week
         const todaysRoutines =
-          (routines as Routine[])?.filter((r) => r.days.includes(today)) ?? [];
+          routines?.filter((r) => r.days.includes(today)) ?? [];
 
         // Fetch goals
         const { data: goals, error: goalsError } = await supabase
           .from("goals")
           .select("*")
           .eq("user_id", userId)
-          .eq("is_completed", false);
+          .eq("is_completed", false)
+          .returns<Goal[]>();
 
         if (goalsError && goalsError.code !== "PGRST116") {
           throw goalsError;
@@ -65,7 +74,8 @@ export function useTodaysPlannedTasks() {
         const { data: habits, error: habitsError } = await supabase
           .from("habits")
           .select("*")
-          .eq("user_id", userId);
+          .eq("user_id", userId)
+          .returns<Habit[]>();
 
         if (habitsError && habitsError.code !== "PGRST116") {
           throw habitsError;
@@ -73,7 +83,7 @@ export function useTodaysPlannedTasks() {
 
         // Merge all tasks
         const mergedTasks: MergedTask[] = [
-          ...((studyBlocks as StudyBlock[])?.map((sb) => ({
+          ...(studyBlocks?.map((sb) => ({
             id: sb.id,
             type: "study" as const,
             title: sb.subject,
@@ -84,13 +94,13 @@ export function useTodaysPlannedTasks() {
             type: "routine" as const,
             title: r.name,
           })),
-          ...((goals as Goal[])?.map((g) => ({
+          ...(goals?.map((g) => ({
             id: g.id,
             type: "goal" as const,
             title: g.title,
             description: g.description ?? undefined,
           })) ?? []),
-          ...((habits as Habit[])?.map((h) => ({
+          ...(habits?.map((h) => ({
             id: h.id,
             type: "habit" as const,
             title: h.name,
@@ -101,7 +111,7 @@ export function useTodaysPlannedTasks() {
         setError(null);
       } catch (err) {
         setError(
-          err instanceof Error ? err : new Error("Error fetching tasks"),
+          err instanceof Error ? err : new Error("Error al cargar tareas"),
         );
         console.error(
           "[useTodaysPlannedTasks] error cargando tareas:",

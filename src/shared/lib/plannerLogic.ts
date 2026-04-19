@@ -1,4 +1,6 @@
-export type CyclePhase = "menstruation" | "follicular" | "ovulation" | "luteal";
+import type { CyclePhase } from "@/src/shared/lib/healthConnect";
+
+export type { CyclePhase };
 
 export interface TaskScore {
   id: string;
@@ -68,14 +70,16 @@ export function scoreTodaysTasks(
 
 function typeScoreByCycle(phase: CyclePhase): number {
   switch (phase) {
-    case "menstruation":
+    case "menstrual":
       return -20;
-    case "follicular":
+    case "folicular":
       return 10;
-    case "ovulation":
+    case "ovulatoria":
       return 20;
-    case "luteal":
+    case "lutea":
       return -10;
+    case "unknown":
+      return 0;
     default:
       return 0;
   }

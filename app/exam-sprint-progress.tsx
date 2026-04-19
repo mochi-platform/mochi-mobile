@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -17,7 +18,6 @@ import {
 } from "react-native-safe-area-context";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useExamSprints } from "@/src/shared/hooks/useExamSprints";
-import { useExamSprintProgress } from "@/src/shared/hooks/useExamSprintProgress";
 import { SprintTracker } from "@/src/shared/components/SprintTracker";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 
@@ -50,6 +50,9 @@ export function ExamSprintProgressScreen() {
       s.exam_id === examId &&
       new Date(s.start_date) <= new Date() &&
       new Date(s.end_date) >= new Date(),
+  );
+  const pastSprints = sprints.filter(
+    (s) => s.exam_id === examId && s.id !== activeSprint?.id,
   );
 
   const handleCreateSprint = async () => {
@@ -107,11 +110,10 @@ export function ExamSprintProgressScreen() {
           <View className="mb-6 mt-4">
             <Pressable
               onPress={() => router.back()}
-              className="mb-4 active:opacity-70"
+              className="mb-4 flex-row items-center gap-1 active:opacity-70"
             >
-              <Text className="text-base font-semibold text-green-700">
-                ← Volver
-              </Text>
+              <Ionicons name="chevron-back" size={18} color="#15803d" />
+              <Text className="text-base font-semibold text-green-700">Volver</Text>
             </Pressable>
 
             <View>
@@ -168,14 +170,12 @@ export function ExamSprintProgressScreen() {
           )}
 
           {/* Past Sprints */}
-          {sprints.length > 1 && (
+          {pastSprints.length > 0 && (
             <>
               <Text className="mt-8 mb-3 text-lg font-bold text-green-900">
                 Sprints Anteriores
               </Text>
-              {sprints
-                .filter((s) => s.exam_id === examId && s !== activeSprint)
-                .map((sprint) => (
+              {pastSprints.map((sprint) => (
                   <View
                     key={sprint.id}
                     className="mb-3 p-3 rounded-lg bg-white border border-green-100"
@@ -206,7 +206,7 @@ export function ExamSprintProgressScreen() {
                 onPress={() => setShowCreateModal(false)}
                 className="rounded-full p-2 active:bg-gray-100"
               >
-                <Text className="text-2xl text-gray-600">✕</Text>
+                <Ionicons name="close" size={24} color="#4b5563" />
               </Pressable>
             </View>
 
@@ -272,7 +272,11 @@ export function ExamSprintProgressScreen() {
               </View>
 
               <Pressable
-                onPress={handleCreateSprint}
+                onPress={() => {
+                  void (async () => {
+                    await handleCreateSprint();
+                  })();
+                }}
                 disabled={creating}
                 className={`rounded-lg py-3 ${
                   creating ? "bg-green-300" : "bg-green-500"

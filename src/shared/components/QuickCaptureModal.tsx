@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -85,7 +86,7 @@ export function QuickCaptureModal({
               onPress={handleCancel}
               className="rounded-full p-2 active:bg-gray-100"
             >
-              <Text className="text-2xl text-gray-600">✕</Text>
+              <Ionicons name="close" size={24} color="#4b5563" />
             </Pressable>
           </View>
 
@@ -113,7 +114,11 @@ export function QuickCaptureModal({
                   </Pressable>
 
                   <Pressable
-                    onPress={handleAnalyze}
+                    onPress={() => {
+                      void (async () => {
+                        await handleAnalyze();
+                      })();
+                    }}
                     disabled={convertingNote || !noteText.trim()}
                     className="flex-1 bg-purple-500 rounded-lg py-3 active:opacity-70 disabled:opacity-50"
                   >
@@ -136,7 +141,7 @@ export function QuickCaptureModal({
                     Sugerencia:
                   </Text>
                   <Text className="text-sm font-semibold text-gray-800 mb-2">
-                    {conversionResult.data?.title as string}
+                    {conversionResult.data.title || "Sin título sugerido"}
                   </Text>
                   <Text className="text-xs text-purple-600">
                     Tipo: {getTipoLabel(conversionResult.type)}

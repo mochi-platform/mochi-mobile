@@ -1,4 +1,5 @@
 import { Modal, View, Text, Pressable, ScrollView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import type { StreakRecoveryPlan } from "@mochi/supabase/types";
 
 interface RecoveryPlanModalProps {
@@ -33,9 +34,12 @@ export function RecoveryPlanModal({
           {/* Recovery Tasks */}
           <ScrollView className="mb-4 max-h-64">
             {plan.recovery_tasks.map((task, index) => (
-              <View
+              <LinearGradient
                 key={index}
-                className="mb-3 p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-200"
+                colors={["#fdf2f8", "#f3e8ff"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="mb-3 rounded-xl border border-pink-200 p-3"
               >
                 <View className="flex-row items-start gap-2">
                   <View className="bg-purple-500 rounded-full w-8 h-8 items-center justify-center mt-0.5">
@@ -54,7 +58,7 @@ export function RecoveryPlanModal({
                     </View>
                   </View>
                 </View>
-              </View>
+              </LinearGradient>
             ))}
           </ScrollView>
 
@@ -62,7 +66,7 @@ export function RecoveryPlanModal({
           <View className="bg-yellow-50 rounded-xl p-3 mb-4 border border-yellow-200">
             <Text className="text-xs text-yellow-800">
               <Text className="font-semibold">Pista:</Text> Completa estos 3
-              días y tu racha estará de vuelta. Tú puedes, amiga 💪
+              días y tu racha estará de vuelta. Tú puedes, amiga.
             </Text>
           </View>
 

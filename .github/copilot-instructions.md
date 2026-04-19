@@ -77,6 +77,12 @@ mochi/
 - `routines` (id, user_id, name, days[])
 - `routine_exercises` (id, routine_id, exercise_id, order_index)
 - `routine_logs` (id, user_id, routine_id, completed_at)
+- `exam_prep_sprints` (id, user_id, exam_id, start_date, end_date, daily_target_hours, target_grade)
+- `exam_sprint_milestones` (id, sprint_id, milestone_number, title, due_date, is_completed)
+- `flashcard_decks` (id, user_id, title, subject, is_archived)
+- `streak_recovery_plans` (id, user_id, recovery_tasks, is_active, created_at)
+- `energy_levels` (id, user_id, logged_date, overall_rating, notes)
+- `engagement_events` (id, user_id, event_type, payload, created_at)
 
 ### Gamification
 - `achievements` (id, key, title, description, icon, category, points, is_secret)

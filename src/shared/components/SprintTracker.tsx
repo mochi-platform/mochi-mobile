@@ -1,9 +1,10 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Text, View, Pressable, ScrollView } from "react-native";
 import { useExamSprintProgress } from "@/src/shared/hooks/useExamSprintProgress";
-import type { ExamPrepSprint } from "@mochi/supabase/types";
+import type { ExamPrepSprint, ExamSprintMilestone } from "@mochi/supabase/types";
 
 interface SprintTrackerProps {
-  sprint: ExamPrepSprint & { milestones?: any[] };
+  sprint: ExamPrepSprint & { milestones?: ExamSprintMilestone[] };
 }
 
 export function SprintTracker({ sprint }: SprintTrackerProps) {
@@ -22,8 +23,10 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
   // Calculate total days in sprint
   const startDate = new Date(sprint.start_date);
   const endDate = new Date(sprint.end_date);
-  const totalDays = Math.ceil(
-    (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+  const totalDays = Math.max(
+    1,
+    Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) +
+      1,
   );
 
   // Calculate completed days
@@ -81,7 +84,9 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
               <Text className="font-semibold text-center text-xs">
                 {day.dayNumber}
               </Text>
-              {day.completed && <Text className="text-lg">✓</Text>}
+              {day.completed && (
+                <Ionicons name="checkmark" size={16} color="#16a34a" />
+              )}
             </Pressable>
           ))}
         </View>

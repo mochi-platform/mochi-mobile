@@ -25,7 +25,7 @@ import {
   getLevelProgress,
   getMochiLevel,
   MOCHI_LEVELS,
-} from "@mochi/supabase/levels";
+} from "@/src/shared/lib/supabase/levels";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import type {
