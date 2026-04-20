@@ -1,5 +1,10 @@
 # Suscripciones premium para IA
 
+## Alcance de repositorio (override)
+
+- Este documento asume repositorios individuales (sin Turborepo).
+- La implementación descrita aquí corresponde al repo `mochi-mobile`.
+
 ## Resumen
 Implementar una suscripción premium para reducir fricción de uso de IA, habilitar mayores límites de consumo y crear una vía de monetización sostenible.
 

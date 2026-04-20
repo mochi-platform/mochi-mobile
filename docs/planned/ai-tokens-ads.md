@@ -1,5 +1,10 @@
 # Créditos de IA por anuncios recompensados
 
+## Alcance de repositorio (override)
+
+- Este documento asume repositorios individuales (sin Turborepo).
+- La implementación descrita aquí corresponde al repo `mochi-mobile`.
+
 ## Resumen
 Implementar un sistema de créditos de IA donde la usuaria obtiene créditos al completar anuncios recompensados.
 
