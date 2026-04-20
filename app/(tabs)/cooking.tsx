@@ -28,9 +28,11 @@ import { FloatingActionButton } from "@/src/shared/components/FloatingActionButt
 import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { TabHeader } from "@/src/shared/components/TabHeader";
+import { getRecipeGenerationTypeFromPrompt } from "@/src/shared/lib/recipeCatalog";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
 import type {
   Recipe,
+  RecipePublication,
   AIRecipeResponse,
   RecipeDifficulty,
 } from "@/src/shared/types/database";
@@ -85,27 +87,6 @@ const listDifficultyOptions: Array<
   { value: "media", label: "Media" },
   { value: "difícil", label: "Difícil" },
 ];
-
-const generationTypeValues: RecipeGenerationType[] = [
-  "normal",
-  "keto",
-  "vegetariana",
-  "vegana",
-  "alta_proteina",
-];
-
-function getRecipeGenerationType(
-  userPrompt: string | null,
-): RecipeGenerationType | "normal" {
-  const match = userPrompt?.match(/Tipo:\s*([a-z_]+)/i);
-  const candidate = match?.[1]?.toLowerCase() as RecipeGenerationType | undefined;
-
-  if (!candidate || !generationTypeValues.includes(candidate)) {
-    return "normal";
-  }
-
-  return candidate;
-}
 
 function formatRecipeTag(tag: string): string {
   const normalized = tag.trim();
@@ -237,6 +218,138 @@ function RecipeCard({
   );
 }
 
+function PublicRecipeCard({
+  publication,
+  onPress,
+  imageUrl,
+  imageLoading,
+  onLoadImage,
+  isOwned,
+}: {
+  publication: RecipePublication;
+  onPress: () => void;
+  imageUrl: string | null;
+  imageLoading: boolean;
+  onLoadImage: (recipeId: string, title: string) => Promise<void>;
+  isOwned: boolean;
+}) {
+  const diff = difficultyConfig[publication.difficulty] ?? difficultyConfig["media"];
+  const totalTime =
+    publication.total_time_minutes > 0
+      ? publication.total_time_minutes
+      : publication.prep_time_minutes + publication.cook_time_minutes;
+
+  useEffect(() => {
+    void onLoadImage(publication.id, publication.title);
+  }, [onLoadImage, publication.id, publication.title]);
+
+  return (
+    <TouchableOpacity
+      className="mb-3 rounded-3xl border-2 border-fuchsia-200 bg-white p-4"
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      <View className="mb-3 h-28 overflow-hidden rounded-2xl bg-fuchsia-100">
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl }}
+            className="h-full w-full"
+            resizeMode="cover"
+          />
+        ) : (
+          <View className="h-full items-center justify-center">
+            <MochiCharacter mood="thinking" size={48} />
+            {imageLoading ? (
+              <Text className="mt-1 text-xs font-semibold text-fuchsia-700">
+                Buscando imagen...
+              </Text>
+            ) : null}
+          </View>
+        )}
+      </View>
+
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1 pr-3">
+          <Text
+            className="text-base font-extrabold text-fuchsia-950"
+            numberOfLines={2}
+          >
+            {publication.title}
+          </Text>
+          {publication.description ? (
+            <Text
+              className="mt-1 text-xs font-semibold text-fuchsia-700"
+              numberOfLines={2}
+            >
+              {publication.description}
+            </Text>
+          ) : null}
+          <Text className="mt-1 text-[11px] font-bold text-fuchsia-500">
+            {isOwned
+              ? "Tu receta en el catálogo público"
+              : publication.owner_name
+                ? `Compartida por ${publication.owner_name}`
+                : "Compartida por la comunidad"}
+          </Text>
+        </View>
+        <Ionicons name="globe" size={18} color="#c026d3" />
+      </View>
+
+      <View className="mt-3 flex-row flex-wrap items-center gap-2">
+        {totalTime > 0 && (
+          <View className="flex-row items-center rounded-full bg-fuchsia-100 px-3 py-1">
+            <Ionicons name="time" size={12} color="#a21caf" />
+            <Text className="ml-1 text-xs font-bold text-fuchsia-800">
+              {totalTime} min
+            </Text>
+          </View>
+        )}
+        <View className={`rounded-full px-3 py-1 ${diff.className}`}>
+          <Text className={`text-xs font-bold ${diff.textClass}`}>
+            {diff.label}
+          </Text>
+        </View>
+        {publication.servings > 0 && (
+          <View className="flex-row items-center rounded-full bg-fuchsia-100 px-3 py-1">
+            <Ionicons name="people" size={12} color="#a21caf" />
+            <Text className="ml-1 text-xs font-bold text-fuchsia-800">
+              {publication.servings} porc.
+            </Text>
+          </View>
+        )}
+        {publication.generation_type !== "normal" ? (
+          <View className="rounded-full bg-fuchsia-100 px-3 py-1">
+            <Text className="text-xs font-bold text-fuchsia-800">
+              {formatRecipeTag(publication.generation_type.replace(/_/g, " "))}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
+      {publication.tags.length > 0 && (
+        <View className="mt-2 flex-row flex-wrap gap-1">
+          {publication.tags.slice(0, 3).map((tag, index) => (
+            <View
+              key={`${tag}-${index}`}
+              className="shrink-0 self-start rounded-full border border-fuchsia-200 px-2.5 py-1"
+            >
+              <Text className="text-xs font-semibold leading-4 text-fuchsia-600">
+                {formatRecipeTag(tag)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <View className="mt-3 rounded-2xl bg-fuchsia-500 px-4 py-2.5">
+        <Text className="text-center text-sm font-extrabold text-white">
+          {isOwned ? "Abrir receta" : "Usar receta"}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export function CookingScreen() {
   const { session } = useSession();
   const { showAchievement } = useAchievement();
@@ -245,8 +358,11 @@ export function CookingScreen() {
     useCycleRecommendation("cooking");
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [publicRecipes, setPublicRecipes] = useState<RecipePublication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [publicLoading, setPublicLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [publicError, setPublicError] = useState<string | null>(null);
 
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -300,10 +416,34 @@ export function CookingScreen() {
     }
   }, [userId]);
 
+  const loadPublicRecipes = useCallback(async () => {
+    try {
+      setPublicLoading(true);
+      setPublicError(null);
+      const { data, error: fetchError } = await supabase
+        .from("recipe_publications")
+        .select("*")
+        .eq("is_published", true)
+        .order("published_at", { ascending: false });
+
+      if (fetchError) throw fetchError;
+      setPublicRecipes((data ?? []) as RecipePublication[]);
+    } catch (err) {
+      setPublicError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo cargar el catálogo público",
+      );
+    } finally {
+      setPublicLoading(false);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
+      void loadPublicRecipes();
       void loadRecipes();
-    }, [loadRecipes]),
+    }, [loadPublicRecipes, loadRecipes]),
   );
 
   useEffect(() => {
@@ -355,7 +495,7 @@ export function CookingScreen() {
 
       if (
         typeFilter !== "all" &&
-        getRecipeGenerationType(recipe.user_prompt) !== typeFilter
+        getRecipeGenerationTypeFromPrompt(recipe.user_prompt) !== typeFilter
       ) {
         return false;
       }
@@ -376,6 +516,42 @@ export function CookingScreen() {
       return haystack.includes(normalizedSearch);
     });
   }, [difficultyFilter, favoritesOnly, recipes, searchQuery, typeFilter]);
+
+  const filteredPublicRecipes = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return publicRecipes.filter((publication) => {
+      if (
+        difficultyFilter !== "all" &&
+        publication.difficulty !== difficultyFilter
+      ) {
+        return false;
+      }
+
+      if (
+        typeFilter !== "all" &&
+        publication.generation_type !== typeFilter
+      ) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const haystack = [
+        publication.title,
+        publication.description ?? "",
+        publication.cuisine_type ?? "",
+        publication.tags.join(" "),
+        publication.owner_name ?? "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(normalizedSearch);
+    });
+  }, [difficultyFilter, publicRecipes, searchQuery, typeFilter]);
 
   const handleGenerate = async () => {
     if (!userId || !prompt.trim()) return;
@@ -473,6 +649,49 @@ export function CookingScreen() {
       setGeneratingStep("");
     }
   };
+
+  const handleUsePublicRecipe = useCallback(
+    async (publication: RecipePublication) => {
+      if (!userId) {
+        showAlert({
+          title: "Inicia sesión",
+          message: "Necesitas iniciar sesión para guardar una copia de la receta.",
+          buttons: [{ text: "Entendido", style: "cancel" }],
+        });
+        return;
+      }
+
+      if (publication.owner_id === userId) {
+        router.push(`/recipe-detail?recipeId=${publication.source_recipe_id}`);
+        return;
+      }
+
+      try {
+        const { data: recipeId, error: importError } = await supabase.rpc(
+          "import_public_recipe",
+          { p_publication_id: publication.id },
+        );
+
+        if (importError) throw importError;
+
+        const newRecipeId = recipeId as string | null;
+        if (!newRecipeId) {
+          throw new Error("No se pudo crear la copia de la receta");
+        }
+
+        await loadRecipes();
+        router.push(`/recipe-detail?recipeId=${newRecipeId}`);
+      } catch (err) {
+        showAlert({
+          title: "No se pudo usar la receta",
+          message:
+            err instanceof Error ? err.message : "Intenta de nuevo más tarde",
+          buttons: [{ text: "Entendido", style: "destructive" }],
+        });
+      }
+    },
+    [loadRecipes, showAlert, userId],
+  );
 
   return (
     <>
@@ -642,6 +861,68 @@ export function CookingScreen() {
               ))
             )}
           </View>
+
+          <View className="mt-8 rounded-3xl border-2 border-fuchsia-200 bg-white p-4">
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="text-lg font-extrabold text-fuchsia-950">
+                  Catálogo público
+                </Text>
+                <Text className="mt-1 text-xs font-semibold text-fuchsia-700">
+                  Recetas compartidas por la comunidad.
+                </Text>
+              </View>
+              <Ionicons name="globe" size={20} color="#c026d3" />
+            </View>
+
+            <View className="mt-4">
+              {publicLoading ? (
+                <View className="items-center py-10">
+                  <MochiCharacter mood="thinking" size={72} />
+                  <Text className="mt-3 text-sm font-semibold text-fuchsia-700">
+                    Cargando catálogo...
+                  </Text>
+                </View>
+              ) : publicError ? (
+                <View className="rounded-3xl border-2 border-red-200 bg-red-50 p-4">
+                  <Text className="text-sm font-semibold text-red-700">
+                    {publicError}
+                  </Text>
+                  <TouchableOpacity
+                    className="mt-3 rounded-2xl bg-red-500 py-2"
+                    onPress={() => void loadPublicRecipes()}
+                  >
+                    <Text className="text-center font-bold text-white">
+                      Reintentar
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : filteredPublicRecipes.length === 0 ? (
+                <View className="items-center rounded-3xl border-2 border-fuchsia-200 bg-fuchsia-50 p-8">
+                  <MochiCharacter mood="thinking" size={72} />
+                  <Text className="mt-3 text-center text-base font-extrabold text-fuchsia-950">
+                    Todavía no hay recetas públicas
+                  </Text>
+                  <Text className="mt-2 text-center text-sm font-semibold text-fuchsia-700">
+                    Cuando alguien publique una receta, aparecerá aquí.
+                  </Text>
+                </View>
+              ) : (
+                filteredPublicRecipes.map((publication) => (
+                  <PublicRecipeCard
+                    key={publication.id}
+                    publication={publication}
+                    imageUrl={recipeImageMap[publication.id] ?? null}
+                    imageLoading={Boolean(recipeImageLoadingMap[publication.id])}
+                    onLoadImage={loadRecipeImage}
+                    isOwned={publication.owner_id === userId}
+                    onPress={() => void handleUsePublicRecipe(publication)}
+                  />
+                ))
+              )}
+            </View>
+          </View>
+
           <View className="h-20" />
         </ScrollView>
         <FloatingActionButton

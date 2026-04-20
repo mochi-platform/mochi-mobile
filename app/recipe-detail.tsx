@@ -20,10 +20,12 @@ import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { checkFavoriteRecipeAchievement } from "@/src/shared/lib/gamification";
+import { getRecipeGenerationTypeFromPrompt } from "@/src/shared/lib/recipeCatalog";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
 import type {
   Recipe,
   RecipeIngredient,
+  RecipePublication,
   RecipeStep,
   RecipeCookSession,
 } from "@/src/shared/types/database";
@@ -88,6 +90,7 @@ export function RecipeDetailScreen() {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
+  const [publication, setPublication] = useState<RecipePublication | null>(null);
   const [activeSession, setActiveSession] = useState<RecipeCookSession | null>(
     null,
   );
@@ -101,6 +104,7 @@ export function RecipeDetailScreen() {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesInput, setNotesInput] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [heroImageLoading, setHeroImageLoading] = useState(false);
 
@@ -116,7 +120,7 @@ export function RecipeDetailScreen() {
       setLoading(true);
       setError(null);
 
-      const [recipeRes, ingredientsRes, stepsRes, sessionRes] =
+      const [recipeRes, ingredientsRes, stepsRes, publicationRes, sessionRes] =
         await Promise.all([
           supabase
             .from("recipes")
@@ -135,6 +139,11 @@ export function RecipeDetailScreen() {
             .eq("recipe_id", recipeId)
             .order("step_number", { ascending: true }),
           supabase
+            .from("recipe_publications")
+            .select("*")
+            .eq("source_recipe_id", recipeId)
+            .maybeSingle(),
+          supabase
             .from("recipe_cook_sessions")
             .select("*")
             .eq("recipe_id", recipeId)
@@ -148,11 +157,13 @@ export function RecipeDetailScreen() {
       if (recipeRes.error) throw recipeRes.error;
       if (ingredientsRes.error) throw ingredientsRes.error;
       if (stepsRes.error) throw stepsRes.error;
+      if (publicationRes.error) throw publicationRes.error;
 
       const r = recipeRes.data as Recipe;
       setRecipe(r);
       setIngredients((ingredientsRes.data ?? []) as RecipeIngredient[]);
       setSteps((stepsRes.data ?? []) as RecipeStep[]);
+      setPublication((publicationRes.data as RecipePublication | null) ?? null);
       setActiveSession((sessionRes.data as RecipeCookSession | null) ?? null);
       setServings(r.servings);
       setNotesInput(r.personal_notes ?? "");
@@ -238,6 +249,43 @@ export function RecipeDetailScreen() {
         },
       ],
     });
+  };
+
+  const handleTogglePublication = async () => {
+    if (!recipe || !userId) return;
+
+    try {
+      setPublishing(true);
+
+      if (publication?.is_published) {
+        const { error: unpublishError } = await supabase.rpc(
+          "unpublish_recipe_from_catalog",
+          { p_recipe_id: recipe.id },
+        );
+        if (unpublishError) throw unpublishError;
+      } else {
+        const { error: publishError } = await supabase.rpc(
+          "publish_recipe_to_catalog",
+          {
+            p_recipe_id: recipe.id,
+            p_generation_type: getRecipeGenerationTypeFromPrompt(
+              recipe.user_prompt,
+            ),
+          },
+        );
+        if (publishError) throw publishError;
+      }
+
+      await loadRecipe();
+    } catch (err) {
+      showAlert({
+        title: "No se pudo actualizar el catálogo",
+        message: err instanceof Error ? err.message : "Intenta de nuevo más tarde",
+        buttons: [{ text: "Entendido", style: "destructive" }],
+      });
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const handleStartCooking = () => {
@@ -425,6 +473,18 @@ export function RecipeDetailScreen() {
                   ))}
                 </View>
               )}
+
+              <IconCtaButton
+                label={publication?.is_published ? "Quitar del catálogo público" : "Publicar en catálogo público"}
+                onPress={() => void handleTogglePublication()}
+                iconName={publication?.is_published ? "eye-off" : "globe"}
+                iconColor="#c2410c"
+                iconSize={16}
+                containerClassName="mt-4 w-full rounded-2xl border border-orange-200 bg-orange-50 py-3"
+                textClassName="text-orange-800"
+                loading={publishing}
+                loadingColor="#c2410c"
+              />
             </View>
 
             {/* Sesión activa */}

@@ -286,6 +286,12 @@ export interface EngagementEvent {
 // ─── Cooking ──────────────────────────────────────────────────────────────
 
 export type RecipeDifficulty = 'fácil' | 'media' | 'difícil'
+export type RecipeGenerationType =
+  | 'normal'
+  | 'keto'
+  | 'vegetariana'
+  | 'vegana'
+  | 'alta_proteina'
 
 export interface Recipe {
   id: string
@@ -304,6 +310,45 @@ export interface Recipe {
   is_favorite: boolean
   image_url: string | null
   created_at: string
+  updated_at: string
+}
+
+export interface RecipePublicationIngredient {
+  name: string
+  amount: number | null
+  unit: string | null
+  notes: string | null
+}
+
+export interface RecipePublicationStep {
+  step_number: number
+  title: string
+  instructions: string
+  duration_seconds: number | null
+  temperature: string | null
+  tip: string | null
+}
+
+export interface RecipePublication {
+  id: string
+  source_recipe_id: string
+  owner_id: string
+  owner_name: string | null
+  title: string
+  description: string | null
+  total_time_minutes: number
+  prep_time_minutes: number
+  cook_time_minutes: number
+  servings: number
+  difficulty: RecipeDifficulty
+  cuisine_type: string | null
+  generation_type: RecipeGenerationType
+  tags: string[]
+  image_url: string | null
+  ingredients_snapshot: RecipePublicationIngredient[]
+  steps_snapshot: RecipePublicationStep[]
+  is_published: boolean
+  published_at: string
   updated_at: string
 }
 
