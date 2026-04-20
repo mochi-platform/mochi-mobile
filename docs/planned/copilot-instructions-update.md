@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- El alcance es exclusivamente `.github/` y `plugins/` dentro de `mochi-mobile`.
+- No se asumen carpetas de agentes duplicadas por workspace compartido.
+- Solo se documentan archivos que existen en este repo hoy.
+
 ## Problema
 
 `copilot-instructions.md` tiene un schema desactualizado. Faltan las siguientes tablas
@@ -21,12 +27,12 @@ que existen en el proyecto pero no están documentadas:
 - `recipe_publications`
 - `recipe_cook_sessions`
 
-Además, hay dos archivos de agentes duplicados:
-- `.github/agents/mochi-dev.agent.md` (versión actual)
-- `.github/agents/mochi-dev-agent.md` (versión anterior)
-- `.github/agents/mochi-db-agent.md` (versión anterior)
-- `.github/agents/mochi-db.agent.md` (versión nueva)
-- `.github/agents/mochi-reviewer.md` (versión actual)
+Estado actual de agentes en este repo:
+- `.github/agents/mochi-dev-agent.md`
+- `.github/agents/mochi-db-agent.md`
+- `.github/agents/mochi-reviewer.md`
+
+No se detectan duplicados de naming en el árbol actual.
 
 ## Cambios en `copilot-instructions.md`
 
@@ -103,28 +109,16 @@ En la sección de convenciones técnicas, agregar:
 - `expo-widgets` — widget iOS (MochiResumenWidget); Android pendiente
 - `react-native-health-connect` — lectura de datos de ciclo menstrual
 
-NOTA: El archivo `plugins/with-health-connect-permission-delegate.js` es un duplicado
-sin uso del archivo anterior. Puede eliminarse de forma segura.
+NOTA: En este repo el plugin custom activo es `plugins/with-mochi-health-connect-delegate.js`.
 ```
 
-## Limpieza de archivos de agentes duplicados
+## Validación de agentes en repo individual
 
-### Archivos a eliminar
-
-```
-.github/agents/mochi-dev.agent.md     ← duplicado de mochi-dev-agent.md
-```
-
-### Verificar cuál es la versión actual
-
-El archivo `.github/agents/mochi-dev-agent.md` (sin el punto antes de "agent") es el
-que se referencia en `copilot-instructions.md` con `@mochi-dev`. Verificar con:
+Verificar referencias internas sin asumir duplicados:
 
 ```bash
-grep -r "mochi-dev" .github/copilot-instructions.md
+rg "mochi-dev|mochi-db|mochi-reviewer" .github/copilot-instructions.md .github/agents
 ```
-
-Mantener solo la versión más completa y eliminar la otra.
 
 ### Archivos de agentes a actualizar
 
@@ -136,16 +130,11 @@ Los valores de CyclePhase son SIEMPRE en español (menstrual, folicular, ovulato
 Importar desde: @/src/shared/lib/healthConnect
 ```
 
-## Plugin duplicado — eliminación segura
+## Plugins — validación segura
 
 ```bash
-# Verificar que no está referenciado en ningún lado
-grep -r "with-health-connect-permission-delegate" . \
-  --include="*.js" --include="*.json" --include="*.ts" \
-  --exclude-dir=node_modules
-
-# Si el único resultado es el archivo mismo → eliminar
-rm plugins/with-health-connect-permission-delegate.js
+# Verificar plugins activos en este repo
+rg "with-mochi-health-connect-delegate|expo-build-properties|expo-widgets" app.config.js app.json plugins
 ```
 
 ## Archivos a modificar
@@ -156,11 +145,11 @@ rm plugins/with-health-connect-permission-delegate.js
 | `.github/agents/mochi-dev-agent.md` | Agregar nota CyclePhase, actualizar schema |
 | `.github/agents/mochi-db-agent.md` | Agregar tablas faltantes al schema |
 | `.github/agents/mochi-reviewer.md` | (sin cambios — ya tiene la nota de CyclePhase) |
-| `plugins/with-health-connect-permission-delegate.js` | Eliminar si no está referenciado |
+| `plugins/with-mochi-health-connect-delegate.js` | Verificar configuración y referencias (plugin custom activo) |
 
 ## Criterios de aceptación
 
 - `copilot-instructions.md` lista todas las tablas del proyecto.
 - Los valores de CyclePhase en español están documentados en todos los agentes.
-- No existe el plugin duplicado.
-- No existen archivos de agentes duplicados con contenido idéntico.
+- El plugin activo coincide con `with-mochi-health-connect-delegate.js`.
+- La documentación de agentes coincide con los archivos reales del repo.

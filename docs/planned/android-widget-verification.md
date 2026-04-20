@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- Toda la validación y corrección se ejecuta en código móvil de este repo.
+- No se asume infraestructura web compartida para widgets.
+- Cualquier pieza nativa Android pendiente se documenta como trabajo local de `mochi-mobile`.
+
 ## Estado actual
 
 `expo-widgets` está configurado en `app.json` con el widget `MochiResumenWidget`.

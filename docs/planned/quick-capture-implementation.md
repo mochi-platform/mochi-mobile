@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- Todos los cambios de UI/flujo y persistencia se implementan en pantallas/componentes móviles.
+- Las inserciones se hacen contra tablas Supabase ya consumidas desde este repo.
+- No se requiere ninguna pieza de `mochi-web` para completar el alcance.
+
 ## Estado actual
 
 El `QuickCaptureModal` existe y llama a `convertNoteToAction` de la IA, pero el callback

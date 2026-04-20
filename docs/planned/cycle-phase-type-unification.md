@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- La unificación de tipos se resuelve solo en código TypeScript de `mochi-mobile`.
+- No depende de paquetes compartidos de un monorepo; se toma como fuente local del repo.
+- Cualquier ajuste de tipos de Supabase se consume por alias ya configurados en este workspace.
+
 ## Problema
 
 Existen **dos definiciones incompatibles** de `CyclePhase` en el proyecto:

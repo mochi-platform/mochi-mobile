@@ -5,6 +5,13 @@
 - El proyecto ya no usa Turborepo: `mochi-mobile` y `mochi-web` son repos individuales.
 - Este documento aplica al repo `mochi-web`; en `mochi-mobile` solo se consumen los cambios vía Supabase.
 
+## Aplicación del override en este documento
+
+- Implementación principal: `mochi-web` (UI, rutas, guard admin).
+- Implementación en `mochi-mobile`: solo consumo de datos compartidos (`voucher_templates.is_active`, RPCs y columnas de perfil).
+- Este plan no implica crear pantallas admin en el workspace actual de `mochi-mobile`.
+- Cualquier cambio de esquema (SQL/RLS/RPC) se versiona como migración Supabase y luego se consume desde ambos repos.
+
 ## Contexto
 
 Doménica es superusuaria de Mochi con necesidades de administración:

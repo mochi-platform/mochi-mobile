@@ -5,6 +5,13 @@
 - Estos documentos se mantienen bajo un modelo de repositorios individuales (sin Turborepo).
 - Este repositorio cubre `mochi-mobile`; cualquier tarea de web se implementa en su repo (`mochi-web`) y se coordina por contrato de Supabase.
 
+## Regla operativa del override
+
+- Cada documento debe indicar explícitamente dónde se ejecuta: `mochi-mobile` o `mochi-web`.
+- Si un documento requiere cambios en otro repo, se documenta como dependencia externa, no como paso local.
+- No usar rutas heredadas de Turborepo (`apps/*`, `packages/*`, root compartido).
+- En este repo solo se planifican cambios en rutas reales del workspace actual.
+
 ## Prioridad de implementación
 
 ### 🔴 Alta — bugs que afectan funcionalidad o calidad del código

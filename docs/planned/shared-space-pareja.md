@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- Todo el plan se implementa en `mochi-mobile` con soporte de migraciones Supabase.
+- No hay dependencia de paywall/suscripciones para habilitar Mochi Duo.
+- No se requieren cambios de UI en `mochi-web` para liberar esta versión.
+
 ## Contexto
 
 El campo `partner_features_enabled` existe en `user_settings` y controla la visibilidad
@@ -241,7 +247,7 @@ GRANT EXECUTE ON FUNCTION accept_partner_invite(text) TO authenticated;
 
 ## Pantallas a crear (Mobile)
 
-### `app/partner-space.tsx`
+### `app/mochi-duo.tsx`
 
 Vista principal de Mochi Duo:
 - Panel de él (espacio reducido):
@@ -253,7 +259,7 @@ Vista principal de Mochi Duo:
 - Metas compartidas (`joint_goals`)
 - Vales compartidos
 
-### `app/partner-invite.tsx`
+### `app/mochi-duo-invite.tsx`
 
 Dos modos:
 1. **Crear invitación** — muestra código generado y opción de compartir

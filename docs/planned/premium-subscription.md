@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- La integración de SDK, UX de compra y gating cliente se implementa en `mochi-mobile`.
+- El estado de suscripción se sincroniza por Supabase (migraciones/RPC compartidas).
+- No se planifican pasos de frontend web dentro de este documento.
+
 ## Resumen
 Implementar una suscripción premium para reducir fricción de uso de IA, habilitar mayores límites de consumo y crear una vía de monetización sostenible.
 

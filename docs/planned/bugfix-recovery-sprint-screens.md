@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- Todos los cambios propuestos viven en pantallas/componentes móviles de este repo.
+- No hay dependencias de `mochi-web` para cerrar estos bugfixes.
+- Validación final esperada: build y tipado del repo móvil.
+
 ## Resumen de problemas
 
 Tres componentes introducidos recientemente tienen violaciones de las convenciones del

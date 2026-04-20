@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- Implementación de UI y lógica cliente: solo `mochi-mobile`.
+- Las funciones SQL/RPC se crean como migraciones Supabase compartidas.
+- No se requiere dashboard web ni cambios en `mochi-web` para el MVP.
+
 ## Resumen
 Implementar un sistema de créditos de IA donde la usuaria obtiene créditos al completar anuncios recompensados.
 

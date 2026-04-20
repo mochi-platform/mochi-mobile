@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- Todo el checklist es ejecutable desde el repo móvil (EAS, assets, config y workflows).
+- No requiere pasos de build web para publicar Android.
+- Cualquier dependencia externa se limita a Play Console/RevenueCat/EAS, no a otro repo de código.
+
 ## Estado actual
 
 La app se distribuye como APK directo vía GitHub Releases con el perfil `production-apk`.
@@ -100,18 +106,15 @@ Contenido mínimo:
 - Terceros (Supabase, OpenRouter, Unsplash)
 - Derecho a eliminar cuenta
 
-### 7. Eliminar o condicionar el plugin duplicado
+### 7. Validar plugin custom de Health Connect
 
-Antes del lanzamiento, limpiar `plugins/with-health-connect-permission-delegate.js`
-que es una copia de `with-mochi-health-connect-delegate.js`. Solo debe usarse uno
-(el que está referenciado en `app.config.js`):
+Antes del lanzamiento, verificar que el plugin custom activo sea
+`plugins/with-mochi-health-connect-delegate.js` y esté correctamente referenciado en
+`app.config.js`:
 
 ```bash
-# Verificar cuál se usa realmente:
-grep -r "with-health-connect-permission-delegate" . --include="*.js" --include="*.json"
+rg "with-mochi-health-connect-delegate" app.config.js plugins
 ```
-
-Si no está referenciado en ningún lado, eliminar el archivo.
 
 ### 8. Target SDK version
 

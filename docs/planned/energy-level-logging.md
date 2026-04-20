@@ -5,6 +5,12 @@
 - Este documento asume repositorios individuales (sin Turborepo).
 - La implementación descrita aquí corresponde al repo `mochi-mobile`.
 
+## Aplicación del override en este documento
+
+- La implementación de UI y hooks se realiza íntegramente en este repo móvil.
+- El único contrato externo es Supabase (tabla `energy_levels`) vía cliente del repo.
+- No se requiere intervención de `mochi-web` para habilitar esta funcionalidad.
+
 ## Estado actual
 
 La tabla `energy_levels` existe en Supabase y el hook `useEnergyDaily` la consume
