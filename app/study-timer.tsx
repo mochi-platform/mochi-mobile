@@ -798,7 +798,7 @@ export function StudyTimerScreen() {
                 </Text>
               ) : null}
 
-              <Text className="text-sm font-bold text-purple-800">
+              <Text className="mt-4 text-sm font-bold text-purple-800">
                 ¿Qué vas a estudiar específicamente hoy?
               </Text>
               <TextInput

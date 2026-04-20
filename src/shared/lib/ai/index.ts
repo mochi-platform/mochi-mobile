@@ -7,6 +7,7 @@ const TEXT_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free'
 const MULTIMODAL_MODEL = 'google/gemini-2.0-flash-exp:free'
 const NEMOTRON_MODEL = 'nvidia/nemotron-4-340b-instruct'
 const FALLBACK_MODELS: AIModel[] = [TEXT_MODEL, MULTIMODAL_MODEL]
+const WELLNESS_RISK_MODELS: AIModel[] = [NEMOTRON_MODEL, ...FALLBACK_MODELS]
 const AI_LOG_PREFIX = '[mochi-ai]'
 
 type ChatRole = 'system' | 'user' | 'assistant'
@@ -456,6 +457,19 @@ function isRateLimitError(error: unknown): boolean {
 function isNetworkError(error: unknown): boolean {
   const normalized = normalizeError(error)
   return normalized.code === 'NETWORK' || normalized.code === 'TIMEOUT'
+}
+
+function isModelUnavailableError(error: AIError): boolean {
+  if (error.code !== 'API_ERROR') {
+    return false
+  }
+
+  if (error.status === 404) {
+    return true
+  }
+
+  const message = error.message.toLowerCase()
+  return message.includes('modelo') || message.includes('model')
 }
 
 interface WithRetryOptions {
@@ -931,8 +945,16 @@ function buildClient(openrouter: OpenAI): MochiAIContract {
         const normalized = normalizeError(error, model)
         lastError = normalized
 
-        if (!normalized.retryable) {
+        if (!normalized.retryable && !isModelUnavailableError(normalized)) {
           throw normalized
+        }
+
+        if (isModelUnavailableError(normalized)) {
+          logWarn('Modelo no disponible en fallback de IA; intentando siguiente modelo.', {
+            model,
+            status: normalized.status,
+          })
+          continue
         }
 
         if (normalized.code === 'NETWORK' || normalized.code === 'TIMEOUT') {
@@ -1318,10 +1340,10 @@ Reglas:
     const userMessage = JSON.stringify(input, null, 2)
 
     try {
-      const raw = await callAIText({
+      const raw = await callAIWithFallback({
         systemPrompt,
         userMessage,
-        model: NEMOTRON_MODEL,
+        models: WELLNESS_RISK_MODELS,
         maxTokens: 4096,
         temperature: 0.2,
       })
@@ -1331,7 +1353,7 @@ Reglas:
       wellnessPredictionCache.set(input.userId, normalized)
       return normalized
     } catch (error) {
-      const normalized = normalizeError(error, NEMOTRON_MODEL)
+      const normalized = normalizeError(error)
 
       if (normalized.code === 'RATE_LIMIT') {
         void queueWellnessPrediction(input)
@@ -1373,6 +1395,13 @@ Reglas:
       const cached = wellnessPredictionCache.get(input.userId)
       if (cached) {
         return cached
+      }
+
+      if (normalized.code === 'API_ERROR' && normalized.status === 404) {
+        logWarn('Modelo no encontrado en predictWellnessRisk; retornando predicción neutral.', {
+          userId: input.userId,
+        })
+        return fallback
       }
 
       handleAIError(normalized, 'Error no recuperable en predictWellnessRisk')

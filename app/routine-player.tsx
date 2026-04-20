@@ -220,6 +220,35 @@ export function RoutinePlayerScreen() {
     width: `${progress.value * 100}%` as `${number}%`,
   }));
 
+  const currentRoutineExercise = routine?.routine_exercises[currentExerciseIndex];
+  const currentExercise = currentRoutineExercise?.exercise;
+  const totalExercises = routine?.routine_exercises.length ?? 0;
+
+  useEffect(() => {
+    async function loadExerciseImage() {
+      if (!currentExercise?.name || phase !== "exercise") return;
+
+      setImageLoading(true);
+      const imageUrl = await searchUnsplashImage(
+        `${currentExercise.name} fitness exercise`,
+        "portrait",
+      );
+      setExerciseImageUrl(imageUrl);
+      setImageLoading(false);
+
+      if (imageUrl) {
+        imageOpacity.setValue(0);
+        RNAnimated.timing(imageOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }).start();
+      }
+    }
+
+    void loadExerciseImage();
+  }, [currentExercise?.name, currentExerciseIndex, imageOpacity, phase]);
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-teal-50">
@@ -276,36 +305,6 @@ export function RoutinePlayerScreen() {
     );
   }
 
-  const currentRoutineExercise =
-    routine?.routine_exercises[currentExerciseIndex];
-  const currentExercise = currentRoutineExercise?.exercise;
-  const totalExercises = routine?.routine_exercises.length ?? 0;
-
-  useEffect(() => {
-    async function loadExerciseImage() {
-      if (!currentExercise?.name || phase !== "exercise") return;
-
-      setImageLoading(true);
-      const imageUrl = await searchUnsplashImage(
-        `${currentExercise.name} fitness exercise`,
-        "portrait",
-      );
-      setExerciseImageUrl(imageUrl);
-      setImageLoading(false);
-
-      if (imageUrl) {
-        imageOpacity.setValue(0);
-        RNAnimated.timing(imageOpacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }).start();
-      }
-    }
-
-    void loadExerciseImage();
-  }, [currentExercise?.name, currentExerciseIndex, imageOpacity, phase]);
-
   return (
     <View className="flex-1 bg-teal-50">
       {phase === "exercise" && exerciseImageUrl ? (
@@ -317,9 +316,14 @@ export function RoutinePlayerScreen() {
             source={{ uri: exerciseImageUrl }}
             className="h-full w-full"
             resizeMode="cover"
+            blurRadius={1}
           >
             <LinearGradient
-              colors={["rgba(0,0,0,0.05)", "rgba(0,0,0,0.7)"]}
+              colors={[
+                "rgba(255,255,255,0.58)",
+                "rgba(255,255,255,0.72)",
+                "rgba(255,255,255,0.82)",
+              ]}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
               className="h-full w-full"
@@ -383,12 +387,12 @@ export function RoutinePlayerScreen() {
                 </Text>
               )}
             {currentExercise?.notes ? (
-              <Text className="mt-2 px-4 text-center text-xs font-semibold text-teal-100">
+              <Text className="mt-2 px-4 text-center text-xs font-semibold text-teal-800">
                 {currentExercise.notes}
               </Text>
             ) : null}
             {imageLoading ? (
-              <Text className="mt-2 text-xs font-semibold text-teal-100">
+              <Text className="mt-2 text-xs font-semibold text-teal-800">
                 Cargando imagen del ejercicio...
               </Text>
             ) : null}
