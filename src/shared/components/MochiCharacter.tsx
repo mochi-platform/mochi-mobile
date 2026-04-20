@@ -23,12 +23,21 @@ const moodScale: Record<MochiMood, number> = {
   excited: 1.05,
 };
 
+const moodSourceMap: Record<MochiMood, number> = {
+  happy: require("../../../assets/mochi-expressions/happy.png"),
+  thinking: require("../../../assets/mochi-expressions/thinking.png"),
+  sleepy: require("../../../assets/mochi-expressions/sleepy.png"),
+  excited: require("../../../assets/mochi-expressions/excited.png"),
+};
+
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
   const floatY = useSharedValue(0);
   const floatX = useSharedValue(0);
   const scale = useSharedValue(1);
+  const squashX = useSharedValue(1);
+  const squashY = useSharedValue(1);
   const rotate = useSharedValue(0);
 
   const animateOscillation = (
@@ -53,6 +62,8 @@ export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
     cancelAnimation(floatY);
     cancelAnimation(floatX);
     cancelAnimation(scale);
+    cancelAnimation(squashX);
+    cancelAnimation(squashY);
     cancelAnimation(rotate);
 
     switch (mood) {
@@ -67,6 +78,8 @@ export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
         animateOscillation(floatY, -0.7, 1.1, 2600);
         animateOscillation(floatX, 0, 1.5, 2500);
         animateOscillation(scale, 1, 0.008, 2200);
+        animateOscillation(squashX, 1.01, 0.012, 2400);
+        animateOscillation(squashY, 0.99, 0.01, 2400);
         animateOscillation(rotate, 0, 1.5, 2200);
         break;
 
@@ -74,6 +87,8 @@ export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
         animateOscillation(floatY, -0.3, 0.8, 3200);
         animateOscillation(floatX, 0, 0.55, 3500);
         animateOscillation(scale, 0.995, 0.007, 2800);
+        animateOscillation(squashX, 1.03, 0.02, 3000);
+        animateOscillation(squashY, 0.95, 0.014, 3000);
         animateOscillation(rotate, 0, 0.55, 3000);
         break;
 
@@ -81,6 +96,8 @@ export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
         animateOscillation(floatY, -1.8, 2, 1050);
         animateOscillation(floatX, 0, 1.3, 1200);
         animateOscillation(scale, 1.02, 0.018, 900);
+        animateOscillation(squashX, 0.98, 0.014, 980);
+        animateOscillation(squashY, 1.03, 0.02, 980);
         animateOscillation(rotate, 0, 1.4, 1000);
         break;
     }
@@ -93,6 +110,8 @@ export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
         { translateX: floatX.value },
         { translateY: floatY.value },
         { scale: scale.value },
+        { scaleX: squashX.value },
+        { scaleY: squashY.value },
         { rotate: `${rotate.value}deg` },
       ],
     };
@@ -102,7 +121,7 @@ export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
 
   return (
     <AnimatedImage
-      source={require("../../../assets/icon.png")}
+      source={moodSourceMap[mood]}
       style={[{ width: resolvedSize, height: resolvedSize }, animatedStyle]}
       resizeMode="contain"
     />

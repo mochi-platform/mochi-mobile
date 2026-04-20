@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
+  ImageBackground,
+  type ImageSourcePropType,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -62,6 +64,7 @@ function EmailSentScreen({ email, onBack }: EmailSentScreenProps) {
 // ─── Login screen ─────────────────────────────────────────────────────────────
 
 export function LoginScreen() {
+  const backgroundImageSource: ImageSourcePropType = require("@/assets/auth-blk.png");
   const [tab, setTab] = useState<Tab>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -211,13 +214,13 @@ export function LoginScreen() {
     return <EmailSentScreen email={email} onBack={resetForm} />;
   }
 
-  return (
+  const content = (
     <KeyboardAvoidingView
       className="flex-1"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        className="flex-1 bg-purple-50"
+        className="flex-1"
         contentContainerStyle={{
           flexGrow: 1,
           alignItems: "center",
@@ -228,20 +231,6 @@ export function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Decorative circles */}
-        <View className="absolute -left-16 -top-16 h-52 w-52 rounded-full bg-pink-200 opacity-60" />
-        <View className="absolute -bottom-20 -right-20 h-52 w-52 rounded-full bg-purple-200 opacity-60" />
-
-        {/* Sparkle badge — top-right */}
-        <View className="absolute right-6 top-14 items-center justify-center rounded-xl bg-yellow-100 p-2">
-          <Ionicons name="sparkles" size={18} color="#ca8a04" />
-        </View>
-
-        {/* Heart badge — bottom-left */}
-        <View className="absolute bottom-14 left-6 items-center justify-center rounded-xl bg-pink-100 p-2">
-          <Ionicons name="heart" size={18} color="#db2777" />
-        </View>
-
         <View className="w-full max-w-sm">
           {/* Branding */}
           <View className="items-center">
@@ -380,6 +369,16 @@ export function LoginScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+
+  if (!backgroundImageSource) {
+    return content;
+  }
+
+  return (
+    <ImageBackground source={backgroundImageSource} className="flex-1">
+      {content}
+    </ImageBackground>
   );
 }
 
