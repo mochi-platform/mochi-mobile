@@ -17,6 +17,7 @@ import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useAchievement } from "@/src/core/providers/AchievementContext";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { checkFavoriteRecipeAchievement } from "@/src/shared/lib/gamification";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
@@ -65,6 +66,17 @@ function scaleAmount(
   // Redondear a 1 decimal si es necesario
   const rounded = Math.round(scaled * 10) / 10;
   return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatRecipeTag(tag: string): string {
+  const normalized = tag.trim();
+  if (!normalized) return "";
+
+  const capitalized =
+    normalized.charAt(0).toLocaleUpperCase("es-ES") + normalized.slice(1);
+
+  // Keep multi-word tags on a single line inside pill chips.
+  return capitalized.replace(/\s+/g, "\u00A0");
 }
 
 export function RecipeDetailScreen() {
@@ -393,7 +405,7 @@ export function RecipeDetailScreen() {
                 {recipe.cuisine_type ? (
                   <View className="rounded-full bg-purple-100 px-3 py-1.5">
                     <Text className="text-xs font-bold text-purple-800">
-                      {recipe.cuisine_type}
+                      {formatRecipeTag(recipe.cuisine_type)}
                     </Text>
                   </View>
                 ) : null}
@@ -401,13 +413,13 @@ export function RecipeDetailScreen() {
 
               {recipe.tags.length > 0 && (
                 <View className="mt-3 flex-row flex-wrap gap-1">
-                  {recipe.tags.map((tag) => (
+                  {recipe.tags.map((tag, index) => (
                     <View
-                      key={tag}
-                      className="rounded-full border border-orange-200 px-2 py-0.5"
+                      key={`${tag}-${index}`}
+                      className="shrink-0 self-start rounded-full border border-orange-200 px-2.5 py-1"
                     >
-                      <Text className="text-xs font-semibold text-orange-600">
-                        {tag}
+                      <Text className="text-xs font-semibold leading-4 text-orange-600">
+                        {formatRecipeTag(tag)}
                       </Text>
                     </View>
                   ))}
@@ -642,16 +654,15 @@ export function RecipeDetailScreen() {
 
           {/* CTA fijo */}
           <View className="absolute bottom-0 left-0 right-0 border-t border-orange-200 bg-orange-50 px-5 pb-8 pt-3">
-            <TouchableOpacity
-              className="flex-row items-center justify-center rounded-2xl bg-orange-500 py-4"
+            <IconCtaButton
+              label={activeSession ? "Continuar cocinando" : "Empezar a cocinar"}
               onPress={handleStartCooking}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="restaurant" size={20} color="white" />
-              <Text className="ml-2 text-base font-extrabold text-white">
-                {activeSession ? "Continuar cocinando" : "Empezar a cocinar"}
-              </Text>
-            </TouchableOpacity>
+              iconName="restaurant"
+              iconColor="#ffffff"
+              iconSize={20}
+              containerClassName="w-full rounded-2xl bg-orange-500 py-4"
+              textClassName="text-base text-white"
+            />
           </View>
         </SafeAreaView>
       </View>

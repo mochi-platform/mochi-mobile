@@ -14,6 +14,7 @@ import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { supabase } from "@/src/shared/lib/supabase";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 
 // Ensure WebBrowser auth session complettion on app startup
 WebBrowser.maybeCompleteAuthSession();
@@ -64,6 +65,7 @@ export function LoginScreen() {
   const [tab, setTab] = useState<Tab>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +82,7 @@ export function LoginScreen() {
   function switchTab(next: Tab) {
     setTab(next);
     setError(null);
+    setShowPassword(false);
   }
 
   async function signIn() {
@@ -292,18 +295,35 @@ export function LoginScreen() {
               editable={!loading && !googleLoading}
             />
 
-            <TextInput
-              className="mt-4 rounded-3xl border-2 border-purple-200 bg-white px-5 py-4 text-base text-purple-900"
-              placeholder="Contraseña"
-              placeholderTextColor="#c4b5fd"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete={
-                tab === "signup" ? "new-password" : "current-password"
-              }
-              editable={!loading && !googleLoading}
-            />
+            <View className="mt-4 flex-row items-center rounded-3xl border-2 border-purple-200 bg-white px-5">
+              <TextInput
+                className="flex-1 py-4 text-base text-purple-900"
+                placeholder="Contraseña"
+                placeholderTextColor="#c4b5fd"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoComplete={
+                  tab === "signup" ? "new-password" : "current-password"
+                }
+                editable={!loading && !googleLoading}
+              />
+              <TouchableOpacity
+                className="ml-2 rounded-full p-1"
+                onPress={() => setShowPassword((prev) => !prev)}
+                disabled={loading || googleLoading}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                }
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={20}
+                  color="#7e22ce"
+                />
+              </TouchableOpacity>
+            </View>
 
             {error ? (
               <Text className="mt-2 text-sm text-red-500">{error}</Text>
@@ -338,23 +358,18 @@ export function LoginScreen() {
           </View>
 
           {/* Google button */}
-          <TouchableOpacity
-            className="mt-4 flex-row items-center justify-center gap-2 rounded-3xl border-2 border-gray-200 bg-white py-4 disabled:opacity-60"
-            onPress={() => void signInWithGoogle()}
-            disabled={loading || googleLoading}
-            activeOpacity={0.85}
-          >
-            {googleLoading ? (
-              <ActivityIndicator color="#1f2937" />
-            ) : (
-              <>
-                  <AntDesign name="google" size={24} color="black" />
-                <Text className="text-sm font-semibold text-gray-800">
-                  Continuar con Google
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <IconCtaButton
+            label="Continuar con Google"
+            onPress={() => {
+              void signInWithGoogle();
+            }}
+            icon={<AntDesign name="google" size={24} color="black" />}
+            loading={googleLoading}
+            loadingColor="#1f2937"
+            disabled={loading}
+            containerClassName="mt-4 w-full rounded-3xl border-2 border-gray-200 bg-white py-4"
+            textClassName="text-gray-800"
+          />
 
           {/* Soft hint */}
           <Text className="mt-4 text-center text-xs text-purple-300">

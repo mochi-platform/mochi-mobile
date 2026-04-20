@@ -1134,16 +1134,18 @@ export function HomeDashboard({
           className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-5"
         >
           <View className="mb-3 flex-row items-center justify-between">
-            <View className="flex-row items-center">
+            <View className="flex-1 flex-row items-center">
               <Ionicons name="restaurant" size={18} color="#c2410c" />
               <Text className="ml-2 text-base font-bold text-orange-900">
                 Cocina
               </Text>
             </View>
             {recipeCount > 0 && (
-              <View className="rounded-full bg-orange-100 px-3 py-1">
-                <Text className="text-xs font-bold text-orange-700">
-                  {recipeCount} {recipeCount === 1 ? "receta" : "recetas"}
+              <View className="ml-3 shrink-0 rounded-full bg-orange-100 px-3 py-1">
+                <Text className="text-xs font-bold text-orange-700" numberOfLines={1}>
+                  {recipeCount}
+                  {"\u00A0"}
+                  {recipeCount === 1 ? "receta" : "recetas"}
                 </Text>
               </View>
             )}

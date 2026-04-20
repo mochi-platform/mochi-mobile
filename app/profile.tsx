@@ -30,6 +30,7 @@ import {
   MOCHI_LEVELS,
 } from "@/src/shared/lib/supabase/levels";
 import { useSession } from "@/src/core/providers/SessionContext";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import type {
   Achievement,
@@ -285,16 +286,14 @@ export function ProfileScreen() {
             {(profile?.mochi_name ?? "").trim() || "Mochi"}
           </Text>
 
-          <TouchableOpacity
-            className="mt-2 flex-row items-center rounded-full border border-purple-200 bg-white px-4 py-2"
+          <IconCtaButton
+            label="Renombrar"
             onPress={openEditNameModal}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="create" size={14} color="#7c3aed" />
-            <Text className="ml-1.5 text-xs font-bold text-purple-800">
-              Renombrar
-            </Text>
-          </TouchableOpacity>
+            iconName="create"
+            iconColor="#7c3aed"
+            containerClassName="mt-2 w-full border border-purple-200 bg-white"
+            textClassName="text-purple-800"
+          />
 
           <View className="mt-3 flex-row items-center">
             <View className="mr-3 flex-row items-center rounded-full bg-yellow-200 px-4 py-2">
@@ -339,27 +338,23 @@ export function ProfileScreen() {
           )}
         </View>
 
-        <TouchableOpacity
-            className="mt-3 w-full flex-row items-center justify-center rounded-full border border-purple-200 bg-white px-4 py-2"
-            onPress={() => router.push("/settings")}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="settings" size={14} color="#7c3aed" />
-            <Text className="ml-1.5 text-xs font-bold text-purple-800">
-              Configuración
-            </Text>
-          </TouchableOpacity>
+        <IconCtaButton
+          label="Configuración"
+          onPress={() => router.push("/settings")}
+          iconName="settings"
+          iconColor="#7c3aed"
+          containerClassName="mt-3 w-full border border-purple-200 bg-white"
+          textClassName="text-purple-800"
+        />
 
-        <TouchableOpacity
-          className="mt-3 w-full flex-row items-center justify-center rounded-full border border-sky-200 bg-sky-50 px-4 py-2"
+        <IconCtaButton
+          label="Ver analíticas"
           onPress={() => router.push("/analytics")}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="stats-chart" size={14} color="#0369a1" />
-          <Text className="ml-1.5 text-xs font-bold text-sky-800">
-            Ver analíticas
-          </Text>
-        </TouchableOpacity>
+          iconName="stats-chart"
+          iconColor="#0369a1"
+          containerClassName="mt-3 w-full border border-sky-200 bg-sky-50"
+          textClassName="text-sky-800"
+        />
 
         <View className="mt-8">
           <Text className="mb-4 text-lg font-extrabold text-purple-900">

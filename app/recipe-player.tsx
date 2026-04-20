@@ -28,6 +28,7 @@ import {
   checkCookingSessionAchievements,
   checkPerfectRecipeAchievement,
 } from "@/src/shared/lib/gamification";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
@@ -589,27 +590,21 @@ export function RecipePlayerScreen() {
                       >
                         <Ionicons name="refresh" size={18} color="#c2410c" />
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        className={`flex-1 rounded-2xl py-3 ${timerRunning ? "bg-orange-200" : "bg-orange-500"}`}
+                      <IconCtaButton
+                        label={
+                          timerRunning
+                            ? "Pausar"
+                            : timerSeconds === 0
+                              ? "Reiniciar"
+                              : "Iniciar"
+                        }
                         onPress={() => setTimerRunning((r) => !r)}
-                      >
-                        <View className="flex-row items-center justify-center gap-2">
-                          <Ionicons
-                            name={timerRunning ? "pause" : "play"}
-                            size={18}
-                            color={timerRunning ? "#c2410c" : "white"}
-                          />
-                          <Text
-                            className={`font-extrabold ${timerRunning ? "text-orange-800" : "text-white"}`}
-                          >
-                            {timerRunning
-                              ? "Pausar"
-                              : timerSeconds === 0
-                                ? "Reiniciar"
-                                : "Iniciar"}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
+                        iconName={timerRunning ? "pause" : "play"}
+                        iconColor={timerRunning ? "#c2410c" : "#ffffff"}
+                        iconSize={18}
+                        containerClassName={`flex-1 rounded-2xl py-3 ${timerRunning ? "bg-orange-200" : "bg-orange-500"}`}
+                        textClassName={timerRunning ? "text-orange-800" : "text-white"}
+                      />
                     </View>
                   </View>
                 ) : null}
@@ -717,27 +712,20 @@ export function RecipePlayerScreen() {
                   textAlignVertical="top"
                 />
 
-                <TouchableOpacity
-                  className={`mt-4 flex-row items-center justify-center rounded-2xl py-4 ${question.trim() && !asking ? "bg-orange-500" : "bg-orange-200"}`}
-                  onPress={() => void handleAskMochi()}
-                  disabled={!question.trim() || asking}
-                >
-                  {asking ? (
-                    <>
-                      <MochiCharacter mood="thinking" size={22} />
-                      <Text className="ml-2 font-extrabold text-white">
-                        Pensando...
-                      </Text>
-                    </>
-                  ) : (
-                    <>
-                      <Ionicons name="sparkles" size={16} color="white" />
-                      <Text className="ml-2 font-extrabold text-white">
-                        Preguntar
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+                <IconCtaButton
+                  label="Preguntar"
+                  onPress={() => {
+                    void handleAskMochi();
+                  }}
+                  iconName="sparkles"
+                  iconColor="#ffffff"
+                  iconSize={16}
+                  loading={asking}
+                  loadingColor="#ffffff"
+                  disabled={!question.trim()}
+                  containerClassName={`mt-4 w-full rounded-2xl py-4 ${question.trim() && !asking ? "bg-orange-500" : "bg-orange-200"}`}
+                  textClassName="text-white"
+                />
               </ScrollView>
             </View>
           </View>

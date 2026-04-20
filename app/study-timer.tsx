@@ -22,6 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useAchievement } from "@/src/core/providers/AchievementContext";
 import { useSession } from "@/src/core/providers/SessionContext";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import {
   askStudyCompanion,
@@ -993,15 +994,17 @@ export function StudyTimerScreen() {
         </ScrollView>
 
         {phase === "studying" ? (
-          <TouchableOpacity
-            className="absolute bottom-8 right-6 flex-row items-center rounded-full bg-purple-600 px-4 py-3"
-            onPress={() => setShowCompanion(true)}
-          >
-            <Ionicons name="sparkles" size={16} color="white" />
-            <Text className="ml-2 text-sm font-bold text-white">
-              Preguntarle a Mochi
-            </Text>
-          </TouchableOpacity>
+          <View className="absolute bottom-8 right-6">
+            <IconCtaButton
+              label="Preguntarle a Mochi"
+              onPress={() => setShowCompanion(true)}
+              iconName="sparkles"
+              iconColor="#ffffff"
+              iconSize={16}
+              containerClassName="w-auto rounded-full bg-purple-600 px-4 py-3"
+              textClassName="text-white"
+            />
+          </View>
         ) : null}
       </SafeAreaView>
 

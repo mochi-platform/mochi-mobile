@@ -23,6 +23,7 @@ import {
   saveNotificationPrefs,
   scheduleMorningReminder,
 } from "@/src/shared/lib/notifications";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { TourProvider, TourZone, useTour } from "react-native-lumen";
 
 type Step = "profile" | "modules";
@@ -332,21 +333,16 @@ function OnboardingScreenContent() {
                 <Text className="mt-3 text-sm text-red-600">{error}</Text>
               ) : null}
 
-              <TouchableOpacity
-                className="mt-5 flex-row items-center justify-center rounded-3xl bg-teal-500 px-4 py-4 disabled:opacity-60"
-                disabled={!formIsValid}
+              <IconCtaButton
+                label="Continuar"
                 onPress={handleProfileNext}
-              >
-                <Text className="text-base font-extrabold text-white">
-                  Continuar
-                </Text>
-                <Ionicons
-                  name="arrow-forward"
-                  size={18}
-                  color="white"
-                  style={{ marginLeft: 6 }}
-                />
-              </TouchableOpacity>
+                trailingIconName="arrow-forward"
+                trailingIconColor="#ffffff"
+                trailingIconSize={18}
+                disabled={!formIsValid}
+                containerClassName="mt-5 w-full rounded-3xl bg-teal-500 px-4 py-4"
+                textClassName="text-base text-white"
+              />
             </View>
 
             <View className="mt-5 rounded-3xl border border-teal-200 bg-white/70 p-4">

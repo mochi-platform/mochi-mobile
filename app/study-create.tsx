@@ -22,6 +22,7 @@ import { useCycle } from "@/src/core/providers/CycleContext";
 import TimePickerModal from "@/src/shared/components/TimePickerModal";
 import { suggestStudyDuration } from "@/src/shared/lib/ai";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import {
   createDeviceCalendarEvent,
   getDateFromISOAndTime,
@@ -448,22 +449,18 @@ export function CreateStudyBlockScreen() {
                 </View>
 
                 {/* AI Duration suggestion */}
-                <TouchableOpacity
-                  className="mt-4 flex-row items-center justify-center rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 py-3"
+                <IconCtaButton
+                  label="Sugerir duración con IA"
                   onPress={handleAISuggestDuration}
-                  disabled={aiLoading || !subject.trim()}
-                >
-                  {aiLoading ? (
-                    <ActivityIndicator size="small" color="#a855f7" />
-                  ) : (
-                    <>
-                      <Ionicons name="sparkles" size={16} color="#a855f7" />
-                      <Text className="ml-2 font-bold text-purple-700">
-                        Sugerir duración con IA
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+                  iconName="sparkles"
+                  iconColor="#a855f7"
+                  iconSize={16}
+                  loading={aiLoading}
+                  loadingColor="#a855f7"
+                  disabled={!subject.trim()}
+                  containerClassName="mt-4 w-full rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 py-3"
+                  textClassName="text-purple-700"
+                />
               </View>
 
               {/* Energy lab */}

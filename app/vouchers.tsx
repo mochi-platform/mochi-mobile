@@ -15,6 +15,7 @@ import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { Voucher, VoucherTemplate } from "@/src/shared/types/database";
@@ -607,18 +608,19 @@ export function VouchersScreen() {
                   </View>
                 </View>
 
-                <TouchableOpacity
-                  className={`mx-5 mt-5 items-center rounded-2xl py-4 ${sharing ? "bg-yellow-300" : "bg-yellow-500"}`}
-                  onPress={() => void handleShareVoucher()}
-                  disabled={sharing}
-                >
-                  <View className="flex-row items-center gap-2">
-                    <Ionicons name="share" size={18} color="white" />
-                    <Text className="font-extrabold text-white">
-                      {sharing ? "Compartiendo..." : "Compartir imagen"}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                <IconCtaButton
+                  label="Compartir imagen"
+                  onPress={() => {
+                    void handleShareVoucher();
+                  }}
+                  iconName="share"
+                  iconColor="#ffffff"
+                  iconSize={18}
+                  loading={sharing}
+                  loadingColor="#ffffff"
+                  containerClassName={`mx-5 mt-5 rounded-2xl py-4 ${sharing ? "bg-yellow-300" : "bg-yellow-500"}`}
+                  textClassName="text-white"
+                />
               </>
             )}
           </View>

@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useCycle } from "@/src/core/providers/CycleContext";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import {
   generateStudyBlockSuggestions,
   predictWellnessRisk,
@@ -507,43 +508,34 @@ export function WeeklyPlannerScreen() {
           </View>
 
           <View className="mt-4 flex-row gap-2">
-            <TouchableOpacity
-              className="flex-1 flex-row items-center justify-center rounded-2xl bg-indigo-600 px-3 py-3"
+            <IconCtaButton
+              label="Regenerar plan"
               onPress={() => {
                 void generatePlanner();
               }}
-              disabled={generating}
-            >
-              {generating ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <>
-                  <Ionicons name="refresh" size={14} color="#ffffff" />
-                  <Text className="ml-2 text-xs font-extrabold text-white">
-                    Regenerar plan
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
+              iconName="refresh"
+              iconColor="#ffffff"
+              iconSize={14}
+              loading={generating}
+              loadingColor="#ffffff"
+              containerClassName="flex-1 rounded-2xl bg-indigo-600 px-3 py-3"
+              textClassName="text-xs text-white"
+            />
 
-            <TouchableOpacity
-              className={`flex-1 flex-row items-center justify-center rounded-2xl px-3 py-3 ${saving ? "bg-emerald-300" : "bg-emerald-500"}`}
+            <IconCtaButton
+              label="Guardar bloques"
               onPress={() => {
                 void handleSaveSuggestions();
               }}
-              disabled={saving || suggestions.length === 0}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <>
-                  <Ionicons name="save" size={14} color="#ffffff" />
-                  <Text className="ml-2 text-xs font-extrabold text-white">
-                    Guardar bloques
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
+              iconName="save"
+              iconColor="#ffffff"
+              iconSize={14}
+              loading={saving}
+              loadingColor="#ffffff"
+              disabled={suggestions.length === 0}
+              containerClassName={`flex-1 rounded-2xl px-3 py-3 ${saving ? "bg-emerald-300" : "bg-emerald-500"}`}
+              textClassName="text-xs text-white"
+            />
           </View>
 
           {saveMessage ? (

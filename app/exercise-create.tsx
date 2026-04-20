@@ -19,6 +19,7 @@ import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { suggestExerciseDescription } from "@/src/shared/lib/ai";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 
 export function CreateExerciseScreen() {
   const insets = useSafeAreaInsets();
@@ -194,22 +195,18 @@ export function CreateExerciseScreen() {
                 )}
               </View>
 
-              <TouchableOpacity
-                className="mt-3 flex-row items-center justify-center rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 py-3"
+              <IconCtaButton
+                label="Obtener sugerencias"
                 onPress={handleAISuggest}
-                disabled={aiLoading || !name.trim()}
-              >
-                {aiLoading ? (
-                  <ActivityIndicator size="small" color="#0d9488" />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles" size={16} color="#0d9488" />
-                    <Text className="ml-2 font-bold text-teal-700">
-                      Obtener sugerencias
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
+                iconName="sparkles"
+                iconColor="#0d9488"
+                iconSize={16}
+                loading={aiLoading}
+                loadingColor="#0d9488"
+                disabled={!name.trim()}
+                containerClassName="mt-3 w-full rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 py-3"
+                textClassName="text-teal-700"
+              />
 
               {aiDescription && (
                 <View className="mt-3 rounded-2xl bg-teal-50 p-3">

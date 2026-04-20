@@ -15,6 +15,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GoalCard } from "@/src/features/goals/components/GoalCard";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { TabHeader } from "@/src/shared/components/TabHeader";
@@ -673,20 +674,16 @@ export function GoalsScreen() {
                       </View>
                     </View>
 
-                    <TouchableOpacity
-                      className={`mt-4 flex-row items-center rounded-2xl border px-4 py-3 ${editCompleted ? "border-green-300 bg-green-50" : "border-purple-200 bg-purple-50"}`}
+                    <IconCtaButton
+                      label="Marcar como completada"
                       onPress={() => setEditCompleted((prev) => !prev)}
+                      iconName={editCompleted ? "checkbox" : "square"}
+                      iconColor={editCompleted ? "#16a34a" : "#7c3aed"}
+                      iconSize={20}
                       disabled={savingEdit}
-                    >
-                      <Ionicons
-                        name={editCompleted ? "checkbox" : "square"}
-                        size={20}
-                        color={editCompleted ? "#16a34a" : "#7c3aed"}
-                      />
-                      <Text className="ml-3 text-sm font-bold text-purple-800">
-                        Marcar como completada
-                      </Text>
-                    </TouchableOpacity>
+                      containerClassName={`mt-4 w-full rounded-2xl border px-4 py-3 ${editCompleted ? "border-green-300 bg-green-50" : "border-purple-200 bg-purple-50"}`}
+                      textClassName={editCompleted ? "text-green-700" : "text-purple-800"}
+                    />
 
                     {selectedGoal ? (
                       <TouchableOpacity

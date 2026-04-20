@@ -18,6 +18,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import TimePickerModal from "@/src/shared/components/TimePickerModal";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { useSession } from "@/src/core/providers/SessionContext";
@@ -859,22 +860,18 @@ export function SettingsScreen() {
                   </View>
 
                   {permissionStatus === "denied" && (
-                    <TouchableOpacity
-                      className="mt-3 flex-row items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2"
+                    <IconCtaButton
+                      label="Permiso denegado. Toca aquí para activar en ajustes del sistema."
                       onPress={() => {
                         void Linking.openSettings();
                       }}
-                    >
-                      <Ionicons
-                        name="warning"
-                        size={14}
-                        color="#d97706"
-                      />
-                      <Text className="flex-1 text-xs font-semibold text-amber-800">
-                        Permiso denegado. Toca aquí para activar en ajustes del
-                        sistema.
-                      </Text>
-                    </TouchableOpacity>
+                      iconName="warning"
+                      iconColor="#d97706"
+                      iconSize={14}
+                      containerClassName="mt-3 w-full rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2"
+                      contentClassName="justify-start"
+                      textClassName="flex-1 text-left text-xs text-amber-800"
+                    />
                   )}
 
                   {notifPrefs.enabled && (

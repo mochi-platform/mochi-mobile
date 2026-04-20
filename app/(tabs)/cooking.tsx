@@ -25,6 +25,7 @@ import {
 } from "@/src/shared/lib/gamification";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
+import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { TabHeader } from "@/src/shared/components/TabHeader";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
@@ -104,6 +105,17 @@ function getRecipeGenerationType(
   }
 
   return candidate;
+}
+
+function formatRecipeTag(tag: string): string {
+  const normalized = tag.trim();
+  if (!normalized) return "";
+
+  const capitalized =
+    normalized.charAt(0).toLocaleUpperCase("es-ES") + normalized.slice(1);
+
+  // Keep multi-word tags on a single line inside pill chips.
+  return capitalized.replace(/\s+/g, "\u00A0");
 }
 
 function RecipeCard({
@@ -201,7 +213,7 @@ function RecipeCard({
         {recipe.cuisine_type ? (
           <View className="rounded-full bg-amber-100 px-3 py-1">
             <Text className="text-xs font-bold text-amber-800">
-              {recipe.cuisine_type}
+              {formatRecipeTag(recipe.cuisine_type)}
             </Text>
           </View>
         ) : null}
@@ -209,13 +221,13 @@ function RecipeCard({
 
       {recipe.tags.length > 0 && (
         <View className="mt-2 flex-row flex-wrap gap-1">
-          {recipe.tags.slice(0, 3).map((tag) => (
+          {recipe.tags.slice(0, 3).map((tag, index) => (
             <View
-              key={tag}
-              className="rounded-full border border-orange-200 px-2 py-0.5"
+              key={`${tag}-${index}`}
+              className="shrink-0 self-start rounded-full border border-orange-200 px-2.5 py-1"
             >
-              <Text className="text-xs font-semibold text-orange-600">
-                {tag}
+              <Text className="text-xs font-semibold leading-4 text-orange-600">
+                {formatRecipeTag(tag)}
               </Text>
             </View>
           ))}
@@ -554,88 +566,82 @@ export function CookingScreen() {
               })}
             </ScrollView>
 
-            <TouchableOpacity
-              className={`mt-3 flex-row items-center justify-center rounded-2xl border px-3 py-2 ${
+            <IconCtaButton
+              label="Solo favoritas"
+              onPress={() => setFavoritesOnly((prev) => !prev)}
+              iconName={favoritesOnly ? "heart" : "heart-outline"}
+              iconColor={favoritesOnly ? "#db2777" : "#c2410c"}
+              iconSize={14}
+              containerClassName={`mt-3 w-full rounded-2xl border px-4 py-2.5 ${
                 favoritesOnly
                   ? "border-pink-400 bg-pink-100"
                   : "border-orange-200 bg-orange-50"
               }`}
-              onPress={() => setFavoritesOnly((prev) => !prev)}
-            >
-              <Ionicons
-                name={favoritesOnly ? "heart" : "heart-outline"}
-                size={14}
-                color={favoritesOnly ? "#db2777" : "#c2410c"}
-              />
-              <Text
-                className={`ml-2 text-xs font-bold ${
-                  favoritesOnly ? "text-pink-700" : "text-orange-700"
-                }`}
-              >
-                Solo favoritas
-              </Text>
-            </TouchableOpacity>
+              textClassName={favoritesOnly ? "text-pink-700" : "text-orange-700"}
+            />
           </View>
 
-          {loading ? (
-            <View className="items-center py-12">
-              <MochiCharacter mood="thinking" size={88} />
-              <Text className="mt-3 text-sm font-semibold text-orange-700">
-                Cargando recetas...
-              </Text>
-            </View>
-          ) : error ? (
-            <View className="rounded-3xl border-2 border-red-200 bg-red-50 p-4">
-              <Text className="text-sm font-semibold text-red-700">
-                {error}
-              </Text>
-              <TouchableOpacity
-                className="mt-3 rounded-2xl bg-red-500 py-2"
-                onPress={() => void loadRecipes()}
-              >
-                <Text className="text-center font-bold text-white">
-                  Reintentar
+          <View className="mt-5">
+            {loading ? (
+              <View className="items-center py-12">
+                <MochiCharacter mood="thinking" size={88} />
+                <Text className="mt-3 text-sm font-semibold text-orange-700">
+                  Cargando recetas...
                 </Text>
-              </TouchableOpacity>
-            </View>
-          ) : recipes.length === 0 ? (
-            <View className="items-center rounded-3xl border-2 border-orange-200 bg-white p-8">
-              <MochiCharacter
-                mood={personality?.mochiMood ?? "happy"}
-                size={88}
-              />
-              <Text className="mt-3 text-center text-base font-extrabold text-orange-900">
-                Aún no tienes recetas guardadas
-              </Text>
-              <Text className="mt-2 text-center text-sm font-semibold text-orange-600">
-                {cycleCookingTip ??
-                  "Cuéntame qué quieres cocinar y lo creo para ti"}
-              </Text>
-            </View>
-          ) : filteredRecipes.length === 0 ? (
-            <View className="items-center rounded-3xl border-2 border-orange-200 bg-white p-8">
-              <MochiCharacter mood="thinking" size={88} />
-              <Text className="mt-3 text-center text-base font-extrabold text-orange-900">
-                No encontramos recetas con esos filtros
-              </Text>
-              <Text className="mt-2 text-center text-sm font-semibold text-orange-600">
-                Ajusta la busqueda o desactiva algun filtro para ver mas opciones.
-              </Text>
-            </View>
-          ) : (
-            filteredRecipes.map((recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                imageUrl={recipeImageMap[recipe.id] ?? null}
-                imageLoading={Boolean(recipeImageLoadingMap[recipe.id])}
-                onLoadImage={loadRecipeImage}
-                onPress={() =>
-                  router.push(`/recipe-detail?recipeId=${recipe.id}`)
-                }
-              />
-            ))
-          )}
+              </View>
+            ) : error ? (
+              <View className="rounded-3xl border-2 border-red-200 bg-red-50 p-4">
+                <Text className="text-sm font-semibold text-red-700">
+                  {error}
+                </Text>
+                <TouchableOpacity
+                  className="mt-3 rounded-2xl bg-red-500 py-2"
+                  onPress={() => void loadRecipes()}
+                >
+                  <Text className="text-center font-bold text-white">
+                    Reintentar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : recipes.length === 0 ? (
+              <View className="items-center rounded-3xl border-2 border-orange-200 bg-white p-8">
+                <MochiCharacter
+                  mood={personality?.mochiMood ?? "happy"}
+                  size={88}
+                />
+                <Text className="mt-3 text-center text-base font-extrabold text-orange-900">
+                  Aún no tienes recetas guardadas
+                </Text>
+                <Text className="mt-2 text-center text-sm font-semibold text-orange-600">
+                  {cycleCookingTip ??
+                    "Cuéntame qué quieres cocinar y lo creo para ti"}
+                </Text>
+              </View>
+            ) : filteredRecipes.length === 0 ? (
+              <View className="items-center rounded-3xl border-2 border-orange-200 bg-white p-8">
+                <MochiCharacter mood="thinking" size={88} />
+                <Text className="mt-3 text-center text-base font-extrabold text-orange-900">
+                  No encontramos recetas con esos filtros
+                </Text>
+                <Text className="mt-2 text-center text-sm font-semibold text-orange-600">
+                  Ajusta la busqueda o desactiva algun filtro para ver mas opciones.
+                </Text>
+              </View>
+            ) : (
+              filteredRecipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  imageUrl={recipeImageMap[recipe.id] ?? null}
+                  imageLoading={Boolean(recipeImageLoadingMap[recipe.id])}
+                  onLoadImage={loadRecipeImage}
+                  onPress={() =>
+                    router.push(`/recipe-detail?recipeId=${recipe.id}`)
+                  }
+                />
+              ))
+            )}
+          </View>
           <View className="h-20" />
         </ScrollView>
         <FloatingActionButton
