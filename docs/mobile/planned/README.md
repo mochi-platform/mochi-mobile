@@ -1,17 +1,10 @@
-# Planned movido por repos
-
-La carpeta `docs/planned/` fue separada por repositorio:
-
-- `docs/mobile/planned/`
-- `docs/web/planned/`
-
-Usa esos índices para nuevos documentos o actualizaciones.
 # Índice de documentos planned — Mochi
 
 ## Alcance de repositorio (override)
 
 - Estos documentos se mantienen bajo un modelo de repositorios individuales (sin Turborepo).
-- Este repositorio cubre `mochi-mobile`; cualquier tarea de web se implementa en su repo (`mochi-web`) y se coordina por contrato de Supabase.
+- Este índice corresponde a `mochi-mobile`.
+- Las tareas web se documentan aparte en `docs/web/planned/` como dependencia externa.
 
 ## Regla operativa del override
 
@@ -42,7 +35,6 @@ Usa esos índices para nuevos documentos o actualizaciones.
 
 | Doc | Descripción | Esfuerzo |
 |---|---|---|
-| `admin-dashboard.md` | Dashboard web para Doménica — CRUD de voucher_templates + stats | Alto |
 | `shared-space-pareja.md` | Mochi Duo: dinámica mujer + pareja con panel reducido para él (metas, vales y snapshot de ciclo/rendimiento), 100% gratis | Alto |
 | `play-store-launch.md` | Checklist técnico + configuración para lanzamiento en Play Store | Medio |
 
@@ -50,7 +42,7 @@ Usa esos índices para nuevos documentos o actualizaciones.
 
 ## Monetización (documentos existentes)
 
-Estos documentos ya existen en `docs/planned/` y están completos:
+Estos documentos ya existen en `docs/mobile/planned/` y están completos:
 
 - `ai-tokens-ads.md` — Sistema de créditos IA via rewarded ads
 - `premium-subscription.md` — RevenueCat + Google Play Billing
@@ -71,14 +63,17 @@ Semana 2:
   6. android-widget-verification.md         (1 hora)
 
 Semanas 3-4:
-  7. admin-dashboard.md                    (1 semana)
-  8. play-store-launch.md                  (paralelo a admin)
+  7. play-store-launch.md                  (1 semana)
+  8. shared-space-pareja.md (Mochi Duo)    (paralelo)
 
 Fase siguiente:
-  9. shared-space-pareja.md (Mochi Duo)    (2+ semanas)
-  10. ai-tokens-ads.md                     (cuando se decida monetizar)
-  11. premium-subscription.md              (cuando se decida monetizar)
+  9. ai-tokens-ads.md                      (cuando se decida monetizar)
+  10. premium-subscription.md              (cuando se decida monetizar)
 ```
+
+## Dependencia externa (web)
+
+- `admin-dashboard.md` se mantiene en `docs/web/planned/`.
 
 ---
 

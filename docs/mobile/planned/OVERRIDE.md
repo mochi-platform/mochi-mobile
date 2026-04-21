@@ -2,7 +2,7 @@
 
 Ya no se trabaja con Turborepo. Mochi opera con repositorios individuales.
 
-## Reglas obligatorias para `docs/planned/`
+## Reglas obligatorias para `docs/mobile/planned/`
 
 - Cada documento debe indicar el repo de ejecución (`mochi-mobile` o `mochi-web`).
 - Si un documento depende de otro repo, debe marcarse como dependencia externa.
