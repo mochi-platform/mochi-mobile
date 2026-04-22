@@ -188,9 +188,9 @@ export function MochiDuoScreen() {
   );
 
   const displayOwner =
-    ownerProfile?.full_name?.trim() || ownerProfile?.mochi_name || "Ella";
+    ownerProfile?.full_name?.trim() || "Ella";
   const displayPartner =
-    partnerProfile?.full_name?.trim() || partnerProfile?.mochi_name || "El";
+    partnerProfile?.full_name?.trim() || "El";
 
   const summaryCards = useMemo(
     () => [

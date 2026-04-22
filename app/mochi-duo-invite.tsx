@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Clipboard,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
@@ -28,6 +29,7 @@ export function MochiDuoInviteScreen() {
   const [activeSpace, setActiveSpace] = useState<PartnerSpace | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
+  const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
   const userId = session?.user.id;
 
@@ -77,7 +79,7 @@ export function MochiDuoInviteScreen() {
       const { data, error } = await supabase.rpc("create_partner_invite");
       if (error) throw error;
       const code = typeof data === "string" ? data : "";
-      setInviteCode(code);
+      setInviteCode("");
       await loadSpace();
     } catch (err) {
       showAlert({
@@ -90,6 +92,14 @@ export function MochiDuoInviteScreen() {
       });
     } finally {
       setWorking(false);
+    }
+  };
+
+  const handleCopyCode = async () => {
+    if (activeSpace?.invite_code) {
+      await Clipboard.setString(activeSpace.invite_code);
+      setCopiedToClipboard(true);
+      setTimeout(() => setCopiedToClipboard(false), 2000);
     }
   };
 
@@ -197,7 +207,10 @@ export function MochiDuoInviteScreen() {
           <View className="mt-6 flex-row">
             <TouchableOpacity
               className={`flex-1 rounded-l-2xl border-2 px-4 py-3 ${mode === "create" ? "border-emerald-400 bg-emerald-100" : "border-emerald-200 bg-white"}`}
-              onPress={() => setMode("create")}
+              onPress={() => {
+                setMode("create");
+                setInviteCode("");
+              }}
             >
               <Text className="text-center text-sm font-extrabold text-emerald-900">
                 Crear invitacion
@@ -205,7 +218,10 @@ export function MochiDuoInviteScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               className={`flex-1 rounded-r-2xl border-2 px-4 py-3 ${mode === "join" ? "border-emerald-400 bg-emerald-100" : "border-emerald-200 bg-white"}`}
-              onPress={() => setMode("join")}
+              onPress={() => {
+                setMode("join");
+                setInviteCode("");
+              }}
             >
               <Text className="text-center text-sm font-extrabold text-emerald-900">
                 Unirme
@@ -220,10 +236,28 @@ export function MochiDuoInviteScreen() {
               </Text>
 
               {activeSpace?.invite_status === "pending" && (
-                <View className="mt-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <Text className="text-center text-2xl font-extrabold text-emerald-900">
-                    {activeSpace.invite_code}
-                  </Text>
+                <View className="mt-4">
+                  <View className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <Text
+                      selectable
+                      className="text-center text-2xl font-extrabold text-emerald-900"
+                    >
+                      {activeSpace.invite_code}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    className="mt-3 flex-row items-center justify-center gap-2 rounded-2xl border-2 border-emerald-300 bg-emerald-50 py-2.5"
+                    onPress={handleCopyCode}
+                  >
+                    <Ionicons
+                      name={copiedToClipboard ? "checkmark" : "copy"}
+                      size={18}
+                      color="#047857"
+                    />
+                    <Text className="font-semibold text-emerald-700">
+                      {copiedToClipboard ? "Copiado" : "Copiar codigo"}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               )}
 
