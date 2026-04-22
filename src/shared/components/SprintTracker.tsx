@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Text, View, Pressable, ScrollView } from "react-native";
+import { Text, View, ScrollView, TouchableOpacity } from "react-native";
 import { useExamSprintProgress } from "@/src/shared/hooks/useExamSprintProgress";
 import type { ExamPrepSprint, ExamSprintMilestone } from "@mochi/supabase/types";
 
@@ -13,7 +13,7 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
   if (isLoading) {
     return (
       <View className="bg-white rounded-2xl p-4">
-        <Text className="text-center text-gray-500 text-sm">
+        <Text className="text-center text-slate-500 text-sm">
           Cargando progreso...
         </Text>
       </View>
@@ -55,13 +55,13 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
       {/* Header */}
       <View className="mb-4">
         <View className="flex-row items-center justify-between mb-2">
-          <Text className="font-bold text-gray-800 text-base">
+          <Text className="font-bold text-slate-800 text-base">
             Progreso: {completedDays}/{totalDays} días
           </Text>
         </View>
 
         {/* Progress Bar */}
-        <View className="bg-gray-200 rounded-full h-2 overflow-hidden">
+        <View className="bg-slate-200 rounded-full h-2 overflow-hidden">
           <View
             className="bg-green-500 h-full"
             style={{ width: `${(completedDays / totalDays) * 100}%` }}
@@ -73,12 +73,13 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View className="flex-row gap-2">
           {days.map((day) => (
-            <Pressable
+            <TouchableOpacity
               key={day.dayNumber}
+              activeOpacity={0.85}
               className={`items-center justify-center rounded-lg w-12 h-12 border-2 ${
                 day.completed
                   ? "bg-green-100 border-green-400"
-                  : "bg-gray-50 border-gray-200"
+                  : "bg-slate-50 border-slate-200"
               }`}
             >
               <Text className="font-semibold text-center text-xs">
@@ -87,17 +88,17 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
               {day.completed && (
                 <Ionicons name="checkmark" size={16} color="#16a34a" />
               )}
-            </Pressable>
+            </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
 
       {/* Stats */}
-      <View className="border-t border-gray-200 mt-4 pt-3">
+      <View className="border-t border-slate-200 mt-4 pt-3">
         <View className="flex-row justify-between">
           <View>
-            <Text className="text-xs text-gray-600">Horas promedio</Text>
-            <Text className="font-bold text-gray-800 text-sm">
+            <Text className="text-xs text-slate-600">Horas promedio</Text>
+            <Text className="font-bold text-slate-800 text-sm">
               {(
                 progressEntries.reduce((sum, p) => sum + p.hours_studied, 0) /
                 (completedDays || 1)
@@ -106,8 +107,8 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
             </Text>
           </View>
           <View>
-            <Text className="text-xs text-gray-600">Meta diaria</Text>
-            <Text className="font-bold text-gray-800 text-sm">
+            <Text className="text-xs text-slate-600">Meta diaria</Text>
+            <Text className="font-bold text-slate-800 text-sm">
               {sprint.daily_target_hours}h
             </Text>
           </View>

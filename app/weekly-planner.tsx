@@ -20,6 +20,7 @@ import {
   type PredictWellnessRiskOutput,
   type StudyBlockSuggestion,
 } from "@/src/shared/lib/ai";
+import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
 import { supabase } from "@/src/shared/lib/supabase";
 
 type PlannerExamItem = {
@@ -332,21 +333,40 @@ export function WeeklyPlannerScreen() {
         activeRoutines,
       });
 
-      const [suggestionsResult, wellnessResult] = await Promise.allSettled([
-        generateStudyBlockSuggestions({ context: plannerContext }),
-        predictWellnessRisk({
-          userId,
-          recentEnergyLevels: energyLevels,
-          cyclePhase: cycleData?.phase ?? null,
-          recentMoodRatings: moodLevels,
-          currentStreak,
-          recentExamSprints: upcomingExams.map((exam) => ({
-            exam: exam.subject,
-            daysLeft: Math.max(0, getDaysUntil(exam.exam_date)),
-          })),
-          totalGoalsActive: activeGoals,
-          totalRoutinesActive: activeRoutines,
+      const [plannerUsage, wellnessUsage] = await Promise.all([
+        requestAiUsage({
+          reason: "ai_planner",
+          sourceRef: "weekly_planner",
         }),
+        requestAiUsage({
+          reason: "ai_wellness_risk",
+          sourceRef: "weekly_planner",
+        }),
+      ]);
+
+      const suggestionPromise = plannerUsage.allowed
+        ? generateStudyBlockSuggestions({ context: plannerContext })
+        : Promise.resolve([] as StudyBlockSuggestion[]);
+
+      const wellnessPromise = wellnessUsage.allowed
+        ? predictWellnessRisk({
+            userId,
+            recentEnergyLevels: energyLevels,
+            cyclePhase: cycleData?.phase ?? null,
+            recentMoodRatings: moodLevels,
+            currentStreak,
+            recentExamSprints: upcomingExams.map((exam) => ({
+              exam: exam.subject,
+              daysLeft: Math.max(0, getDaysUntil(exam.exam_date)),
+            })),
+            totalGoalsActive: activeGoals,
+            totalRoutinesActive: activeRoutines,
+          })
+        : Promise.resolve(null);
+
+      const [suggestionsResult, wellnessResult] = await Promise.allSettled([
+        suggestionPromise,
+        wellnessPromise,
       ]);
 
       if (suggestionsResult.status === "fulfilled") {
@@ -368,7 +388,7 @@ export function WeeklyPlannerScreen() {
       }
 
       if (wellnessResult.status === "fulfilled") {
-        setWellness(wellnessResult.value);
+        setWellness(wellnessResult.value as PredictWellnessRiskOutput | null);
       } else {
         setWellness(null);
       }
@@ -378,6 +398,10 @@ export function WeeklyPlannerScreen() {
         wellnessResult.status === "rejected"
       ) {
         setError("No pudimos generar tu planner esta vez. Intenta nuevamente.");
+      }
+
+      if (!plannerUsage.allowed && !wellnessUsage.allowed) {
+        setError(buildAiLimitMessage(plannerUsage.reason));
       }
     } catch (err) {
       setSuggestions([]);

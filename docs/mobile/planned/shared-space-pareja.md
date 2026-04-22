@@ -1,4 +1,4 @@
-# Mochi Duo
+# Mochi Duo™
 
 ## Alcance de repositorio (override)
 
@@ -8,13 +8,13 @@
 ## Aplicación del override en este documento
 
 - Todo el plan se implementa en `mochi-mobile` con soporte de migraciones Supabase.
-- No hay dependencia de paywall/suscripciones para habilitar Mochi Duo.
+- No hay dependencia de paywall/suscripciones para habilitar Mochi Duo™.
 - No se requieren cambios de UI en `mochi-web` para liberar esta versión.
 
 ## Contexto
 
 El campo `partner_features_enabled` existe en `user_settings` y controla la visibilidad
-del módulo de vales. La dinámica de Mochi Duo es la evolución natural: permitir
+del módulo de vales. La dinámica de Mochi Duo™ es la evolución natural: permitir
 que una mujer vincule su cuenta con su pareja hombre para compartir metas, vales y
 seguimiento de bienestar/rendimiento.
 
@@ -22,14 +22,14 @@ Esta feature es **100% gratuita**: no depende de suscripción ni cambia por paga
 
 ## Naming definido
 
-Nombre oficial del producto para esta dinámica: `Mochi Duo`.
+Nombre oficial del producto para esta dinámica: `Mochi Duo™`.
 
 ## Alcance de esta versión (v1)
 
 - Vincular dos cuentas (mujer propietaria + pareja hombre) por invitación.
 - Habilitar para él un espacio reducido con permisos controlados.
 - Permitir que él cree y modifique metas compartidas (`joint_goals`).
-- Permitir que él modifique los vales de ella dentro de Mochi Duo.
+- Permitir que él modifique los vales de ella dentro de Mochi Duo™.
 - Mostrar para él un snapshot del estado de ella:
   - fase del ciclo
   - rendimiento en estudio, ejercicio, hábitos y mood
@@ -137,7 +137,7 @@ ALTER TABLE vouchers ADD COLUMN IF NOT EXISTS updated_by_partner boolean NOT NUL
 ```
 
 Un vale con `space_id != null` puede ser editado/canjeado por cualquiera de las dos
-personas en Mochi Duo.
+personas en Mochi Duo™.
 
 ### Policy para permisos reducidos del partner en `vouchers`
 
@@ -247,9 +247,9 @@ GRANT EXECUTE ON FUNCTION accept_partner_invite(text) TO authenticated;
 
 ## Pantallas a crear (Mobile)
 
-### `app/mochi-duo.tsx`
+### `app/mochi-Duo™.tsx`
 
-Vista principal de Mochi Duo:
+Vista principal de Mochi Duo™:
 - Panel de él (espacio reducido):
   - metas compartidas editables
   - vales de ella editables dentro del espacio
@@ -259,11 +259,11 @@ Vista principal de Mochi Duo:
 - Metas compartidas (`joint_goals`)
 - Vales compartidos
 
-### `app/mochi-duo-invite.tsx`
+### `app/mochi-Duo™-invite.tsx`
 
 Dos modos:
 1. **Crear invitación** — muestra código generado y opción de compartir
-2. **Unirse a Mochi Duo** — campo para ingresar código de 8 caracteres
+2. **Unirse a Mochi Duo™** — campo para ingresar código de 8 caracteres
 
 ## Integración con módulos existentes
 
@@ -346,7 +346,7 @@ GRANT EXECUTE ON FUNCTION get_partner_space_snapshot(uuid) TO authenticated;
 
 ### Settings (`app/settings.tsx`)
 
-Agregar sección "Mochi Duo" con:
+Agregar sección "Mochi Duo™" con:
 - Estado del vínculo (activo / pendiente / sin vincular)
 - Opción de crear código o unirse
 - Opción de desvincular
@@ -388,7 +388,7 @@ GRANT EXECUTE ON FUNCTION leave_partner_space(uuid) TO authenticated;
 
 Esta dinámica se mantiene gratuita en todos los planes:
 - No hay gating por `billing_subscriptions`.
-- No hay paywall para crear, unirse o usar Mochi Duo.
+- No hay paywall para crear, unirse o usar Mochi Duo™.
 
 ## Criterios de aceptación
 

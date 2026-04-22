@@ -27,7 +27,7 @@ export function QuickCaptureModal({
   onClose,
   onActionCreated,
 }: QuickCaptureModalProps) {
-  const { convertNoteToAction, convertingNote } = useActionConversion();
+  const { convertNoteToAction, convertingNote, error } = useActionConversion();
 
   const [step, setStep] = useState<ModalStep>("input");
   const [noteText, setNoteText] = useState("");
@@ -91,6 +91,13 @@ export function QuickCaptureModal({
           </View>
 
           <ScrollView>
+            {error && (
+              <View className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3">
+                <Text className="text-xs font-semibold text-red-700">
+                  {error.message}
+                </Text>
+              </View>
+            )}
             {step === "input" && (
               <View>
                 <TextInput
@@ -99,8 +106,8 @@ export function QuickCaptureModal({
                   onChangeText={setNoteText}
                   multiline
                   maxLength={500}
-                  className="border border-gray-300 rounded-xl p-3 mb-4 min-h-24 text-gray-800"
-                  placeholderTextColor="#999"
+                  className="mb-4 min-h-24 rounded-xl border-2 border-violet-200 bg-violet-50 p-3 text-violet-900"
+                  placeholderTextColor="#8b5cf6"
                 />
 
                 <View className="flex-row gap-2">

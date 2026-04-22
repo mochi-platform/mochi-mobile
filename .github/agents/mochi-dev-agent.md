@@ -98,6 +98,7 @@ if (!moduleVisibility.cooking_enabled) return null;
 Las fases (`menstrual`, `folicular`, `ovulatoria`, `lutea`, `unknown`) vienen de
 `CycleContext`. Úsalas con `useCycleRecommendation(context)` para tips.
 **No hardcodear lógica de ciclo fuera de `cyclePersonality.ts`.**
+Importar tipos desde `@/src/shared/lib/healthConnect` y nunca usar valores en inglés.
 
 ## Expo Go vs APK
 Módulos nativos (`react-native-health-connect`, `react-native-edge-to-edge`,

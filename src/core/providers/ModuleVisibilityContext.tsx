@@ -11,6 +11,7 @@ import { supabase } from "@/src/shared/lib/supabase";
 
 export type ModuleVisibility = {
   partner_features_enabled: boolean;
+  quick_capture_enabled: boolean;
   study_enabled: boolean;
   exercise_enabled: boolean;
   habits_enabled: boolean;
@@ -23,6 +24,7 @@ export type ModuleVisibility = {
 
 export const defaultModuleVisibility: ModuleVisibility = {
   partner_features_enabled: false,
+  quick_capture_enabled: true,
   study_enabled: true,
   exercise_enabled: true,
   habits_enabled: true,
@@ -69,7 +71,7 @@ export function ModuleVisibilityProvider({
       const { data, error } = await supabase
         .from("user_settings")
         .select(
-          "partner_features_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled",
+          "partner_features_enabled, quick_capture_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled",
         )
         .eq("user_id", session.user.id)
         .maybeSingle();

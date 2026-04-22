@@ -30,6 +30,7 @@ import {
   generateFlashcards,
   generateStudySessionPlan,
 } from "@/src/shared/lib/ai";
+import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
 import {
   addPoints,
   checkStreakAchievements,
@@ -408,6 +409,16 @@ export function StudyTimerScreen() {
     }
 
     try {
+      const usage = await requestAiUsage({
+        reason: "ai_flashcards",
+        sourceRef: "study_flashcards",
+      });
+
+      if (!usage.allowed) {
+        setError(buildAiLimitMessage(usage.reason));
+        return;
+      }
+
       setGeneratingFlashcards(true);
       setError(null);
 
@@ -538,6 +549,16 @@ export function StudyTimerScreen() {
     if (!block || !specificTopic.trim()) return;
 
     try {
+      const usage = await requestAiUsage({
+        reason: "ai_study_plan",
+        sourceRef: "study_plan",
+      });
+
+      if (!usage.allowed) {
+        setPlanError(buildAiLimitMessage(usage.reason));
+        return;
+      }
+
       setPlanning(true);
       setPlanError(null);
       const detectedDiscipline = await ensureDiscipline();
@@ -602,6 +623,16 @@ export function StudyTimerScreen() {
       question.trim() ||
       (chatAttachment ? "Ayúdame con este material adjunto." : "");
     if (!userText || !block) return;
+
+    const usage = await requestAiUsage({
+      reason: "ai_chat",
+      sourceRef: "study_companion",
+    });
+
+    if (!usage.allowed) {
+      setChatError(buildAiLimitMessage(usage.reason));
+      return;
+    }
 
     setAsking(true);
     setChatError(null);

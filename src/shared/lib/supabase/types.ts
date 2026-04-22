@@ -160,6 +160,9 @@ export interface Voucher {
   color: string
   is_redeemed: boolean
   redeemed_at: string | null
+  space_id?: string | null
+  redeemed_by?: string | null
+  updated_by_partner?: boolean
   created_at: string
 }
 
@@ -169,6 +172,7 @@ export interface UserSettings {
   id: string
   user_id: string
   partner_features_enabled: boolean
+  quick_capture_enabled: boolean
   study_enabled: boolean
   exercise_enabled: boolean
   habits_enabled: boolean
@@ -179,6 +183,32 @@ export interface UserSettings {
   cooking_enabled: boolean
   created_at: string
   updated_at: string
+}
+
+// ─── Mochi Duo™ ─────────────────────────────────────────────────────────────
+
+export interface PartnerSpace {
+  id: string
+  owner_user_id: string
+  partner_user_id: string | null
+  partner_role: 'male_lite'
+  invite_code: string
+  invite_status: 'pending' | 'accepted' | 'cancelled'
+  created_at: string
+  updated_at: string
+}
+
+export interface JointGoal {
+  id: string
+  space_id: string
+  title: string
+  description: string | null
+  color: string
+  progress: number
+  is_completed: boolean
+  target_date: string | null
+  created_by: string
+  created_at: string
 }
 
 // ─── Quick Notes ───────────────────────────────────────────────────────────

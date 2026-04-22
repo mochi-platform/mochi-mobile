@@ -1,7 +1,5 @@
 import type { CyclePhase } from "@/src/shared/lib/healthConnect";
 
-export type { CyclePhase };
-
 export interface TaskScore {
   id: string;
   type: "study" | "routine" | "goal" | "habit";
@@ -81,6 +79,9 @@ function typeScoreByCycle(phase: CyclePhase): number {
     case "unknown":
       return 0;
     default:
-      return 0;
+      {
+        const _exhaustive: never = phase;
+        return 0;
+      }
   }
 }

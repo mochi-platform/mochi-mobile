@@ -75,6 +75,9 @@ export function VouchersScreen() {
   const { showAlert, AlertComponent } = useCustomAlert();
   const [templates, setTemplates] = useState<VoucherTemplate[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [sharedVouchers, setSharedVouchers] = useState<Voucher[]>([]);
+  const [partnerSpaceId, setPartnerSpaceId] = useState<string | null>(null);
+  const [showSharedSection, setShowSharedSection] = useState(false);
   const [totalPoints, setTotalPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +93,9 @@ export function VouchersScreen() {
     if (!userId) {
       setTemplates([]);
       setVouchers([]);
+      setSharedVouchers([]);
+      setPartnerSpaceId(null);
+      setShowSharedSection(false);
       setTotalPoints(0);
       setLoading(false);
       return;
@@ -99,7 +105,7 @@ export function VouchersScreen() {
       setLoading(true);
       setError(null);
 
-      const [templatesRes, vouchersRes, profileRes] = await Promise.all([
+      const [templatesRes, vouchersRes, profileRes, partnerSpaceRes] = await Promise.all([
         supabase
           .from("voucher_templates")
           .select("id, title, description, points_cost, icon, color")
@@ -107,7 +113,7 @@ export function VouchersScreen() {
         supabase
           .from("vouchers")
           .select(
-            "id, user_id, title, description, points_cost, icon, color, is_redeemed, redeemed_at, created_at",
+            "id, user_id, title, description, points_cost, icon, color, is_redeemed, redeemed_at, created_at, space_id, redeemed_by, updated_by_partner",
           )
           .eq("user_id", userId)
           .order("created_at", { ascending: false }),
@@ -116,6 +122,14 @@ export function VouchersScreen() {
           .select("total_points")
           .eq("id", userId)
           .single(),
+        supabase
+          .from("partner_spaces")
+          .select("id, invite_status, owner_user_id, partner_user_id")
+          .or(`owner_user_id.eq.${userId},partner_user_id.eq.${userId}`)
+          .eq("invite_status", "accepted")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       if (templatesRes.error) throw templatesRes.error;
@@ -128,12 +142,39 @@ export function VouchersScreen() {
         ((profileRes.data as ProfilePoints | null)?.total_points ??
           0) as number,
       );
+
+      const partnerSpace = (partnerSpaceRes.data as {
+        id: string;
+        owner_user_id: string;
+        partner_user_id: string | null;
+      } | null) ?? null;
+      const spaceId = partnerSpace?.id ?? null;
+      setPartnerSpaceId(spaceId);
+      setShowSharedSection(partnerSpace?.partner_user_id === userId);
+
+      if (spaceId) {
+        const { data: sharedData, error: sharedError } = await supabase
+          .from("vouchers")
+          .select(
+            "id, user_id, title, description, points_cost, icon, color, is_redeemed, redeemed_at, created_at, space_id, redeemed_by, updated_by_partner",
+          )
+          .eq("space_id", spaceId)
+          .order("created_at", { ascending: false });
+
+        if (sharedError) throw sharedError;
+        setSharedVouchers((sharedData ?? []) as Voucher[]);
+      } else {
+        setSharedVouchers([]);
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "No se pudieron cargar los vales",
       );
       setTemplates([]);
       setVouchers([]);
+      setSharedVouchers([]);
+      setPartnerSpaceId(null);
+      setShowSharedSection(false);
       setTotalPoints(0);
     } finally {
       setLoading(false);
@@ -238,10 +279,12 @@ export function VouchersScreen() {
                   .from("vouchers")
                   .update({
                     is_redeemed: true,
+                    redeemed_by: userId,
+                    updated_by_partner: userId !== voucher.user_id,
                     redeemed_at: new Date().toISOString(),
                   })
                   .eq("id", voucher.id)
-                  .eq("user_id", voucher.user_id);
+                  ;
 
                 if (updateError) throw updateError;
                 await loadVouchersData();
@@ -436,6 +479,83 @@ export function VouchersScreen() {
                   </View>
                 )}
               </View>
+
+              {partnerSpaceId && showSharedSection && (
+                <View className="mt-6">
+                  <Text className="text-lg font-extrabold text-yellow-900">
+                    Vales compartidos
+                  </Text>
+
+                  {sharedVouchers.length === 0 ? (
+                    <View className="mt-3 items-center rounded-3xl border-2 border-yellow-200 bg-white p-6">
+                      <MochiCharacter mood="happy" size={76} />
+                      <Text className="mt-3 text-center text-sm font-semibold text-yellow-800">
+                        Aun no hay vales compartidos en este espacio
+                      </Text>
+                    </View>
+                  ) : (
+                    <View className="mt-3">
+                      {sharedVouchers.map((voucher) => {
+                        const status = getStatus(voucher.is_redeemed);
+
+                        return (
+                          <TouchableOpacity
+                            key={voucher.id}
+                            className="mb-3 rounded-2xl border-2 border-yellow-200 bg-white p-4"
+                            onLongPress={() => handleMarkAsRedeemed(voucher)}
+                            delayLongPress={250}
+                          >
+                            <View className="flex-row items-center justify-between">
+                              <View className="flex-row items-center flex-1 mr-2">
+                                <View className="h-10 w-10 items-center justify-center rounded-xl bg-yellow-100">
+                                  <Ionicons
+                                    name={
+                                      (voucher.icon as keyof typeof Ionicons.glyphMap) ||
+                                      "ticket"
+                                    }
+                                    size={18}
+                                    color="#92400e"
+                                  />
+                                </View>
+                                <View className="ml-3 flex-1">
+                                  <Text className="text-base font-extrabold text-yellow-950">
+                                    {voucher.title}
+                                  </Text>
+                                  <Text className="mt-1 text-xs font-semibold text-yellow-800">
+                                    {formatDate(voucher.created_at)}
+                                  </Text>
+                                  {voucher.updated_by_partner && (
+                                    <Text className="mt-1 text-xs font-semibold text-emerald-700">
+                                      Actualizado por tu pareja
+                                    </Text>
+                                  )}
+                                </View>
+                              </View>
+                              <View className="flex-row items-center gap-2">
+                                <View
+                                  className={`rounded-full px-3 py-1 ${status.className}`}
+                                >
+                                  <Text
+                                    className={`text-xs font-extrabold ${status.textClass}`}
+                                  >
+                                    {status.label}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+
+                            {redeemingId === voucher.id && (
+                              <Text className="mt-3 text-xs font-semibold text-yellow-800">
+                                Actualizando estado...
+                              </Text>
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              )}
 
               <View className="mt-6">
                 <Text className="text-lg font-extrabold text-yellow-900">

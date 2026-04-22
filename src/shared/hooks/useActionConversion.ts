@@ -3,6 +3,7 @@ import {
   AIError,
   convertNoteToAction as convertNoteToActionAI,
 } from "@mochi/ai/index";
+import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
 
 export interface ActionConversionResult {
   type: "study_block" | "exercise" | "goal" | "habit";
@@ -59,6 +60,17 @@ export function useActionConversion() {
     const payloadNote = `Contexto: student_productivity_app. Idioma requerido: español. Nota: ${note}`;
 
     try {
+      const usage = await requestAiUsage({
+        reason: "ai_note_to_action",
+        sourceRef: "quick_capture",
+      });
+
+      if (!usage.allowed) {
+        const limitError = new Error(buildAiLimitMessage(usage.reason));
+        setError(limitError);
+        return null;
+      }
+
       const result = await withTimeout(
         convertNoteToActionAI({
           note: payloadNote,

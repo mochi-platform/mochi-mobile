@@ -43,7 +43,7 @@ Usa esos índices para nuevos documentos o actualizaciones.
 | Doc | Descripción | Esfuerzo |
 |---|---|---|
 | `admin-dashboard.md` | Dashboard web para Doménica — CRUD de voucher_templates + stats | Alto |
-| `shared-space-pareja.md` | Mochi Duo: dinámica mujer + pareja con panel reducido para él (metas, vales y snapshot de ciclo/rendimiento), 100% gratis | Alto |
+| `shared-space-pareja.md` | Mochi Duo™: dinámica mujer + pareja con panel reducido para él (metas, vales y snapshot de ciclo/rendimiento), 100% gratis | Alto |
 | `play-store-launch.md` | Checklist técnico + configuración para lanzamiento en Play Store | Medio |
 
 ---
@@ -75,7 +75,7 @@ Semanas 3-4:
   8. play-store-launch.md                  (paralelo a admin)
 
 Fase siguiente:
-  9. shared-space-pareja.md (Mochi Duo)    (2+ semanas)
+  9. shared-space-pareja.md (Mochi Duo™)    (2+ semanas)
   10. ai-tokens-ads.md                     (cuando se decida monetizar)
   11. premium-subscription.md              (cuando se decida monetizar)
 ```

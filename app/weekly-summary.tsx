@@ -14,6 +14,7 @@ import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
 import { callAI } from "@/src/shared/lib/ai";
+import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
 
 type AtlasIntensity = "Baja" | "Media" | "Alta";
 
@@ -347,8 +348,17 @@ export function WeeklySummaryScreen() {
         const aiPrompt = `Resumen semanal de estudiante:\nHoras estudio: ${Number(studyHours.toFixed(1))}\nSesiones: ${sessions}\nRutinas: ${routines}\nHábitos: ${habitsCompleted}/${habitsTotal}\nPuntos: ${points}\nRacha: ${(streakRes.data as { longest_streak: number } | null)?.longest_streak ?? 0}\n\nEscribe un mensaje motivador de 2 a 3 líneas, cálido y en español.`;
 
         try {
-          const aiMessage = await callAI(aiPrompt);
-          setMessage(aiMessage.trim());
+          const usage = await requestAiUsage({
+            reason: "ai_summary",
+            sourceRef: "weekly_summary",
+          });
+
+          if (!usage.allowed) {
+            setMessage(buildAiLimitMessage(usage.reason));
+          } else {
+            const aiMessage = await callAI(aiPrompt);
+            setMessage(aiMessage.trim());
+          }
         } catch {
           setMessage(
             "Esta semana avanzaste con constancia. Cada paso cuenta y tu progreso se nota.",

@@ -30,6 +30,7 @@ import type {
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { DailyMotivation } from "@/src/features/home/components/DailyMotivation";
 import { CycleWidget } from "@/src/shared/components/CycleWidget";
+import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
 import {
   getGreeting,
   getTimeIcon,
@@ -44,8 +45,10 @@ type HomeDashboardProps = {
   onNavigateToExercise: () => void;
   onNavigateToHabits: () => void;
   onNavigateToCooking: () => void;
+  onOpenQuickCapture: () => void;
   moduleVisibility: {
     partner_features_enabled: boolean;
+    quick_capture_enabled: boolean;
     study_enabled: boolean;
     exercise_enabled: boolean;
     habits_enabled: boolean;
@@ -65,8 +68,9 @@ type UpcomingExam = {
 
 type QuickAccessItem = {
   label: string;
-  route: "/goals" | "/vouchers" | "/mood" | "/gratitude";
+  route: "/goals" | "/vouchers" | "/mood" | "/gratitude" | "/mochi-duo";
   enabledKey:
+    | "partner_features_enabled"
     | "goals_enabled"
     | "vouchers_enabled"
     | "mood_enabled"
@@ -219,6 +223,14 @@ const quickAccessItems: QuickAccessItem[] = [
     iconColor: "#92400e",
   },
   {
+    label: "Mochi Duo™",
+    route: "/mochi-duo",
+    enabledKey: "partner_features_enabled",
+    icon: "people",
+    cardClass: "border-emerald-200 bg-emerald-100",
+    iconColor: "#047857",
+  },
+  {
     label: "Estado de ánimo",
     route: "/mood",
     enabledKey: "mood_enabled",
@@ -241,6 +253,7 @@ const quickAccessRouteMap: Record<QuickAccessItem["route"], string> = {
   "/vouchers": "/vouchers",
   "/mood": "/(tabs)/mood",
   "/gratitude": "/(tabs)/gratitude",
+  "/mochi-duo": "/mochi-duo",
 };
 
 function buildCycleDismissKey(userId: string): string {
@@ -327,6 +340,7 @@ export function HomeDashboard({
   onNavigateToExercise,
   onNavigateToHabits,
   onNavigateToCooking,
+  onOpenQuickCapture,
   moduleVisibility,
 }: HomeDashboardProps) {
   const insets = useSafeAreaInsets();
@@ -396,12 +410,6 @@ export function HomeDashboard({
   };
 
   const visibleQuickAccessItems = quickAccessItems.filter((item) => {
-    if (item.enabledKey === "vouchers_enabled") {
-      return (
-        moduleVisibility.vouchers_enabled &&
-        moduleVisibility.partner_features_enabled
-      );
-    }
     return moduleVisibility[item.enabledKey];
   });
   const shouldShowCycleWidget =
@@ -817,10 +825,11 @@ export function HomeDashboard({
   );
 
   return (
-    <ScrollView
-      className="flex-1 bg-blue-50 px-5 pt-12"
-      contentContainerStyle={{ paddingBottom: bottomSpacerHeight }}
-    >
+    <View className="flex-1">
+      <ScrollView
+        className="flex-1 bg-blue-50 px-5 pt-12"
+        contentContainerStyle={{ paddingBottom: bottomSpacerHeight }}
+      >
 
       {/* Header */}
       <View>
@@ -1326,7 +1335,18 @@ export function HomeDashboard({
         </View>
       </AnimatedDashboardCard>
 
-    </ScrollView>
+      </ScrollView>
+
+      {moduleVisibility.quick_capture_enabled && (
+        <FloatingActionButton
+          onPress={onOpenQuickCapture}
+          containerClassName="bg-violet-500"
+          borderClassName="border-violet-300"
+          iconName="flash"
+          accessibilityLabel="Captura rápida"
+        />
+      )}
+    </View>
   );
 }
 

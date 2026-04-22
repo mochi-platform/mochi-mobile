@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Linking,
+  Modal,
   Platform,
   ScrollView,
   Switch,
@@ -11,6 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import type {
+  PurchasesOfferings,
+  PurchasesPackage,
+} from "react-native-purchases";
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import {
@@ -23,6 +28,21 @@ import TimePickerModal from "@/src/shared/components/TimePickerModal";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
+import { isExpoGo } from "@/lib/env";
+import {
+  claimAiCreditFromAd,
+  getAiCreditBalance,
+  type AiCreditBalance,
+} from "@/src/shared/lib/aiCredits";
+import {
+  canUseRevenueCat,
+  configureRevenueCat,
+  getRevenueCatCustomerInfo,
+  getRevenueCatOfferings,
+  purchaseRevenueCatPackage,
+  restoreRevenueCatPurchases,
+  syncRevenueCatToBackend,
+} from "@/src/shared/lib/revenuecat";
 import {
   cancelAllNotifications,
   cancelAllStudyBlockReminders,
@@ -49,7 +69,10 @@ import {
   requestCyclePermissions,
   revokeCyclePermissions,
 } from "@/src/shared/lib/healthConnect";
-import type { StudyBlock, UserSettings } from "@/src/shared/types/database";
+import type {
+  PartnerSpace,
+  StudyBlock,
+} from "@/src/shared/types/database";
 
 type HabitNotificationTarget = {
   id: string;
@@ -62,8 +85,15 @@ type ProfileSettings = {
   wake_up_time: string | null;
 };
 
+type PlanInfo = {
+  planKey: "free" | "premium";
+  status: string | null;
+  periodEndsAt: string | null;
+};
+
 type ModuleToggleKey =
   | "partner_features_enabled"
+  | "quick_capture_enabled"
   | "study_enabled"
   | "exercise_enabled"
   | "habits_enabled"
@@ -73,18 +103,35 @@ type ModuleToggleKey =
   | "vouchers_enabled"
   | "cooking_enabled";
 
+type ModuleSettings = {
+  partner_features_enabled: boolean;
+  quick_capture_enabled: boolean;
+  study_enabled: boolean;
+  exercise_enabled: boolean;
+  habits_enabled: boolean;
+  goals_enabled: boolean;
+  mood_enabled: boolean;
+  gratitude_enabled: boolean;
+  vouchers_enabled: boolean;
+  cooking_enabled: boolean;
+};
+
 type ModuleItem = {
   key: ModuleToggleKey;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
 };
 
-const readOnlyModuleKeys: ModuleToggleKey[] = [
-  "partner_features_enabled",
-  "vouchers_enabled",
-];
+type RewardedAdInstance = import("react-native-google-mobile-ads").RewardedAd;
+
+const TEST_REWARDED_AD_UNIT_ID_ANDROID =
+  "ca-app-pub-3940256099942544/5224354917";
+const TEST_REWARDED_AD_UNIT_ID_IOS =
+  "ca-app-pub-3940256099942544/1712485313";
 
 const moduleItems: ModuleItem[] = [
+  { key: "partner_features_enabled", label: "Mochi Duo™", icon: "people" },
+  { key: "quick_capture_enabled", label: "QuickCapture", icon: "flash" },
   { key: "study_enabled", label: "Estudio", icon: "book" },
   { key: "exercise_enabled", label: "Ejercicio", icon: "barbell" },
   { key: "habits_enabled", label: "Hábitos", icon: "leaf" },
@@ -95,19 +142,9 @@ const moduleItems: ModuleItem[] = [
   { key: "cooking_enabled", label: "Cocina", icon: "restaurant" },
 ];
 
-const defaultModuleSettings: Pick<
-  UserSettings,
-  | "partner_features_enabled"
-  | "study_enabled"
-  | "exercise_enabled"
-  | "habits_enabled"
-  | "goals_enabled"
-  | "mood_enabled"
-  | "gratitude_enabled"
-  | "vouchers_enabled"
-  | "cooking_enabled"
-> = {
+const defaultModuleSettings: ModuleSettings = {
   partner_features_enabled: false,
+  quick_capture_enabled: true,
   study_enabled: true,
   exercise_enabled: true,
   habits_enabled: true,
@@ -135,6 +172,18 @@ export function SettingsScreen() {
   });
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [moduleSettings, setModuleSettings] = useState(defaultModuleSettings);
+  const [partnerSpace, setPartnerSpace] = useState<PartnerSpace | null>(null);
+
+  const [aiCredits, setAiCredits] = useState<AiCreditBalance | null>(null);
+  const [aiCreditsLoading, setAiCreditsLoading] = useState(false);
+  const [rewardedReady, setRewardedReady] = useState(false);
+  const [rewardedLoading, setRewardedLoading] = useState(false);
+  const rewardedAdRef = useRef<RewardedAdInstance | null>(null);
+
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
+  const [premiumModalOpen, setPremiumModalOpen] = useState(false);
+  const [premiumLoading, setPremiumLoading] = useState(false);
+  const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
 
   const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>({
     enabled: false,
@@ -168,6 +217,83 @@ export function SettingsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const userId = session?.user.id;
+  const rewardedAdUnitId =
+    Platform.OS === "android"
+      ? process.env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID_UNIT_ID?.trim() ||
+        TEST_REWARDED_AD_UNIT_ID_ANDROID
+      : process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS_UNIT_ID?.trim() ||
+        TEST_REWARDED_AD_UNIT_ID_IOS;
+
+  useEffect(() => {
+    void configureRevenueCat(userId ?? null);
+  }, [userId]);
+
+  useEffect(() => {
+    if (isExpoGo) return;
+    let mounted = true;
+    let unsubscribeLoaded: (() => void) | null = null;
+    let unsubscribeReward: (() => void) | null = null;
+
+    void (async () => {
+      const adsModule = await import("react-native-google-mobile-ads");
+      if (!mounted) return;
+
+      const ad = adsModule.RewardedAd.createForAdRequest(rewardedAdUnitId, {
+        requestNonPersonalizedAdsOnly: true,
+      });
+
+      rewardedAdRef.current = ad;
+      setRewardedLoading(true);
+
+      unsubscribeLoaded = ad.addAdEventListener(
+        adsModule.RewardedAdEventType.LOADED,
+        () => {
+          setRewardedReady(true);
+          setRewardedLoading(false);
+        },
+      );
+
+      unsubscribeReward = ad.addAdEventListener(
+        adsModule.RewardedAdEventType.EARNED_REWARD,
+        () => {
+          void (async () => {
+            if (!userId) return;
+
+            try {
+              const rewardEventId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+              const updated = await claimAiCreditFromAd({
+                rewardEventId,
+                adNetwork: "admob",
+                adUnitId: rewardedAdUnitId,
+              });
+
+              if (updated) {
+                setAiCredits(updated);
+              }
+            } catch {
+              showAlert({
+                title: "No se pudo validar",
+                message: "No se pudo validar la recompensa.",
+                buttons: [{ text: "Entendido", style: "cancel" }],
+              });
+            } finally {
+              setRewardedReady(false);
+              setRewardedLoading(true);
+              ad.load();
+            }
+          })();
+        },
+      );
+
+      ad.load();
+    })();
+
+    return () => {
+      mounted = false;
+      unsubscribeLoaded?.();
+      unsubscribeReward?.();
+    };
+  }, [rewardedAdUnitId, showAlert, userId]);
 
   const loadSettings = useCallback(async () => {
     if (!userId) {
@@ -190,6 +316,9 @@ export function SettingsScreen() {
         cycleAvailable,
         cyclePermission,
         cycleSync,
+        partnerSpaceRes,
+        creditsRes,
+        planRes,
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -199,7 +328,7 @@ export function SettingsScreen() {
         supabase
           .from("user_settings")
           .select(
-            "partner_features_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled",
+            "partner_features_enabled, quick_capture_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled",
           )
           .eq("user_id", userId)
           .maybeSingle(),
@@ -215,6 +344,15 @@ export function SettingsScreen() {
         isHealthConnectAvailable(),
         hasCyclePermissions(),
         getCycleLastSync(),
+        supabase
+          .from("partner_spaces")
+          .select("*")
+          .or(`owner_user_id.eq.${userId},partner_user_id.eq.${userId}`)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        getAiCreditBalance().catch(() => null),
+        supabase.rpc("get_user_plan"),
       ]);
 
       if (profileRes.error) throw profileRes.error;
@@ -227,19 +365,11 @@ export function SettingsScreen() {
         mochi_name: (profileData?.mochi_name ?? "").trim() || "Mochi",
         wake_up_time: profileData?.wake_up_time ?? "",
       });
-      const mergedModuleSettings = {
+      const mergedModuleSettings: ModuleSettings = {
         ...defaultModuleSettings,
-        ...((settingsRes.data as Partial<
-          typeof defaultModuleSettings
-        > | null) ?? {}),
+        ...((settingsRes.data as Partial<ModuleSettings> | null) ?? {}),
       };
-
-      setModuleSettings({
-        ...mergedModuleSettings,
-        vouchers_enabled:
-          mergedModuleSettings.partner_features_enabled &&
-          mergedModuleSettings.vouchers_enabled,
-      });
+      setModuleSettings(mergedModuleSettings);
       setStudyBlocks((blocksRes.data as StudyBlock[] | null) ?? []);
       setHabitTargets(
         (habitsRes.data as HabitNotificationTarget[] | null) ?? [],
@@ -250,6 +380,39 @@ export function SettingsScreen() {
       setHealthAvailable(cycleAvailable);
       setHealthPermission(cyclePermission);
       setLastCycleSync(cycleSync);
+      setPartnerSpace((partnerSpaceRes.data as PartnerSpace | null) ?? null);
+      setAiCredits(creditsRes);
+
+      if (planRes.error) {
+        setPlanInfo(null);
+      } else {
+        const planData = (planRes.data ?? {}) as {
+          plan_key?: string;
+          status?: string | null;
+          current_period_ends_at?: string | null;
+        };
+        setPlanInfo({
+          planKey: planData.plan_key === "premium" ? "premium" : "free",
+          status: planData.status ?? null,
+          periodEndsAt: planData.current_period_ends_at ?? null,
+        });
+      }
+
+      if (canUseRevenueCat()) {
+        try {
+          const info = await getRevenueCatCustomerInfo();
+          if (info) {
+            const plan = await syncRevenueCatToBackend(info);
+            setPlanInfo({
+              planKey: plan.isPremium ? "premium" : "free",
+              status: plan.status,
+              periodEndsAt: plan.periodEndsAt,
+            });
+          }
+        } catch {
+          // No bloquear ajustes si falla RevenueCat.
+        }
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -263,6 +426,9 @@ export function SettingsScreen() {
       setHealthAvailable(false);
       setHealthPermission(false);
       setLastCycleSync(null);
+      setPartnerSpace(null);
+      setAiCredits(null);
+      setPlanInfo(null);
     } finally {
       setLoading(false);
     }
@@ -324,18 +490,52 @@ export function SettingsScreen() {
     }
   };
 
+  const handleOpenMochiDuo = () => {
+    router.push("/mochi-duo");
+  };
+
+  const handleOpenMochiDuoInvite = () => {
+    router.push("/mochi-duo-invite");
+  };
+
+  const handleLeaveMochiDuo = () => {
+    if (!partnerSpace) return;
+
+    showAlert({
+      title: "Desvincular Mochi Duo™",
+      message: "Esto cancelara el vinculo con tu pareja. Puedes crear uno nuevo cuando quieras.",
+      buttons: [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Desvincular",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              try {
+                await supabase.rpc("leave_partner_space", {
+                  p_space_id: partnerSpace.id,
+                });
+                setPartnerSpace(null);
+                await loadSettings();
+              } catch (err) {
+                showAlert({
+                  title: "No se pudo desvincular",
+                  message:
+                    err instanceof Error
+                      ? err.message
+                      : "No se pudo completar la solicitud.",
+                  buttons: [{ text: "Entendido", style: "cancel" }],
+                });
+              }
+            })();
+          },
+        },
+      ],
+    });
+  };
+
   const handleToggleModule = async (key: ModuleToggleKey, value: boolean) => {
     if (!userId) return;
-
-    if (readOnlyModuleKeys.includes(key)) {
-      showAlert({
-        title: "Cambio restringido",
-        message:
-          "Este módulo se administra desde base de datos y no se puede cambiar desde la app.",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
-      return;
-    }
 
     const previousSettings = moduleSettings;
     const nextSettings = {
@@ -348,6 +548,8 @@ export function SettingsScreen() {
     try {
       const payload = {
         user_id: userId,
+        partner_features_enabled: nextSettings.partner_features_enabled,
+        quick_capture_enabled: nextSettings.quick_capture_enabled,
         study_enabled: nextSettings.study_enabled,
         exercise_enabled: nextSettings.exercise_enabled,
         habits_enabled: nextSettings.habits_enabled,
@@ -426,6 +628,143 @@ export function SettingsScreen() {
       setNotifPrefs((prev) => ({ ...prev, enabled: !value }));
     } finally {
       setSavingNotif(false);
+    }
+  };
+
+  const handleRefreshCredits = async () => {
+    if (!userId) return;
+    try {
+      setAiCreditsLoading(true);
+      const latest = await getAiCreditBalance();
+      setAiCredits(latest);
+    } catch (err) {
+      showAlert({
+        title: "No se pudo cargar",
+        message:
+          err instanceof Error
+            ? err.message
+            : "No se pudieron cargar tus creditos de IA.",
+        buttons: [{ text: "Entendido", style: "cancel" }],
+      });
+    } finally {
+      setAiCreditsLoading(false);
+    }
+  };
+
+  const handleWatchAd = () => {
+    if (isExpoGo) {
+      showAlert({
+        title: "Anuncios no disponibles",
+        message: "Los anuncios recompensados requieren un build nativo.",
+        buttons: [{ text: "Entendido", style: "cancel" }],
+      });
+      return;
+    }
+
+    if (!rewardedAdRef.current) {
+      showAlert({
+        title: "Anuncio no listo",
+        message: "Estamos preparando el anuncio. Intenta de nuevo en unos segundos.",
+        buttons: [{ text: "Entendido", style: "cancel" }],
+      });
+      return;
+    }
+
+    if (rewardedReady) {
+      setRewardedReady(false);
+      rewardedAdRef.current.show();
+      return;
+    }
+
+    setRewardedLoading(true);
+    rewardedAdRef.current.load();
+  };
+
+  const handleOpenPremium = async () => {
+    if (!canUseRevenueCat()) {
+      showAlert({
+        title: "Premium no disponible",
+        message: "Necesitas un build nativo y la API key de RevenueCat.",
+        buttons: [{ text: "Entendido", style: "cancel" }],
+      });
+      return;
+    }
+
+    try {
+      setPremiumLoading(true);
+      const fetched = await getRevenueCatOfferings();
+      setOfferings(fetched);
+      setPremiumModalOpen(true);
+    } catch (err) {
+      showAlert({
+        title: "No se pudieron cargar los planes",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Intenta de nuevo en unos segundos.",
+        buttons: [{ text: "Entendido", style: "cancel" }],
+      });
+    } finally {
+      setPremiumLoading(false);
+    }
+  };
+
+  const handlePurchasePackage = async (selected: PurchasesPackage) => {
+    try {
+      setPremiumLoading(true);
+      const info = await purchaseRevenueCatPackage(selected);
+      const plan = await syncRevenueCatToBackend(info);
+      setPlanInfo({
+        planKey: plan.isPremium ? "premium" : "free",
+        status: plan.status,
+        periodEndsAt: plan.periodEndsAt,
+      });
+      showAlert({
+        title: "Premium activado",
+        message: "Tu suscripcion premium esta activa.",
+        buttons: [{ text: "Perfecto", style: "default" }],
+      });
+      setPremiumModalOpen(false);
+    } catch (err) {
+      showAlert({
+        title: "No se pudo completar la compra",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Intenta de nuevo en unos segundos.",
+        buttons: [{ text: "Entendido", style: "cancel" }],
+      });
+    } finally {
+      setPremiumLoading(false);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    try {
+      setPremiumLoading(true);
+      const info = await restoreRevenueCatPurchases();
+      const plan = await syncRevenueCatToBackend(info);
+      setPlanInfo({
+        planKey: plan.isPremium ? "premium" : "free",
+        status: plan.status,
+        periodEndsAt: plan.periodEndsAt,
+      });
+      showAlert({
+        title: "Compras restauradas",
+        message: "Tu plan se actualizo correctamente.",
+        buttons: [{ text: "Listo", style: "default" }],
+      });
+    } catch (err) {
+      showAlert({
+        title: "No se pudo restaurar",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Intenta de nuevo en unos segundos.",
+        buttons: [{ text: "Entendido", style: "cancel" }],
+      });
+    } finally {
+      setPremiumLoading(false);
     }
   };
 
@@ -609,6 +948,20 @@ export function SettingsScreen() {
       })
     : "Sin sincronización aún";
 
+  const partnerStatusLabel = (() => {
+    if (!partnerSpace) return "Sin vinculo";
+    if (partnerSpace.invite_status === "accepted") return "Activo";
+    if (partnerSpace.invite_status === "pending") return "Invitacion pendiente";
+    return "Cancelado";
+  })();
+
+  const premiumStatusLabel = planInfo?.planKey === "premium"
+    ? "Premium activo"
+    : "Plan gratis";
+  const premiumEndsLabel = planInfo?.periodEndsAt
+    ? new Date(planInfo.periodEndsAt).toLocaleDateString("es-ES")
+    : null;
+
   return (
     <>
       <SafeAreaView className="flex-1 bg-blue-50">
@@ -758,7 +1111,6 @@ export function SettingsScreen() {
                         </View>
                         <Switch
                           value={moduleSettings[module.key]}
-                          disabled={readOnlyModuleKeys.includes(module.key)}
                           onValueChange={(nextValue) => {
                             void handleToggleModule(module.key, nextValue);
                           }}
@@ -774,8 +1126,148 @@ export function SettingsScreen() {
                   <View className="rounded-2xl border border-blue-200 bg-blue-50 p-3">
                     <Text className="text-xs font-semibold text-blue-700">
                       Los módulos desactivados se ocultarán del perfil.
-                      Funciones de pareja y vales son informativas.
                     </Text>
+                  </View>
+                </View>
+
+                {/* ── Mochi Duo™ ── */}
+                <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-4">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-lg font-extrabold text-emerald-900">
+                      Mochi Duo™
+                    </Text>
+                    <View className="rounded-full bg-emerald-100 px-3 py-1">
+                      <Text className="text-xs font-extrabold text-emerald-800">
+                        {partnerStatusLabel}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text className="mt-2 text-sm font-semibold text-emerald-700">
+                    Vincula tu cuenta con tu pareja y compartan metas y vales.
+                  </Text>
+
+                  {!moduleSettings.partner_features_enabled && (
+                    <View className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2">
+                      <Text className="text-xs font-semibold text-amber-800">
+                        Activa el módulo Mochi Duo™ en la sección de módulos para abrir este espacio.
+                      </Text>
+                    </View>
+                  )}
+
+                  <View className="mt-4 flex-row gap-2">
+                    <TouchableOpacity
+                      className={`flex-1 rounded-2xl py-3 ${moduleSettings.partner_features_enabled ? "bg-emerald-500" : "bg-emerald-300"}`}
+                      onPress={handleOpenMochiDuo}
+                      disabled={!moduleSettings.partner_features_enabled}
+                    >
+                      <Text className="text-center font-extrabold text-white">
+                        Abrir Mochi Duo™
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      className={`flex-1 rounded-2xl border-2 py-3 ${moduleSettings.partner_features_enabled ? "border-emerald-200 bg-emerald-50" : "border-emerald-100 bg-emerald-100"}`}
+                      onPress={handleOpenMochiDuoInvite}
+                      disabled={!moduleSettings.partner_features_enabled}
+                    >
+                      <Text className="text-center font-extrabold text-emerald-800">
+                        Crear o unirme
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {partnerSpace?.invite_status === "accepted" && (
+                    <TouchableOpacity
+                      className="mt-3 rounded-2xl border-2 border-red-200 bg-red-50 py-3"
+                      onPress={handleLeaveMochiDuo}
+                    >
+                      <Text className="text-center font-extrabold text-red-700">
+                        Desvincular
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* ── Creditos IA ── */}
+                <View className="mt-6 rounded-3xl border-2 border-violet-200 bg-white p-4">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-lg font-extrabold text-violet-900">
+                      Creditos de IA
+                    </Text>
+                    <View className="rounded-full bg-violet-100 px-3 py-1">
+                      <Text className="text-xs font-extrabold text-violet-800" numberOfLines={1}>
+                        {aiCredits?.balance ?? 0} creditos
+                      </Text>
+                    </View>
+                  </View>
+                  <Text className="mt-2 text-sm font-semibold text-violet-700">
+                    Usa anuncios recompensados para ganar creditos cuando los necesites.
+                  </Text>
+
+                  <View className="mt-3 rounded-2xl border border-violet-200 bg-violet-50 px-3 py-3">
+                    <Text className="text-xs font-semibold text-violet-700">
+                      Restantes hoy: {aiCredits?.remainingToday ?? 0}
+                    </Text>
+                  </View>
+
+                  <View className="mt-4 flex-row gap-2">
+                    <TouchableOpacity
+                      className={`flex-1 rounded-2xl py-3 ${rewardedReady ? "bg-violet-500" : "bg-violet-300"}`}
+                      onPress={handleWatchAd}
+                      disabled={!rewardedReady}
+                    >
+                      <Text className="text-center font-extrabold text-white">
+                        {rewardedLoading ? "Cargando anuncio..." : "Ver anuncio"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      className="flex-1 rounded-2xl border-2 border-violet-200 bg-white py-3"
+                      onPress={() => void handleRefreshCredits()}
+                    >
+                      <Text className="text-center font-extrabold text-violet-800">
+                        {aiCreditsLoading ? "Actualizando..." : "Actualizar"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* ── Premium IA ── */}
+                <View className="mt-6 rounded-3xl border-2 border-amber-200 bg-white p-4">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-lg font-extrabold text-amber-900">
+                      Premium IA
+                    </Text>
+                    <View className="rounded-full bg-amber-100 px-3 py-1">
+                      <Text className="text-xs font-extrabold text-amber-800">
+                        {premiumStatusLabel}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text className="mt-2 text-sm font-semibold text-amber-700">
+                    Acceso extendido a IA con menos limites diarios.
+                  </Text>
+                  {premiumEndsLabel && (
+                    <Text className="mt-2 text-xs font-semibold text-amber-600">
+                      Vigente hasta {premiumEndsLabel}
+                    </Text>
+                  )}
+
+                  <View className="mt-4 flex-row gap-2">
+                    <TouchableOpacity
+                      className={`flex-1 rounded-2xl py-3 ${premiumLoading ? "bg-amber-300" : "bg-amber-500"}`}
+                      onPress={() => void handleOpenPremium()}
+                    >
+                      <Text className="text-center font-extrabold text-white">
+                        Ver planes
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      className="flex-1 rounded-2xl border-2 border-amber-200 bg-amber-50 py-3"
+                      onPress={() => void handleRestorePurchases()}
+                    >
+                      <Text className="text-center font-extrabold text-amber-800">
+                        Restaurar compras
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -1091,6 +1583,70 @@ export function SettingsScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+      <Modal visible={premiumModalOpen} transparent animationType="slide">
+        <View className="flex-1 bg-black/40 justify-end">
+          <View className="rounded-t-3xl bg-white p-4">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-lg font-extrabold text-amber-900">
+                Planes premium
+              </Text>
+              <TouchableOpacity
+                className="rounded-full p-2"
+                onPress={() => setPremiumModalOpen(false)}
+              >
+                <Ionicons name="close" size={22} color="#78350f" />
+              </TouchableOpacity>
+            </View>
+
+            <Text className="mt-2 text-sm font-semibold text-amber-700">
+              Elige el plan que mejor se adapte a tu ritmo.
+            </Text>
+
+            <View className="mt-4">
+              {offerings?.current?.availablePackages?.length ? (
+                offerings.current.availablePackages.map((pkg) => (
+                  <View
+                    key={pkg.identifier}
+                    className="mb-3 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4"
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1 pr-3">
+                        <Text className="text-sm font-extrabold text-amber-900">
+                          {pkg.product.title}
+                        </Text>
+                        <Text className="mt-1 text-xs font-semibold text-amber-700">
+                          {pkg.product.description}
+                        </Text>
+                      </View>
+                      <View className="rounded-full bg-amber-200 px-3 py-1">
+                        <Text className="text-xs font-extrabold text-amber-900">
+                          {pkg.product.priceString}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      className={`mt-3 rounded-2xl py-3 ${premiumLoading ? "bg-amber-300" : "bg-amber-500"}`}
+                      onPress={() => void handlePurchasePackage(pkg)}
+                      disabled={premiumLoading}
+                    >
+                      <Text className="text-center font-extrabold text-white">
+                        Elegir plan
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : (
+                <View className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  <Text className="text-sm font-semibold text-amber-700">
+                    No hay planes disponibles en este momento.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {AlertComponent}
     </>
   );

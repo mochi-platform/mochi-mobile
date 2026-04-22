@@ -1,5 +1,10 @@
-import { Modal, View, Text, Pressable, ScrollView } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import {
+  Modal,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import type { StreakRecoveryPlan } from "@mochi/supabase/types";
 
 interface RecoveryPlanModalProps {
@@ -23,10 +28,10 @@ export function RecoveryPlanModal({
         <View className="bg-white rounded-3xl p-6 w-full max-w-sm">
           {/* Header */}
           <View className="mb-4">
-            <Text className="text-2xl font-bold text-gray-800 mb-1">
+            <Text className="text-2xl font-bold text-slate-800 mb-1">
               ¡Tu racha se rompió!
             </Text>
-            <Text className="text-sm text-gray-600">
+            <Text className="text-sm text-slate-600">
               Pero no te preocupes, aquí está tu plan para recuperarte
             </Text>
           </View>
@@ -34,12 +39,9 @@ export function RecoveryPlanModal({
           {/* Recovery Tasks */}
           <ScrollView className="mb-4 max-h-64">
             {plan.recovery_tasks.map((task, index) => (
-              <LinearGradient
+              <View
                 key={index}
-                colors={["#fdf2f8", "#f3e8ff"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="mb-3 rounded-xl border border-pink-200 p-3"
+                className="mb-3 rounded-xl border border-pink-200 bg-pink-50 p-3"
               >
                 <View className="flex-row items-start gap-2">
                   <View className="bg-purple-500 rounded-full w-8 h-8 items-center justify-center mt-0.5">
@@ -48,17 +50,17 @@ export function RecoveryPlanModal({
                     </Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-sm font-semibold text-gray-800 mb-1">
+                    <Text className="text-sm font-semibold text-slate-800 mb-1">
                       {task.description}
                     </Text>
                     <View className="bg-white rounded-full px-2 py-1 self-start">
-                      <Text className="text-xs font-medium text-gray-700">
+                      <Text className="text-xs font-medium text-slate-700">
                         {getDifficultyLabel(task.difficulty)}
                       </Text>
                     </View>
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             ))}
           </ScrollView>
 
@@ -66,29 +68,31 @@ export function RecoveryPlanModal({
           <View className="bg-yellow-50 rounded-xl p-3 mb-4 border border-yellow-200">
             <Text className="text-xs text-yellow-800">
               <Text className="font-semibold">Pista:</Text> Completa estos 3
-              días y tu racha estará de vuelta. Tú puedes, amiga.
+              días y tu racha estará de vuelta. ¡Tú puedes, amiga!
             </Text>
           </View>
 
           {/* Actions */}
           <View className="flex-row gap-2">
-            <Pressable
+            <TouchableOpacity
               onPress={onDismiss}
-              className="flex-1 border-2 border-gray-300 rounded-lg py-3 active:opacity-70"
+              activeOpacity={0.85}
+              className="flex-1 border-2 border-slate-300 rounded-lg py-3"
             >
-              <Text className="text-center font-semibold text-gray-800">
+              <Text className="text-center font-semibold text-slate-800">
                 Ahora no
               </Text>
-            </Pressable>
+            </TouchableOpacity>
 
-            <Pressable
+            <TouchableOpacity
               onPress={onStart}
-              className="flex-1 bg-green-500 rounded-lg py-3 active:opacity-70"
+              activeOpacity={0.85}
+              className="flex-1 bg-green-500 rounded-lg py-3"
             >
               <Text className="text-center font-semibold text-white">
                 Empezar
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

@@ -119,12 +119,17 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 const bottomNavRoutes: Record<MobileScreen, string> = {
   home: "/(tabs)",
   study: "/(tabs)/study",
+  "mochi-duo": "/mochi-duo",
   exercise: "/(tabs)/exercise",
   habits: "/(tabs)/habits",
   cooking: "/(tabs)/cooking",
 };
 
 function getBottomNavScreen(pathname: string): MobileScreen {
+  if (pathname === "/mochi-duo" || pathname.startsWith("/mochi-duo")) {
+    return "mochi-duo";
+  }
+
   if (pathname === "/study") {
     return "study";
   }
@@ -145,6 +150,7 @@ function getBottomNavScreen(pathname: string): MobileScreen {
 }
 
 function getVisibleTabs(settings: {
+  partner_features_enabled: boolean;
   study_enabled: boolean;
   exercise_enabled: boolean;
   habits_enabled: boolean;
@@ -153,6 +159,7 @@ function getVisibleTabs(settings: {
   return [
     "home",
     ...(settings.study_enabled ? (["study"] as const) : []),
+    ...(settings.partner_features_enabled ? (["mochi-duo"] as const) : []),
     ...(settings.exercise_enabled ? (["exercise"] as const) : []),
     ...(settings.habits_enabled ? (["habits"] as const) : []),
     ...(settings.cooking_enabled ? (["cooking"] as const) : []),
@@ -186,6 +193,10 @@ function isRouteAllowed(
     return true;
   }
 
+  if (pathname === "/mochi-duo" || pathname.startsWith("/mochi-duo")) {
+    return settings.partner_features_enabled;
+  }
+
   if (pathname === "/habits") {
     return settings.habits_enabled;
   }
@@ -211,7 +222,7 @@ function isRouteAllowed(
   }
 
   if (pathname === "/vouchers") {
-    return settings.partner_features_enabled && settings.vouchers_enabled;
+    return settings.vouchers_enabled;
   }
 
   if (
@@ -424,7 +435,8 @@ function RootLayoutNavigator() {
     Boolean(session) &&
     !requiresOnboarding &&
     !pathname.startsWith("/auth") &&
-    pathname !== "/login";
+    pathname !== "/login" ||
+    (Boolean(session) && pathname.startsWith("/mochi-duo"));
   const currentScreen = getBottomNavScreen(pathname);
   const visibleTabs = getVisibleTabs(moduleVisibility);
 

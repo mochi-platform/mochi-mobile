@@ -35,7 +35,7 @@
 
 | Doc | Descripción | Esfuerzo |
 |---|---|---|
-| `shared-space-pareja.md` | Mochi Duo: dinámica mujer + pareja con panel reducido para él (metas, vales y snapshot de ciclo/rendimiento), 100% gratis | Alto |
+| `shared-space-pareja.md` | Mochi Duo™: dinámica mujer + pareja con panel reducido para él (metas, vales y snapshot de ciclo/rendimiento), 100% gratis | Alto |
 | `play-store-launch.md` | Checklist técnico + configuración para lanzamiento en Play Store | Medio |
 
 ---
@@ -64,7 +64,7 @@ Semana 2:
 
 Semanas 3-4:
   7. play-store-launch.md                  (1 semana)
-  8. shared-space-pareja.md (Mochi Duo)    (paralelo)
+  8. shared-space-pareja.md (Mochi Duo™)    (paralelo)
 
 Fase siguiente:
   9. ai-tokens-ads.md                      (cuando se decida monetizar)

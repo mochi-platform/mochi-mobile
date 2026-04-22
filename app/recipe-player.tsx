@@ -23,6 +23,7 @@ import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useAchievement } from "@/src/core/providers/AchievementContext";
 import { askMochiWhileCooking } from "@/src/shared/lib/ai";
+import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
 import {
   addPoints,
   checkCookingSessionAchievements,
@@ -322,6 +323,20 @@ export function RecipePlayerScreen() {
   const handleAskMochi = async () => {
     if (!question.trim() || !recipe || !currentStep) return;
     try {
+      const usage = await requestAiUsage({
+        reason: "ai_chat",
+        sourceRef: "cooking_help",
+      });
+
+      if (!usage.allowed) {
+        showAlert({
+          title: "Creditos de IA",
+          message: buildAiLimitMessage(usage.reason),
+          buttons: [{ text: "Entendido", style: "cancel" }],
+        });
+        return;
+      }
+
       setAsking(true);
       const answer = await askMochiWhileCooking(
         recipe.title,

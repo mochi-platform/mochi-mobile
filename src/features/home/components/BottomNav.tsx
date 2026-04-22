@@ -11,7 +11,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { getBottomNavPaddingBottom } from "@/src/shared/lib/layout";
 
-export type MobileScreen = "home" | "study" | "exercise" | "habits" | "cooking";
+export type MobileScreen =
+  | "home"
+  | "study"
+  | "mochi-duo"
+  | "exercise"
+  | "habits"
+  | "cooking";
 
 type BottomNavProps = {
   currentScreen: MobileScreen;
@@ -36,6 +42,7 @@ const tabs: Array<{
 }> = [
   { id: "home", label: "Inicio", icon: "home" },
   { id: "study", label: "Estudio", icon: "book" },
+  { id: "mochi-duo", label: "Duo™", icon: "people" },
   { id: "exercise", label: "Ejercicio", icon: "barbell" },
   { id: "habits", label: "Hábitos", icon: "leaf" },
   { id: "cooking", label: "Cocina", icon: "restaurant" },
@@ -59,6 +66,15 @@ const tabPalettes: Record<MobileScreen, TabPalette> = {
     inactiveIcon: "#f9a8d4",
     activeText: "text-pink-800",
     inactiveText: "text-pink-500",
+  },
+  "mochi-duo": {
+    container: "bg-emerald-50",
+    border: "border-emerald-200",
+    activeBg: "bg-emerald-200",
+    activeIcon: "#047857",
+    inactiveIcon: "#6ee7b7",
+    activeText: "text-emerald-800",
+    inactiveText: "text-emerald-500",
   },
   exercise: {
     container: "bg-teal-50",
@@ -126,9 +142,11 @@ function BottomTabItem({
     transform: [{ scale: iconScale.value }],
   }));
 
+  const isCenterTab = id === "mochi-duo";
+
   return (
     <TouchableOpacity
-      className={`h-14 w-16 items-center justify-center rounded-2xl ${active ? palette.activeBg : ""}`}
+      className={`flex-1 items-center justify-center rounded-2xl h-14 ${active ? palette.activeBg : ""}`}
       onPress={() => onNavigate(id)}
     >
       <Animated.View style={iconAnimatedStyle}>
@@ -163,7 +181,7 @@ export function BottomNav({
       className={`px-3 pt-3 ${palette.border} ${palette.container}`}
       style={{ paddingBottom: getBottomNavPaddingBottom(insets.bottom) }}
     >
-      <View className="flex-row items-center justify-between">
+      <View className="flex-row items-end justify-between gap-1">
         {filteredTabs.map((tab) => (
           <BottomTabItem
             key={tab.id}

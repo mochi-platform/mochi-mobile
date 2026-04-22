@@ -59,6 +59,13 @@ tools: [vscode/getProjectSetupInfo, vscode/installExtension, vscode/memory, vsco
 | `flashcard_decks` | mazos de flashcards |
 | `flashcards` | tarjetas individuales |
 | `energy_levels` | registro de energía diaria |
+| `partner_spaces` | espacios de pareja (Mochi Duo™) |
+| `joint_goals` | metas compartidas de pareja |
+| `ai_credits_ledger` | ledger de créditos de IA |
+| `ai_ad_rewards_daily` | eventos diarios de anuncios recompensados |
+| `billing_subscriptions` | estado de suscripción premium |
+| `billing_events` | bitácora de eventos de facturación |
+| `ai_usage_limits` | límites por plan (free/premium) |
 
 ## Patrones críticos
 

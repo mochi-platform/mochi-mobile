@@ -1,0 +1,197 @@
+name: Mobile Production AAB
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Perfil de EAS para construir"
+        required: true
+        default: "production-aab"
+        type: choice
+        options:
+          - production-aab
+      artifactName:
+        description: "Nombre base del AAB generado"
+        required: true
+        default: "mochi-production"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mobile-production-aab-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+  EAS_CLI_VERSION: "18.4.0"
+
+jobs:
+  quality-gates:
+    name: Quality Gates (mobile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Verify pnpm version
+        run: corepack pnpm --version
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Gate 1 - Lint/format check (mobile)
+        id: prettier_check
+        continue-on-error: true
+        run: corepack pnpm --filter mochi-mobile exec prettier --check "app/**/*.{ts,tsx}" "src/**/*.{ts,tsx}"
+
+      - name: Gate 1 summary (format)
+        if: always()
+        run: |
+          if [ "${{ steps.prettier_check.outcome }}" = "failure" ]; then
+            echo "## Gate 1 (format)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Prettier reporto archivos sin formato. El gate es no bloqueante por ahora para no frenar releases." >> "$GITHUB_STEP_SUMMARY"
+            echo "Sugerencia local: pnpm --filter mochi-mobile exec prettier --write \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\"" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Gate 2 - Check types (mobile)
+        run: corepack pnpm --filter mochi-mobile exec tsc --noEmit -p tsconfig.json
+
+      - name: Gate 3 - Build validation (Expo export Android)
+        run: corepack pnpm --filter mochi-mobile exec expo export --platform android --output-dir .expo-export/android --clear
+
+  build-production-aab:
+    name: Build + Draft Release (Android AAB)
+    runs-on: ubuntu-latest
+    needs: [quality-gates]
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Verify pnpm version
+        run: corepack pnpm --version
+
+      - name: Setup Java 17 (Android local build)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Verify pinned EAS CLI
+        run: corepack pnpm dlx eas-cli@${{ env.EAS_CLI_VERSION }} --version
+
+      - name: Build Production AAB (EAS local)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          corepack pnpm dlx eas-cli@${{ env.EAS_CLI_VERSION }} build \
+            --platform android \
+            --profile "${{ github.event.inputs.profile }}" \
+            --local \
+            --non-interactive \
+            --output "./${{ github.event.inputs.artifactName }}.aab" \
+            2>&1 | tee eas-build.log
+
+      - name: Collect release metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./app.json').expo.version")
+          ANDROID_VERSION_CODE=$(node -p "require('./app.json').expo?.android?.versionCode ?? 'n/a'")
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          RELEASE_TAG="android-aab-v${VERSION}-r${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          RELEASE_NAME="Mochi Android AAB v${VERSION} (build ${ANDROID_VERSION_CODE}) run ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "android_version_code=${ANDROID_VERSION_CODE}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "release_name=${RELEASE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog file
+        run: |
+          set -euo pipefail
+
+          if git describe --tags --abbrev=0 > /dev/null 2>&1; then
+            LAST_TAG=$(git describe --tags --abbrev=0)
+            git log "$LAST_TAG"..HEAD --pretty=format:"- %s (%h)" > changelog.md
+          else
+            git log --pretty=format:"- %s (%h)" -n 25 > changelog.md
+          fi
+
+      - name: Generate release notes file
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## Release Android AAB"
+            echo
+            echo "- App version: ${{ steps.meta.outputs.version }}"
+            echo "- Android versionCode: ${{ steps.meta.outputs.android_version_code }}"
+            echo "- EAS profile: ${{ github.event.inputs.profile }}"
+            echo "- Commit: ${{ steps.meta.outputs.short_sha }}"
+            echo "- Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "- Built at (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            echo "## Cambios incluidos"
+            if [ -s changelog.md ]; then
+              cat changelog.md
+            else
+              echo "- Sin cambios detectados desde el ultimo tag."
+            fi
+          } > release-notes.md
+
+      - name: Create GitHub draft release
+        id: gh_release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          fail_on_unmatched_files: true
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.meta.outputs.release_name }}
+          tag_name: ${{ steps.meta.outputs.release_tag }}
+          files: ${{ github.event.inputs.artifactName }}.aab
+          body_path: release-notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fallback summary on release failure
+        if: failure()
+        run: |
+          {
+            echo "## Release Android fallido"
+            echo
+            echo "Se ejecutaron gates y build local, pero fallo la publicacion en GitHub Release."
+            echo
+            echo "### Que revisar"
+            echo "- Permisos de contents:write y GITHUB_TOKEN"
+            echo "- Colision de tag: ${{ steps.meta.outputs.release_tag }}"
+            echo "- Logs del job Build Production AAB (EAS local) y del paso Create GitHub draft release"
+          } >> "$GITHUB_STEP_SUMMARY"

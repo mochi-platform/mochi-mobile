@@ -117,6 +117,7 @@ export function MoodScreen() {
   const [todayEntry, setTodayEntry] = useState<MoodLog | null>(null);
   const [recentEntries, setRecentEntries] = useState<MoodLog[]>([]);
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
+  const [energyRating, setEnergyRating] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [editingToday, setEditingToday] = useState(false);
 
@@ -160,12 +161,30 @@ export function MoodScreen() {
 
       if (recentError) throw recentError;
 
+      const { data: energyData, error: energyError } = await supabase
+        .from("energy_levels")
+        .select("overall_rating")
+        .eq("user_id", userId)
+        .eq("logged_date", todayISO)
+        .maybeSingle();
+
+      if (energyError) {
+        console.error(
+          "[Mood] error cargando nivel de energía:",
+          energyError.message,
+        );
+      }
+
       const normalizedToday = (todayData as MoodLog | null) ?? null;
 
       setTodayEntry(normalizedToday);
       setRecentEntries((recentData ?? []) as MoodLog[]);
       setSelectedMood(normalizedToday?.mood ?? null);
       setNote(normalizedToday?.note ?? "");
+      setEnergyRating(
+        (energyData as { overall_rating: number } | null)?.overall_rating ??
+          null,
+      );
       setEditingToday(false);
     } catch (err) {
       setError(
@@ -229,6 +248,27 @@ export function MoodScreen() {
       );
 
       if (upsertError) throw upsertError;
+
+      if (energyRating !== null) {
+        const { error: energyError } = await supabase
+          .from("energy_levels")
+          .upsert(
+            {
+              user_id: userId,
+              logged_date: todayISO,
+              overall_rating: energyRating,
+              notes: null,
+            },
+            { onConflict: "user_id,logged_date" },
+          );
+
+        if (energyError) {
+          console.error(
+            "[Mood] error guardando nivel de energía:",
+            energyError.message,
+          );
+        }
+      }
 
       showAlert({
         title: "Registro guardado",
@@ -323,6 +363,11 @@ export function MoodScreen() {
                           ? todayEntry.note
                           : "Sin nota para hoy"}
                       </Text>
+                      {energyRating !== null && (
+                        <Text className="mt-2 text-sm font-semibold text-orange-800">
+                          Energía de hoy: {energyRating}/5
+                        </Text>
+                      )}
                       {phase === "lutea" && (
                         <Text className="mt-3 text-xs font-semibold text-violet-700">
                           Es normal sentirte más sensible en esta fase. Mochi
@@ -376,6 +421,42 @@ export function MoodScreen() {
                           </Text>
                         </View>
                       )}
+
+                      <View className="mt-4">
+                        <Text className="mb-2 text-sm font-bold text-orange-900">
+                          Nivel de energía hoy
+                        </Text>
+                        <View className="flex-row justify-between">
+                          {[1, 2, 3, 4, 5].map((level) => {
+                            const isSelected = energyRating === level;
+                            const label = [
+                              "Agotada",
+                              "Baja",
+                              "Regular",
+                              "Bien",
+                              "Llena",
+                            ][level - 1];
+                            return (
+                              <TouchableOpacity
+                                key={level}
+                                className={`flex-1 mx-0.5 items-center rounded-2xl py-3 border-2 ${
+                                  isSelected
+                                    ? "border-orange-500 bg-orange-200"
+                                    : "border-orange-200 bg-orange-50"
+                                }`}
+                                onPress={() => setEnergyRating(level)}
+                              >
+                                <Text className="text-lg font-extrabold text-orange-900">
+                                  {level}
+                                </Text>
+                                <Text className="text-[10px] font-semibold text-orange-700 text-center">
+                                  {label}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
 
                       <View className="mt-2">
                         <Text className="mb-2 text-sm font-bold text-orange-900">

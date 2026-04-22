@@ -5,7 +5,7 @@ import {
   Text,
   ScrollView,
   TextInput,
-  Pressable,
+  TouchableOpacity,
   Modal,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -57,12 +57,12 @@ export function ExamSprintProgressScreen() {
 
   const handleCreateSprint = async () => {
     if (!startDate || !endDate || !dailyHours) {
-      setError("Por favor completa todos los campos");
+      setError("Completa todos los campos para continuar");
       return;
     }
 
     if (new Date(startDate) >= new Date(endDate)) {
-      setError("La fecha de inicio debe ser anterior a la de fin");
+      setError("La fecha de inicio debe ser antes de la fecha de fin");
       return;
     }
 
@@ -86,7 +86,7 @@ export function ExamSprintProgressScreen() {
       setTargetGrade("");
       setShowCreateModal(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al crear sprint");
+      setError(err instanceof Error ? err.message : "No se pudo crear el sprint");
     } finally {
       setCreating(false);
     }
@@ -108,20 +108,21 @@ export function ExamSprintProgressScreen() {
         >
           {/* Header */}
           <View className="mb-6 mt-4">
-            <Pressable
+            <TouchableOpacity
               onPress={() => router.back()}
-              className="mb-4 flex-row items-center gap-1 active:opacity-70"
+              activeOpacity={0.85}
+              className="mb-4 flex-row items-center gap-1"
             >
               <Ionicons name="chevron-back" size={18} color="#15803d" />
               <Text className="text-base font-semibold text-green-700">Volver</Text>
-            </Pressable>
+            </TouchableOpacity>
 
             <View>
               <Text className="text-3xl font-bold text-green-900 mb-1">
                 {subject}
               </Text>
               <Text className="text-sm text-green-600">
-                Centro de preparación con sprints
+                Centro de preparación
               </Text>
             </View>
           </View>
@@ -130,21 +131,21 @@ export function ExamSprintProgressScreen() {
           {sprintsLoading ? (
             <View className="items-center py-12">
               <ActivityIndicator size="large" color="#059669" />
-              <Text className="mt-4 text-gray-600 font-semibold">
+              <Text className="mt-4 text-slate-600 font-semibold">
                 Cargando sprints...
               </Text>
             </View>
           ) : activeSprint ? (
             <>
               <Text className="mb-3 text-lg font-bold text-green-900">
-                Tu Sprint Actual
+                Sprint activo
               </Text>
               <SprintTracker sprint={activeSprint} />
 
               <View className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
                 <Text className="text-sm text-blue-900">
-                  <Text className="font-bold">Consejo:</Text> Mantén
-                  consistencia diaria para una preparación efectiva. ¡Tú puedes!
+                  <Text className="font-bold">Consejo:</Text> La constancia
+                  diaria es tu mejor herramienta. ¡Adelante!
                 </Text>
               </View>
             </>
@@ -152,20 +153,21 @@ export function ExamSprintProgressScreen() {
             <View className="items-center py-12">
               <MochiCharacter mood="happy" size={100} />
               <Text className="mt-6 text-center text-lg font-bold text-green-900">
-                No hay sprint activo
+                Sin sprint activo
               </Text>
               <Text className="mt-2 text-center text-sm text-green-600">
                 Crea un plan de estudio estructurado para este examen
               </Text>
 
-              <Pressable
+              <TouchableOpacity
                 onPress={() => setShowCreateModal(true)}
-                className="mt-8 bg-green-500 rounded-xl px-6 py-3 active:opacity-70"
+                activeOpacity={0.85}
+                className="mt-8 bg-green-500 rounded-xl px-6 py-3"
               >
                 <Text className="font-bold text-white text-center">
-                  Crear Sprint
+                  Crear sprint
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -173,18 +175,18 @@ export function ExamSprintProgressScreen() {
           {pastSprints.length > 0 && (
             <>
               <Text className="mt-8 mb-3 text-lg font-bold text-green-900">
-                Sprints Anteriores
+                Sprints anteriores
               </Text>
               {pastSprints.map((sprint) => (
                   <View
                     key={sprint.id}
                     className="mb-3 p-3 rounded-lg bg-white border border-green-100"
                   >
-                    <Text className="font-semibold text-gray-800">
+                    <Text className="font-semibold text-slate-800">
                       {new Date(sprint.start_date).toLocaleDateString("es-MX")}{" "}
                       al {new Date(sprint.end_date).toLocaleDateString("es-MX")}
                     </Text>
-                    <Text className="text-xs text-gray-600 mt-1">
+                    <Text className="text-xs text-slate-600 mt-1">
                       {sprint.daily_target_hours}h diarias
                     </Text>
                   </View>
@@ -199,15 +201,16 @@ export function ExamSprintProgressScreen() {
         <View className="flex-1 bg-black/40 justify-end">
           <View className="bg-white rounded-t-3xl p-4 max-h-96">
             <View className="flex-row items-center justify-between mb-4">
-              <Text className="font-bold text-lg text-gray-800">
-                Crear Sprint
+              <Text className="font-bold text-lg text-slate-800">
+                Crear sprint
               </Text>
-              <Pressable
+              <TouchableOpacity
                 onPress={() => setShowCreateModal(false)}
-                className="rounded-full p-2 active:bg-gray-100"
+                activeOpacity={0.85}
+                className="rounded-full p-2"
               >
                 <Ionicons name="close" size={24} color="#4b5563" />
-              </Pressable>
+              </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -218,33 +221,33 @@ export function ExamSprintProgressScreen() {
               )}
 
               <View className="mb-4">
-                <Text className="mb-2 text-sm font-semibold text-gray-800">
+                <Text className="mb-2 text-sm font-semibold text-slate-800">
                   Fecha de inicio (AAAA-MM-DD)
                 </Text>
                 <TextInput
-                  placeholder="2026-03-29"
+                  placeholder="AAAA-MM-DD"
                   value={startDate}
                   onChangeText={setStartDate}
-                  className="border border-green-300 rounded-lg p-3 text-gray-800"
+                  className="border border-green-300 rounded-lg p-3 text-slate-800"
                   placeholderTextColor="#999"
                 />
               </View>
 
               <View className="mb-4">
-                <Text className="mb-2 text-sm font-semibold text-gray-800">
+                <Text className="mb-2 text-sm font-semibold text-slate-800">
                   Fecha de fin (AAAA-MM-DD)
                 </Text>
                 <TextInput
-                  placeholder="2026-04-10"
+                  placeholder="AAAA-MM-DD"
                   value={endDate}
                   onChangeText={setEndDate}
-                  className="border border-green-300 rounded-lg p-3 text-gray-800"
+                  className="border border-green-300 rounded-lg p-3 text-slate-800"
                   placeholderTextColor="#999"
                 />
               </View>
 
               <View className="mb-4">
-                <Text className="mb-2 text-sm font-semibold text-gray-800">
+                <Text className="mb-2 text-sm font-semibold text-slate-800">
                   Horas de estudio por día
                 </Text>
                 <TextInput
@@ -252,13 +255,13 @@ export function ExamSprintProgressScreen() {
                   value={dailyHours}
                   onChangeText={setDailyHours}
                   keyboardType="decimal-pad"
-                  className="border border-green-300 rounded-lg p-3 text-gray-800"
+                  className="border border-green-300 rounded-lg p-3 text-slate-800"
                   placeholderTextColor="#999"
                 />
               </View>
 
               <View className="mb-6">
-                <Text className="mb-2 text-sm font-semibold text-gray-800">
+                <Text className="mb-2 text-sm font-semibold text-slate-800">
                   Meta de calificación (opcional)
                 </Text>
                 <TextInput
@@ -266,18 +269,19 @@ export function ExamSprintProgressScreen() {
                   value={targetGrade}
                   onChangeText={setTargetGrade}
                   keyboardType="decimal-pad"
-                  className="border border-green-300 rounded-lg p-3 text-gray-800"
+                  className="border border-green-300 rounded-lg p-3 text-slate-800"
                   placeholderTextColor="#999"
                 />
               </View>
 
-              <Pressable
+              <TouchableOpacity
                 onPress={() => {
                   void (async () => {
                     await handleCreateSprint();
                   })();
                 }}
                 disabled={creating}
+                activeOpacity={0.85}
                 className={`rounded-lg py-3 ${
                   creating ? "bg-green-300" : "bg-green-500"
                 }`}
@@ -286,19 +290,20 @@ export function ExamSprintProgressScreen() {
                   <ActivityIndicator color="white" size="small" />
                 ) : (
                   <Text className="text-center font-bold text-white">
-                    Crear Sprint
+                    Crear sprint
                   </Text>
                 )}
-              </Pressable>
+              </TouchableOpacity>
 
-              <Pressable
+              <TouchableOpacity
                 onPress={() => setShowCreateModal(false)}
-                className="mt-2 rounded-lg py-3 bg-gray-200"
+                activeOpacity={0.85}
+                className="mt-2 rounded-lg py-3 bg-slate-200"
               >
-                <Text className="text-center font-semibold text-gray-800">
+                <Text className="text-center font-semibold text-slate-800">
                   Cancelar
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>

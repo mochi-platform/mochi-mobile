@@ -66,29 +66,65 @@ mochi/
 - Mobile env vars: `EXPO_PUBLIC_OPENROUTER_API_KEY`
 - AI responses must always be in Spanish
 
+### Tipos de fase de ciclo menstrual
+- Fuente de verdad: `src/shared/lib/healthConnect.ts`
+- Valores válidos: `"menstrual" | "folicular" | "ovulatoria" | "lutea" | "unknown"`
+- NUNCA usar valores en inglés ("follicular", "luteal", etc.)
+- Import: `import type { CyclePhase } from "@/src/shared/lib/healthConnect"`
+
+### Plugins nativos activos
+- `with-mochi-health-connect-delegate.js` — inyecta delegado de permisos en MainActivity
+- `expo-build-properties` — minSdkVersion 26
+- `react-native-edge-to-edge` — edge-to-edge display
+- `expo-notifications` — push notifications
+- `expo-widgets` — widget iOS (MochiResumenWidget); Android pendiente
+- `react-native-health-connect` — lectura de datos de ciclo menstrual
+
 ---
 
 ## Database Schema
 
 ### Core
-- `profiles` (id, full_name, wake_up_time, total_points)
+- `profiles` (id, full_name, wake_up_time, total_points, mochi_name, is_admin)
 - `study_blocks` (id, user_id, subject, day_of_week, start_time, end_time, color)
+- `study_sessions` (id, user_id, study_block_id, subject, duration_seconds, completed_at)
+- `exam_logs` (id, user_id, subject, grade, max_grade, notes, preparation_notes, exam_date, is_upcoming)
 - `exercises` (id, user_id, name, sets, reps, duration_seconds, notes)
 - `routines` (id, user_id, name, days[])
 - `routine_exercises` (id, routine_id, exercise_id, order_index)
 - `routine_logs` (id, user_id, routine_id, completed_at)
-- `exam_prep_sprints` (id, user_id, exam_id, start_date, end_date, daily_target_hours, target_grade)
-- `exam_sprint_milestones` (id, sprint_id, milestone_number, title, due_date, is_completed)
-- `flashcard_decks` (id, user_id, title, subject, is_archived)
-- `streak_recovery_plans` (id, user_id, recovery_tasks, is_active, created_at)
-- `energy_levels` (id, user_id, logged_date, overall_rating, notes)
-- `engagement_events` (id, user_id, event_type, payload, created_at)
+- `habits` (id, user_id, name, icon, color)
+- `habit_logs` (id, user_id, habit_id, log_date)
+- `goals` (id, user_id, title, description, progress, color, target_date, is_completed)
+- `mood_logs` (id, user_id, mood, note, logged_date)
+- `gratitude_logs` (id, user_id, entry_1, entry_2, entry_3, logged_date)
+- `energy_levels` (id, user_id, overall_rating 1-5, logged_date, notes)
 
 ### Gamification
 - `achievements` (id, key, title, description, icon, category, points, is_secret)
-- `user_achievements` (id, user_id, achievement_id, unlocked_at)
+- `user_achievements` (id, user_id, achievement_id, unlocked_at) — UNIQUE(user_id, achievement_id)
 - `streaks` (id, user_id, current_streak, longest_streak, last_activity_date)
-- `rewards` (id, user_id, title, description, points_cost, is_redeemed, redeemed_at)
+- `voucher_templates` (id, title, description, points_cost, icon, color, is_active)
+- `vouchers` (id, user_id, template_id, title, description, points_cost, icon, color, is_redeemed, redeemed_at)
+- `engagement_events` (id, user_id, event_name, event_key, payload, occurred_at) — UNIQUE(user_id, event_key)
+
+### Cooking
+- `recipes` (id, user_id, title, description, total_time_minutes, prep_time_minutes, cook_time_minutes, servings, difficulty, cuisine_type, tags[], user_prompt, personal_notes, is_favorite)
+- `recipe_ingredients` (id, recipe_id, order_index, name, amount, unit, notes)
+- `recipe_steps` (id, recipe_id, step_number, title, instructions, duration_seconds, temperature, tip)
+- `recipe_cook_sessions` (id, user_id, recipe_id, last_step_completed, is_finished, rating)
+- `recipe_publications` (id, source_recipe_id, owner_id, title, difficulty, generation_type, is_published)
+
+### Settings
+- `user_settings` (id, user_id, partner_features_enabled, study_enabled, exercise_enabled, habits_enabled, goals_enabled, mood_enabled, gratitude_enabled, vouchers_enabled, cooking_enabled) — UNIQUE(user_id)
+
+### Study tools
+- `flashcard_decks` (id, user_id, study_session_id, subject, topic)
+- `flashcards` (id, deck_id, front, back, difficulty_rating, review_count, last_reviewed_at)
+- `exam_prep_sprints` (id, user_id, exam_id, start_date, end_date, daily_target_hours, target_grade)
+- `exam_sprint_milestones` (id, sprint_id, milestone_number, target_date, description, is_completed)
+- `exam_sprint_progress` (id, user_id, sprint_id, progress_date, hours_studied, mood_rating, is_day_completed)
+- `streak_recovery_plans` (id, user_id, recovery_tasks jsonb, is_active, completed_tasks)
 
 ---
 

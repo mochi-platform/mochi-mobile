@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -9,6 +9,8 @@ import { useStreakRecovery } from "@/src/shared/hooks/useStreakRecovery";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useModuleVisibility } from "@/src/core/providers/ModuleVisibilityContext";
 import { supabase } from "@/src/shared/lib/supabase";
+import { useAchievement } from "@/src/core/providers/AchievementContext";
+import type { ActionConversionResult } from "@/src/shared/hooks/useActionConversion";
 
 function pickDisplayName(raw: string | null | undefined): string | null {
   const cleaned = raw?.trim();
@@ -21,6 +23,7 @@ export default function Home() {
   const router = useRouter();
   const { session } = useSession();
   const { moduleVisibility } = useModuleVisibility();
+  const { showAchievement } = useAchievement();
   const [displayName, setDisplayName] = useState("Amiga");
   const [recoveryDismissed, setRecoveryDismissed] = useState(false);
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
@@ -62,6 +65,92 @@ export default function Home() {
   const navigateToCooking = () => {
     router.replace("/(tabs)/cooking");
   };
+
+  const handleActionCreated = useCallback(
+    async (action: ActionConversionResult) => {
+      const userId = session?.user.id;
+      if (!userId) return;
+
+      try {
+        switch (action.type) {
+          case "study_block": {
+            const { error } = await supabase.from("study_blocks").insert({
+              user_id: userId,
+              subject: action.data.title ?? "Estudio",
+              day_of_week: new Date().getDay(),
+              start_time: "09:00",
+              end_time: "10:30",
+              color: "purple",
+            });
+            if (error) throw error;
+            break;
+          }
+          case "exercise": {
+            const { error } = await supabase.from("exercises").insert({
+              user_id: userId,
+              name: action.data.title ?? "Ejercicio",
+              sets: 3,
+              reps: 10,
+              duration_seconds: (action.data.duration ?? 30) * 60,
+              notes: action.data.description ?? null,
+            });
+            if (error) throw error;
+            break;
+          }
+          case "goal": {
+            const { error } = await supabase.from("goals").insert({
+              user_id: userId,
+              title: action.data.title ?? "Nueva meta",
+              description: action.data.description ?? null,
+              color: "purple",
+              progress: 0,
+              is_completed: false,
+            });
+            if (error) throw error;
+            break;
+          }
+          case "habit": {
+            const { error } = await supabase.from("habits").insert({
+              user_id: userId,
+              name: action.data.title ?? "Nuevo hábito",
+              icon: "leaf",
+              color: "purple",
+            });
+            if (error) throw error;
+            break;
+          }
+        }
+
+        const label = {
+          study_block: "Bloque de estudio",
+          exercise: "Ejercicio",
+          goal: "Meta",
+          habit: "Hábito",
+        }[action.type];
+
+        showAchievement({
+          title: `${label} creado`,
+          description:
+            action.data.title ??
+            "Acción guardada desde captura rápida",
+          points: 0,
+          icon: "flash",
+        });
+      } catch (err) {
+        console.error(
+          "[QuickCapture] error persistiendo acción:",
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    },
+    [session?.user.id, showAchievement],
+  );
+
+  useEffect(() => {
+    if (!moduleVisibility.quick_capture_enabled) {
+      setQuickCaptureOpen(false);
+    }
+  }, [moduleVisibility.quick_capture_enabled]);
 
   useEffect(() => {
     let mounted = true;
@@ -123,6 +212,7 @@ export default function Home() {
           onNavigateToExercise={navigateToExercise}
           onNavigateToHabits={navigateToHabits}
           onNavigateToCooking={navigateToCooking}
+          onOpenQuickCapture={() => setQuickCaptureOpen(true)}
           moduleVisibility={moduleVisibility}
         />
       </View>
@@ -137,8 +227,11 @@ export default function Home() {
 
       {/* Quick Capture Modal - FAB */}
       <QuickCaptureModal
-        visible={quickCaptureOpen}
+        visible={moduleVisibility.quick_capture_enabled && quickCaptureOpen}
         onClose={() => setQuickCaptureOpen(false)}
+        onActionCreated={(action) => {
+          void handleActionCreated(action);
+        }}
       />
     </View>
   );

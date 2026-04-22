@@ -19,6 +19,7 @@ import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useAchievement } from "@/src/core/providers/AchievementContext";
 import { generateRecipe } from "@/src/shared/lib/ai";
+import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
 import {
   addPoints,
   checkCookingRecipeAchievements,
@@ -556,6 +557,20 @@ export function CookingScreen() {
   const handleGenerate = async () => {
     if (!userId || !prompt.trim()) return;
     try {
+      const usage = await requestAiUsage({
+        reason: "ai_recipe",
+        sourceRef: "cooking_generate",
+      });
+
+      if (!usage.allowed) {
+        showAlert({
+          title: "Creditos de IA",
+          message: buildAiLimitMessage(usage.reason),
+          buttons: [{ text: "Entendido", style: "cancel" }],
+        });
+        return;
+      }
+
       setGenerating(true);
       setGeneratingStep("Pensando en tu receta...");
 
