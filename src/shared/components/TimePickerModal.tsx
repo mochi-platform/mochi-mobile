@@ -1,5 +1,5 @@
-import { Text, View, TouchableOpacity, ScrollView, Modal } from "react-native";
-import { useEffect, useMemo, useState } from "react";
+import { Text, View, TouchableOpacity, Modal, FlatList } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -9,11 +9,117 @@ import Animated, {
 
 type TimePickerModalProps = {
   visible: boolean;
-  time: string; // HH:MM format
+  time: string;
   onConfirm: (time: string) => void;
   onCancel: () => void;
   label: string;
 };
+
+const ITEM_HEIGHT = 36;
+const VISIBLE_ITEMS = 3;
+const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
+
+function ColumnPicker({
+  data,
+  value,
+  onChange,
+}: {
+  data: number[];
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const ref = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const index = data.indexOf(value);
+    if (index >= 0) {
+      setTimeout(() => {
+        ref.current?.scrollToOffset({
+          offset: index * ITEM_HEIGHT,
+          animated: true,
+        });
+      }, 80);
+    }
+  }, [value]);
+
+  return (
+    <View
+      style={{
+        height: PICKER_HEIGHT,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: "#e5d4ff",
+        backgroundColor: "#faf5ff",
+        overflow: "hidden",
+      }}
+    >
+      <FlatList
+        ref={ref}
+        data={data}
+        keyExtractor={(i) => i.toString()}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={ITEM_HEIGHT}
+        decelerationRate="fast"
+        getItemLayout={(_, index) => ({
+          length: ITEM_HEIGHT,
+          offset: ITEM_HEIGHT * index,
+          index,
+        })}
+        contentContainerStyle={{
+          paddingVertical: ITEM_HEIGHT,
+        }}
+        onMomentumScrollEnd={(e) => {
+          const index = Math.round(
+            e.nativeEvent.contentOffset.y / ITEM_HEIGHT,
+          );
+          const clamped = Math.max(0, Math.min(data.length - 1, index));
+          onChange(data[clamped]);
+        }}
+        renderItem={({ item }) => {
+          const selected = item === value;
+
+          return (
+            <View
+              style={{
+                height: ITEM_HEIGHT,
+                justifyContent: "center",
+                alignItems: "center",
+                paddingHorizontal: 8,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: selected ? 17 : 15,
+                  fontWeight: "700",
+                  color: selected ? "#6d28d9" : "#a78bfa",
+                }}
+                numberOfLines={1}
+              >
+                {String(item).padStart(2, "0")}
+              </Text>
+            </View>
+          );
+        }}
+      />
+
+      {/* highlight center */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: ITEM_HEIGHT,
+          left: 0,
+          right: 0,
+          height: ITEM_HEIGHT,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderColor: "#a855f7",
+          opacity: 0.25,
+        }}
+      />
+    </View>
+  );
+}
 
 export function TimePickerModal({
   visible,
@@ -24,162 +130,103 @@ export function TimePickerModal({
 }: TimePickerModalProps) {
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
-  const modalScale = useSharedValue(0.8);
-  const modalOpacity = useSharedValue(0);
+
+  const scale = useSharedValue(0.9);
+  const opacity = useSharedValue(0);
+
+  const hoursArray = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
+  const minutesArray = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
 
   useEffect(() => {
     if (!visible) return;
 
-    const [hoursRaw = "0", minutesRaw = "0"] = time.split(":");
-    const nextHours = Number.parseInt(hoursRaw, 10);
-    const nextMinutes = Number.parseInt(minutesRaw, 10);
-
-    setHours(Number.isFinite(nextHours) ? Math.max(0, Math.min(23, nextHours)) : 0);
-    setMinutes(
-      Number.isFinite(nextMinutes) ? Math.max(0, Math.min(59, nextMinutes)) : 0,
-    );
+    const [h, m] = time.split(":");
+    setHours(Number(h) || 0);
+    setMinutes(Number(m) || 0);
   }, [time, visible]);
 
   useEffect(() => {
     if (visible) {
-      modalScale.value = 0.8;
-      modalOpacity.value = 0;
-      modalScale.value = withSpring(1, { damping: 14, stiffness: 180 });
-      modalOpacity.value = withTiming(1, { duration: 220 });
-      return;
+      scale.value = 0.92;
+      opacity.value = 0;
+
+      scale.value = withSpring(1, { damping: 14 });
+      opacity.value = withTiming(1, { duration: 160 });
+    } else {
+      opacity.value = withTiming(0, { duration: 120 });
     }
+  }, [visible]);
 
-    modalOpacity.value = withTiming(0, { duration: 120 });
-  }, [visible, modalOpacity, modalScale]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
 
-  const modalAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: modalOpacity.value,
-      transform: [{ scale: modalScale.value }],
-    };
-  });
-
-  const hoursArray = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
-  const minutesArray = useMemo(
-    () => Array.from({ length: 60 }, (_, i) => i),
-    [],
-  );
-
-  const selectedTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-
-  const handleConfirm = () => {
-    onConfirm(selectedTime);
-  };
+  const selectedTime = `${String(hours).padStart(2, "0")}:${String(
+    minutes,
+  ).padStart(2, "0")}`;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onCancel}
-    >
-      <View className="flex-1 items-center justify-center bg-black/45 px-4 py-8">
+    <Modal transparent visible={visible} animationType="fade">
+      <View className="flex-1 items-center justify-center bg-black/40 px-6">
         <Animated.View
-          style={modalAnimatedStyle}
-          className="w-full max-w-md rounded-[28px] bg-white px-5 py-5"
+          style={animatedStyle}
+          className="w-full max-w-xs rounded-2xl bg-white p-4"
         >
-          <View className="mb-4">
-            <Text className="text-lg font-extrabold text-purple-900">
-              {label}
-            </Text>
-            <Text className="mt-1 text-sm font-medium text-slate-500">
-              Selecciona una hora concreta sin pelearte con el espacio.
-            </Text>
-          </View>
+          {/* header */}
+          <Text className="text-base font-bold text-purple-900">
+            {label}
+          </Text>
 
-          <View className="mb-4 rounded-2xl bg-purple-50 px-4 py-3">
-            <Text className="text-xs font-bold uppercase tracking-[0.2em] text-purple-500">
-              Hora seleccionada
-            </Text>
-            <Text className="mt-1 text-3xl font-extrabold text-purple-900">
-              {selectedTime}
-            </Text>
-          </View>
+          <Text className="mb-3 text-sm text-slate-400">
+            {selectedTime}
+          </Text>
 
-          <View className="gap-4">
-            <View>
-              <Text className="mb-2 text-sm font-bold text-purple-800">
+          {/* pickers */}
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Text className="mb-1.5 text-center text-xs font-bold text-purple-600">
                 Hora
               </Text>
-              <ScrollView
-                className="max-h-52 rounded-2xl border border-purple-200 bg-purple-50"
-                showsVerticalScrollIndicator={false}
-              >
-                <View className="flex-row flex-wrap gap-2 p-3">
-                  {hoursArray.map((h) => {
-                    const isSelected = hours === h;
 
-                    return (
-                      <TouchableOpacity
-                        key={h}
-                        className={`h-11 w-[22%] items-center justify-center rounded-2xl border ${isSelected ? "border-purple-600 bg-purple-600" : "border-transparent bg-white"}`}
-                        onPress={() => setHours(h)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Seleccionar hora ${String(h).padStart(2, "0")}`}
-                      >
-                        <Text
-                          className={`text-base font-extrabold ${isSelected ? "text-white" : "text-purple-700"}`}
-                        >
-                          {String(h).padStart(2, "0")}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </ScrollView>
+              <ColumnPicker
+                data={hoursArray}
+                value={hours}
+                onChange={setHours}
+              />
             </View>
 
-            <View>
-              <Text className="mb-2 text-sm font-bold text-purple-800">
-                Minuto
+            <View className="flex-1">
+              <Text className="mb-1.5 text-center text-xs font-bold text-purple-600">
+                Min
               </Text>
-              <ScrollView
-                className="max-h-64 rounded-2xl border border-purple-200 bg-purple-50"
-                showsVerticalScrollIndicator={false}
-              >
-                <View className="flex-row flex-wrap gap-2 p-3">
-                  {minutesArray.map((m) => {
-                    const isSelected = minutes === m;
 
-                    return (
-                      <TouchableOpacity
-                        key={m}
-                        className={`h-10 w-[15%] items-center justify-center rounded-2xl border ${isSelected ? "border-purple-600 bg-purple-600" : "border-transparent bg-white"}`}
-                        onPress={() => setMinutes(m)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Seleccionar minuto ${String(m).padStart(2, "0")}`}
-                      >
-                        <Text
-                          className={`text-xs font-extrabold ${isSelected ? "text-white" : "text-purple-700"}`}
-                        >
-                          {String(m).padStart(2, "0")}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </ScrollView>
+              <ColumnPicker
+                data={minutesArray.filter((m) => m % 5 === 0)}
+                value={minutes}
+                onChange={setMinutes}
+              />
             </View>
           </View>
 
-          <View className="mt-5 flex-row gap-3">
+          {/* actions */}
+          <View className="mt-4 flex-row gap-2">
             <TouchableOpacity
-              className="flex-1 items-center rounded-2xl border border-purple-200 bg-white py-3"
               onPress={onCancel}
+              className="flex-1 rounded-xl border border-purple-200 py-2.5"
             >
-              <Text className="font-bold text-purple-700">Cancelar</Text>
+              <Text className="text-center text-sm font-bold text-purple-700">
+                Cancelar
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 items-center rounded-2xl bg-purple-600 py-3"
-              onPress={handleConfirm}
+              onPress={() => onConfirm(selectedTime)}
+              className="flex-1 rounded-xl bg-purple-600 py-2.5"
             >
-              <Text className="font-bold text-white">Confirmar</Text>
+              <Text className="text-center text-sm font-bold text-white">
+                Confirmar
+              </Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
