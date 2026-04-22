@@ -138,7 +138,6 @@ const moduleItems: ModuleItem[] = [
   { key: "goals_enabled", label: "Metas", icon: "flag" },
   { key: "mood_enabled", label: "Estado de ánimo", icon: "heart" },
   { key: "gratitude_enabled", label: "Gratitud", icon: "flower" },
-  { key: "vouchers_enabled", label: "Vales (pareja)", icon: "ticket" },
   { key: "cooking_enabled", label: "Cocina", icon: "restaurant" },
 ];
 
@@ -369,7 +368,10 @@ export function SettingsScreen() {
         ...defaultModuleSettings,
         ...((settingsRes.data as Partial<ModuleSettings> | null) ?? {}),
       };
-      setModuleSettings(mergedModuleSettings);
+      setModuleSettings({
+        ...mergedModuleSettings,
+        vouchers_enabled: mergedModuleSettings.partner_features_enabled,
+      });
       setStudyBlocks((blocksRes.data as StudyBlock[] | null) ?? []);
       setHabitTargets(
         (habitsRes.data as HabitNotificationTarget[] | null) ?? [],
@@ -542,6 +544,10 @@ export function SettingsScreen() {
       ...moduleSettings,
       [key]: value,
     };
+
+    if (key === "partner_features_enabled") {
+      nextSettings.vouchers_enabled = value;
+    }
 
     setModuleSettings(nextSettings);
 
