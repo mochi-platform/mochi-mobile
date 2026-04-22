@@ -25,15 +25,16 @@ module.exports = ({ config }) => {
       openrouterApiKey: process.env.EXPO_PUBLIC_OPENROUTER_API_KEY ?? null,
     },
     plugins: [
-      ...plugins,
-      [
-        'react-native-google-mobile-ads',
-        {
-          androidAppId: admobAndroidAppId,
-          iosAppId: admobIosAppId,
-        },
-      ],
-      withMochiHealthConnectPermissionDelegate,
-    ],
+  ...plugins,
+  "expo-router",
+  [
+    'react-native-google-mobile-ads',
+    {
+      androidAppId: admobAndroidAppId,
+      iosAppId: admobIosAppId,
+    },
+  ],
+  withMochiHealthConnectPermissionDelegate,
+],
   }
 }
