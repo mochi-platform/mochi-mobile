@@ -4,7 +4,7 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
+  TouchableOpacity,
   Modal,
   ScrollView,
   ActivityIndicator,
@@ -82,12 +82,13 @@ export function QuickCaptureModal({
             <Text className="font-bold text-lg text-gray-800">
               Captura rápida
             </Text>
-            <Pressable
+            <TouchableOpacity
               onPress={handleCancel}
-              className="rounded-full p-2 active:bg-gray-100"
+              activeOpacity={0.85}
+              className="rounded-full p-2"
             >
               <Ionicons name="close" size={24} color="#4b5563" />
-            </Pressable>
+            </TouchableOpacity>
           </View>
 
           <ScrollView>
@@ -111,23 +112,25 @@ export function QuickCaptureModal({
                 />
 
                 <View className="flex-row gap-2">
-                  <Pressable
+                  // DESPUÉS
+                  <TouchableOpacity
                     onPress={handleCancel}
-                    className="flex-1 bg-gray-200 rounded-lg py-3 active:opacity-70"
+                    activeOpacity={0.85}
+                    className="flex-1 bg-slate-200 rounded-lg py-3"
                   >
-                    <Text className="text-center font-semibold text-gray-800">
+                    <Text className="text-center font-semibold text-slate-800">
                       Cancelar
                     </Text>
-                  </Pressable>
-
-                  <Pressable
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     onPress={() => {
                       void (async () => {
                         await handleAnalyze();
                       })();
                     }}
                     disabled={convertingNote || !noteText.trim()}
-                    className="flex-1 bg-purple-500 rounded-lg py-3 active:opacity-70 disabled:opacity-50"
+                    activeOpacity={0.85}
+                    className="flex-1 bg-purple-500 rounded-lg py-3 opacity-50 disabled:opacity-100"
                   >
                     {convertingNote ? (
                       <ActivityIndicator color="white" size="small" />
@@ -136,7 +139,7 @@ export function QuickCaptureModal({
                         Analizar
                       </Text>
                     )}
-                  </Pressable>
+                  </TouchableOpacity>
                 </View>
               </View>
             )}
@@ -161,23 +164,25 @@ export function QuickCaptureModal({
                 </View>
 
                 <View className="flex-row gap-2">
-                  <Pressable
+                  <TouchableOpacity
                     onPress={() => resetModal()}
-                    className="flex-1 bg-gray-200 rounded-lg py-3 active:opacity-70"
+                    activeOpacity={0.85}
+                    className="flex-1 bg-slate-200 rounded-lg py-3"
                   >
-                    <Text className="text-center font-semibold text-gray-800">
+                    <Text className="text-center font-semibold text-slate-800">
                       No, gracias
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
 
-                  <Pressable
+                  <TouchableOpacity
                     onPress={handleCreateAction}
-                    className="flex-1 bg-green-500 rounded-lg py-3 active:opacity-70"
+                    activeOpacity={0.85}
+                    className="flex-1 bg-green-500 rounded-lg py-3"
                   >
                     <Text className="text-center font-semibold text-white">
                       Crear
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 </View>
               </View>
             )}
@@ -190,46 +195,49 @@ export function QuickCaptureModal({
 
                 {(["study_block", "exercise", "goal", "habit"] as const).map(
                   (type) => (
-                    <Pressable
+                    <TouchableOpacity
                       key={type}
                       onPress={() => setSelectedType(type)}
+                      activeOpacity={0.85}
                       className={`p-3 rounded-lg mb-2 border-2 ${
                         selectedType === type
                           ? "bg-purple-100 border-purple-400"
-                          : "bg-gray-50 border-gray-200"
+                          : "bg-slate-50 border-slate-200"
                       }`}
                     >
                       <Text
                         className={`font-semibold ${
                           selectedType === type
                             ? "text-purple-800"
-                            : "text-gray-800"
+                            : "text-slate-800"
                         }`}
                       >
                         {getTipoLabel(type)}
                       </Text>
-                    </Pressable>
+                    </TouchableOpacity>
                   ),
                 )}
 
                 <View className="flex-row gap-2 mt-4">
-                  <Pressable
+                  <TouchableOpacity
                     onPress={() => resetModal()}
-                    className="flex-1 bg-gray-200 rounded-lg py-3 active:opacity-70"
+                    activeOpacity={0.85}
+                    className="flex-1 bg-slate-200 rounded-lg py-3"
                   >
-                    <Text className="text-center font-semibold text-gray-800">
+                    <Text className="text-center font-semibold text-slate-800">
                       Cancelar
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
 
-                  <Pressable
+                  <TouchableOpacity
                     onPress={handleCreateAction}
-                    className="flex-1 bg-green-500 rounded-lg py-3 active:opacity-70"
+                    activeOpacity={0.85}
+                    className="flex-1 bg-green-500 rounded-lg py-3"
                   >
                     <Text className="text-center font-semibold text-white">
                       Crear
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 </View>
               </View>
             )}
