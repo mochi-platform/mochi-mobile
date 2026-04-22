@@ -8,6 +8,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
@@ -559,73 +561,82 @@ export function MochiDuoScreen() {
       </SafeAreaView>
 
       <Modal visible={showGoalModal} transparent animationType="slide">
-        <View className="flex-1 bg-black/40 justify-end">
-          <View className="rounded-t-3xl bg-white p-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-lg font-extrabold text-purple-900">
-                Nueva meta compartida
-              </Text>
-              <TouchableOpacity onPress={() => setShowGoalModal(false)}>
-                <Ionicons name="close" size={22} color="#7c3aed" />
-              </TouchableOpacity>
-            </View>
-
-            <View className="mt-4">
-              <Text className="mb-2 text-sm font-semibold text-purple-800">
-                Titulo
-              </Text>
-              <TextInput
-                value={goalTitle}
-                onChangeText={setGoalTitle}
-                placeholder="Ej: Completar el curso de ingles"
-                placeholderTextColor="#a855f7"
-                className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900"
-              />
-            </View>
-
-            <View className="mt-4">
-              <Text className="mb-2 text-sm font-semibold text-purple-800">
-                Descripcion (opcional)
-              </Text>
-              <TextInput
-                value={goalDescription}
-                onChangeText={setGoalDescription}
-                placeholder="Describe el objetivo"
-                placeholderTextColor="#a855f7"
-                className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900"
-              />
-            </View>
-
-            <View className="mt-4">
-              <Text className="mb-2 text-sm font-semibold text-purple-800">
-                Fecha objetivo (opcional)
-              </Text>
-              <TextInput
-                value={goalTargetDate}
-                onChangeText={setGoalTargetDate}
-                placeholder="AAAA-MM-DD"
-                placeholderTextColor="#a855f7"
-                className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900"
-              />
-            </View>
-
-            <TouchableOpacity
-              className={`mt-5 rounded-2xl py-3 ${savingGoal ? "bg-purple-300" : "bg-purple-500"}`}
-              onPress={() => {
-                void handleCreateGoal();
-              }}
-              disabled={savingGoal}
-            >
-              {savingGoal ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-center font-extrabold text-white">
-                  Guardar meta
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
+        >
+          <View className="flex-1 bg-black/40 justify-end">
+            <View className="rounded-t-3xl bg-white p-4 max-h-96">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-lg font-extrabold text-purple-900">
+                  Nueva meta compartida
                 </Text>
-              )}
-            </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowGoalModal(false)}>
+                  <Ionicons name="close" size={22} color="#7c3aed" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View className="mt-4">
+                  <Text className="mb-2 text-sm font-semibold text-purple-800">
+                    Titulo
+                  </Text>
+                  <TextInput
+                    value={goalTitle}
+                    onChangeText={setGoalTitle}
+                    placeholder="Ej: Completar el curso de ingles"
+                    placeholderTextColor="#a855f7"
+                    className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900"
+                  />
+                </View>
+
+                <View className="mt-4">
+                  <Text className="mb-2 text-sm font-semibold text-purple-800">
+                    Descripcion (opcional)
+                  </Text>
+                  <TextInput
+                    value={goalDescription}
+                    onChangeText={setGoalDescription}
+                    placeholder="Describe el objetivo"
+                    placeholderTextColor="#a855f7"
+                    className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900"
+                  />
+                </View>
+
+                <View className="mt-4">
+                  <Text className="mb-2 text-sm font-semibold text-purple-800">
+                    Fecha objetivo (opcional)
+                  </Text>
+                  <TextInput
+                    value={goalTargetDate}
+                    onChangeText={setGoalTargetDate}
+                    placeholder="AAAA-MM-DD"
+                    placeholderTextColor="#a855f7"
+                    className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  className={`mt-5 rounded-2xl py-3 ${savingGoal ? "bg-purple-300" : "bg-purple-500"}`}
+                  onPress={() => {
+                    void handleCreateGoal();
+                  }}
+                  disabled={savingGoal}
+                >
+                  {savingGoal ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text className="text-center font-extrabold text-white">
+                      Guardar meta
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                <View className="h-4" />
+              </ScrollView>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {AlertComponent}
