@@ -1,6 +1,28 @@
 const withMochiHealthConnectPermissionDelegate = require('./plugins/with-mochi-health-connect-delegate.js')
 
+// En builds de producción las variables obligatorias deben existir: no se permite caer en IDs de prueba.
+const REQUIRED_PRODUCTION_ENV = [
+  'EXPO_PUBLIC_SUPABASE_URL',
+  'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+  'EXPO_PUBLIC_REVENUECAT_API_KEY',
+  'EXPO_PUBLIC_ADMOB_ANDROID_APP_ID',
+  'EXPO_PUBLIC_ADMOB_REWARDED_ANDROID_UNIT_ID',
+]
+
+function assertProductionEnv() {
+  const profile = process.env.EAS_BUILD_PROFILE || process.env.APP_ENV || ''
+  if (!profile.startsWith('production')) return
+  const missing = REQUIRED_PRODUCTION_ENV.filter((name) => !process.env[name]?.trim())
+  if (missing.length > 0) {
+    throw new Error(
+      `Build de producción detenido: faltan variables obligatorias: ${missing.join(', ')}. ` +
+        'Configúralas en EAS (eas env:create --environment production).'
+    )
+  }
+}
+
 module.exports = ({ config }) => {
+  assertProductionEnv()
   const baseConfig = config
   const basePlugins = Array.isArray(baseConfig.plugins) ? baseConfig.plugins : []
   const baseExtra =
@@ -22,7 +44,6 @@ module.exports = ({ config }) => {
     ...baseConfig,
     extra: {
       ...baseExtra,
-      openrouterApiKey: process.env.EXPO_PUBLIC_OPENROUTER_API_KEY ?? null,
     },
     plugins: [
   ...plugins,

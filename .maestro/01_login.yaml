@@ -1,0 +1,16 @@
+appId: com.siramong.mochi
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Iniciar sesión"
+- tapOn: "Correo electrónico"
+- inputText: ${EMAIL}
+- tapOn: "Contraseña"
+- inputText: ${PASSWORD}
+- tapOn: "Iniciar sesión"
+- assertVisible:
+    text: ".*"
+    enabled: true
+- extendedWaitUntil:
+    notVisible: "Iniciar sesión"
+    timeout: 15000

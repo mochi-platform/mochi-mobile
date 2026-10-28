@@ -1,0 +1,10 @@
+appId: com.siramong.mochi
+---
+- launchApp
+- tapOn: "Perfil"
+- tapOn: "Ajustes"
+- scrollUntilVisible:
+    element: "Premium IA"
+- tapOn: "Ver planes"
+- assertVisible: "Mochi Premium"
+- assertVisible: "Restaurar compras"

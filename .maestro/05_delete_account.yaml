@@ -1,0 +1,14 @@
+appId: com.siramong.mochi
+---
+# Usar SOLO con una cuenta desechable.
+- launchApp
+- tapOn: "Perfil"
+- tapOn: "Ajustes"
+- scrollUntilVisible:
+    element: "Eliminar mi cuenta"
+- tapOn: "Eliminar mi cuenta"
+- assertVisible: "Eliminar cuenta"
+- tapOn: "Eliminar para siempre"
+- extendedWaitUntil:
+    visible: "Iniciar sesión"
+    timeout: 20000

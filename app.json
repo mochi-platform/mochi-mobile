@@ -5,13 +5,8 @@
     "version": "5.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "scheme": "mochi",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#f0e6ff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.siramong.mochi"
@@ -19,7 +14,8 @@
     "android": {
       "package": "com.siramong.mochi",
       "permissions": [
-        "android.permission.health.READ_MENSTRUATION"
+        "android.permission.health.READ_MENSTRUATION",
+        "android.permission.health.READ_HEALTH_DATA_HISTORY"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -39,16 +35,8 @@
         {
           "android": {
             "minSdkVersion": 26,
-            "targetSdkVersion": 35
-          }
-        }
-      ],
-      [
-        "react-native-edge-to-edge/app.plugin.js",
-        {
-          "android": {
-            "parentTheme": "Default",
-            "enforceNavigationBarContrast": false
+            "targetSdkVersion": 36,
+            "compileSdkVersion": 37
           }
         }
       ],
@@ -74,16 +62,42 @@
               ],
               "displayName": "Resumen Mochi",
               "description": "Puntos, racha y bloque del dia",
-              "contentMarginsDisabled": false
+              "contentMarginsDisabled": false,
+              "android": {
+                "minWidth": 180,
+                "minHeight": 110,
+                "targetCellWidth": 3,
+                "targetCellHeight": 2,
+                "resizeMode": "both"
+              }
             }
-          ]
+          ],
+          "enableAndroid": true
         }
       ],
       [
         "react-native-health-connect"
       ],
       "expo-image-picker",
-      "expo-document-picker"
+      "expo-document-picker",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#f0e6ff"
+        }
+      ],
+      "expo-font",
+      "expo-sharing",
+      "expo-web-browser",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Mochi usa la cámara solo para escanear el código QR de invitación de tu pareja."
+        }
+      ]
     ],
     "extra": {
       "eas": {

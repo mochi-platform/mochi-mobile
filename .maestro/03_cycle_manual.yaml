@@ -1,0 +1,8 @@
+appId: com.siramong.mochi
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Me llegó hoy"
+    timeout: 15000
+- tapOn: "Me llegó hoy"
+- assertVisible: "Día 1 de tu ciclo"

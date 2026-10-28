@@ -24,8 +24,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NODE_VERSION: "20"
-  EAS_CLI_VERSION: "18.4.0"
+  NODE_VERSION: "22"
+  EAS_CLI_VERSION: "26.0.0"
 
 jobs:
   quality-gates:
@@ -51,25 +51,15 @@ jobs:
       - name: Install dependencies
         run: corepack pnpm install --frozen-lockfile
 
-      - name: Gate 1 - Lint/format check (mobile)
-        id: prettier_check
-        continue-on-error: true
-        run: corepack pnpm --filter mochi-mobile exec prettier --check "app/**/*.{ts,tsx}" "src/**/*.{ts,tsx}"
+      - name: Gate 1 - Lint y formato (mobile)
+        run: corepack pnpm lint && corepack pnpm format:check
 
-      - name: Gate 1 summary (format)
-        if: always()
-        run: |
-          if [ "${{ steps.prettier_check.outcome }}" = "failure" ]; then
-            echo "## Gate 1 (format)" >> "$GITHUB_STEP_SUMMARY"
-            echo "Prettier reportó archivos sin formato. El gate es no bloqueante por ahora para no frenar releases." >> "$GITHUB_STEP_SUMMARY"
-            echo "Sugerencia local: pnpm --filter mochi-mobile exec prettier --write \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\"" >> "$GITHUB_STEP_SUMMARY"
-          fi
 
       - name: Gate 2 - Check types (mobile)
-        run: corepack pnpm --filter mochi-mobile exec tsc --noEmit -p tsconfig.json
+        run: corepack pnpm exec tsc --noEmit -p tsconfig.json
 
       - name: Gate 3 - Build validation (Expo export Android)
-        run: corepack pnpm --filter mochi-mobile exec expo export --platform android --output-dir .expo-export/android --clear
+        run: corepack pnpm exec expo export --platform android --output-dir .expo-export/android --clear
 
   build-production-apk:
     name: Build + Draft Release (Android APK)

@@ -42,4 +42,6 @@ yarn-error.*
 /ios
 /android
 
-/supabase/
+/supabase/data.sql
+/supabase/.temp/
+/.dburl

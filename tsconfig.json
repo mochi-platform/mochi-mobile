@@ -3,7 +3,9 @@
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
-    "ignoreDeprecations": "5.0",
+    "ignoreDeprecations": "6.0",
+    "types": ["jest"],
+    "moduleSuffixes": [".ios", ".android", ""],
     "paths": {
       "@/*": ["./*"],
       "@mochi/ai": ["./src/shared/lib/ai"],
@@ -11,5 +13,6 @@
       "@mochi/supabase": ["./src/shared/lib/supabase"],
       "@mochi/supabase/*": ["./src/shared/lib/supabase/*"]
     }
-  }
+  },
+  "exclude": ["supabase/functions"]
 }

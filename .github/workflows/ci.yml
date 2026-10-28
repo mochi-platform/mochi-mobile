@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+      - name: Lint
+        run: corepack pnpm lint
+      - name: Formato
+        run: corepack pnpm format:check
+      - name: Tipos
+        run: corepack pnpm typecheck
+      - name: Tests unitarios
+        run: corepack pnpm test
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Stack local (solo base de datos y auth)
+        run: supabase start -x studio,imgproxy,logflare,vector,edge-runtime,mailpit,postgres-meta,supavisor,realtime,storage-api
+      - name: pgTAP
+        run: supabase test db
+
+  functions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Tipos de las Edge Functions
+        working-directory: supabase/functions
+        run: |
+          for f in ai revenuecat-webhook admob-ssv delete-account export-data; do
+            deno check --config deno.json "$f/index.ts"
+          done
+      - name: Tests de las Edge Functions
+        working-directory: supabase/functions
+        run: deno test --config deno.json --no-lock ai revenuecat-webhook admob-ssv delete-account export-data unsplash-image duo-push
