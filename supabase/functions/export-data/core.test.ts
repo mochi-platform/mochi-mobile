@@ -44,5 +44,5 @@ Deno.test("una tabla que falla se marca sin romper la exportación", async () =>
 });
 
 Deno.test("incluye datos del ciclo, consentimientos y memoria (derecho de acceso)", () => {
-  for (const t of ["cycle_logs", "user_consents", "mochi_memory", "points_ledger", "vouchers"]) assert(t in TABLES, t);
+  for (const t of ["cycle_logs", "user_consents", "mochi_memory", "points_ledger", "vouchers", "partner_checkins", "partner_notes"]) assert(t in TABLES, t);
 });

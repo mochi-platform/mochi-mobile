@@ -30,6 +30,9 @@ export const TABLES: Record<string, string> = {
   rewards: "user_id",
   cycle_logs: "user_id",
   partner_spaces: "owner_user_id",
+  // Duo: solo lo que la persona escribió (las notas y el ánimo del otro son del otro).
+  partner_checkins: "user_id",
+  partner_notes: "author_id",
   points_ledger: "user_id",
   ai_credits_ledger: "user_id",
   billing_subscriptions: "user_id",
