@@ -14,4 +14,4 @@ export const ELEVATION: Record<Elevation, ViewStyle> = {
 };
 
 /** Sombra de color para la acción principal (botón acento). */
-export const ACCENT_GLOW: ViewStyle = { boxShadow: "0 8px 20px rgba(185, 115, 159, 0.35)" };
+export const ACCENT_GLOW: ViewStyle = { boxShadow: "0 8px 20px rgba(163, 92, 138, 0.32)" };

@@ -200,11 +200,11 @@
   --color-surface: 255 255 255;     /* tarjetas */
   --color-surface-muted: 244 236 227; /* zonas hundidas: campos, notas */
   --color-ink: 58 42 46;            /* texto principal */
-  --color-ink-muted: 138 116 121;   /* texto secundario */
+  --color-ink-muted: 122 100 105;   /* texto secundario */
   --color-ink-faint: 185 167 169;   /* marcadores, iconos inactivos */
   --color-border: 241 232 226;      /* separadores finos */
-  --color-accent: 185 115 159;      /* rosa-lavanda */
-  --color-accent-strong: 156 90 133;
+  --color-accent: 163 92 138;      /* rosa-lavanda (4,7:1 con blanco) */
+  --color-accent-strong: 142 78 120;
   --color-accent-ink: 255 255 255;
   --color-accent-soft: 245 230 239;
   --color-peach: 247 185 168;
@@ -212,15 +212,15 @@
   --color-warning: 217 128 72;
   --color-danger: 208 86 104;
   --color-tint-study: 236 228 247;
-  --color-tint-study-ink: 138 108 196;
+  --color-tint-study-ink: 117 86 179;
   --color-tint-me: 251 228 232;
-  --color-tint-me-ink: 208 96 126;
+  --color-tint-me-ink: 184 72 104;
   --color-tint-kitchen: 253 235 220;
-  --color-tint-kitchen-ink: 217 128 72;
+  --color-tint-kitchen-ink: 176 96 42;
   --color-tint-duo: 246 225 236;
-  --color-tint-duo-ink: 185 115 159;
+  --color-tint-duo-ink: 156 90 133;
   --color-tint-ok: 227 242 234;
-  --color-tint-ok-ink: 79 156 120;
+  --color-tint-ok-ink: 59 128 98;
 }
 
 @media (prefers-color-scheme: dark) {

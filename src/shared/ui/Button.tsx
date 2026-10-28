@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
 import Animated from "react-native-reanimated";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { ACCENT_GLOW } from "./elevation";
 import { haptic } from "./haptics";
 import { usePressScale } from "./usePressScale";
@@ -9,7 +10,7 @@ type Variant = "primary" | "soft" | "outline" | "ghost" | "danger";
 const container: Record<Variant, string> = {
   primary: "bg-accent",
   soft: "bg-accent-soft",
-  outline: "bg-surface",
+  outline: "border-[1.5px] border-ink-faint/50 bg-surface",
   ghost: "",
   danger: "bg-danger",
 };
@@ -58,7 +59,11 @@ export function Button({
         className={`min-h-[54px] items-center justify-center rounded-control px-5 ${container[variant]} ${inactive ? "opacity-60" : ""}`}
       >
         {loading ? (
-          <ActivityIndicator color={variant === "primary" || variant === "danger" ? "#ffffff" : "#9C5A85"} />
+          <ActivityIndicator
+            color={
+              variant === "primary" || variant === "danger" ? COLORS.accentInk : COLORS.accentStrong
+            }
+          />
         ) : (
           <Text className={`font-body-extrabold text-[16.5px] ${label[variant]}`}>{title}</Text>
         )}

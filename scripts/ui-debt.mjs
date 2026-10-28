@@ -6,8 +6,9 @@
  */
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("..", import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const BASELINE = join(ROOT, "scripts/ui-debt.baseline.json");
 const HUES =
   "red|orange|amber|yellow|green|emerald|teal|sky|blue|indigo|violet|fuchsia|rose|slate|gray|purple|pink";

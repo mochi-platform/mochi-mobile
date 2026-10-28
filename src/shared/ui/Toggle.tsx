@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { ELEVATION } from "./elevation";
 import { EASE_OUT, REDUCE } from "./motion";
 import { usePressScale } from "./usePressScale";
 
@@ -58,7 +59,7 @@ export function Toggle({ label, value, onValueChange, description }: ToggleProps
           ) : null}
         </View>
         <View
-          className="justify-center overflow-hidden rounded-full bg-surface-muted"
+          className="justify-center overflow-hidden rounded-full bg-ink-faint/50"
           style={{ width: TRACK_W, height: TRACK_H }}
         >
           {/* Capa "encendido" que se funde sobre la pista apagada: sin leer colores en el worklet. */}
@@ -69,7 +70,7 @@ export function Toggle({ label, value, onValueChange, description }: ToggleProps
           />
           <Animated.View
             className="rounded-full bg-white"
-            style={[{ width: THUMB, height: THUMB, marginLeft: PAD }, thumbStyle]}
+            style={[{ width: THUMB, height: THUMB, marginLeft: PAD }, ELEVATION[1], thumbStyle]}
           />
         </View>
       </Animated.View>

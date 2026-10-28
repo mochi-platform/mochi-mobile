@@ -14,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 import { FONT_ASSETS } from "@/src/shared/theme/fonts";
 import {
   bottomNavRoutes,
@@ -436,12 +437,18 @@ function RootLayoutNavigator() {
 }
 
 initSentry();
+// El splash se queda hasta que las fuentes están listas (expo-router lo ocultaría antes).
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export function RootLayout() {
   // En Android las fuentes ya vienen embebidas; esto las registra en Expo Go, iOS y web.
   // Si la carga falla se sigue con la fuente del sistema en vez de bloquear la app.
   const [fontsLoaded, fontError] = useFonts(FONT_ASSETS);
-  if (!fontsLoaded && !fontError) return null;
+  const fontsReady = fontsLoaded || Boolean(fontError);
+  useEffect(() => {
+    if (fontsReady) void SplashScreen.hideAsync().catch(() => {});
+  }, [fontsReady]);
+  if (!fontsReady) return null;
   return (
     <SystemBarsProvider>
       <SessionProvider>

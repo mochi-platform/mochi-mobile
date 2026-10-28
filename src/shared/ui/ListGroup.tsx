@@ -28,7 +28,11 @@ type ListRowProps = {
   subtitle?: string;
   /** Elemento a la izquierda: normalmente un IconTile, una carita o un check. */
   leading?: ReactNode;
-  /** Elemento a la derecha: valor, botón, anillo. Si hay onPress y no hay trailing, va un chevron. */
+  /**
+   * Elemento a la derecha: valor, anillo, etiqueta. Si hay onPress y no hay trailing, va un chevron.
+   * Con onPress la fila entera es un botón: `trailing` debe ser no interactivo. Para un
+   * interruptor o botón propio, no pases onPress a la fila.
+   */
   trailing?: ReactNode;
   onPress?: () => void;
   accessibilityLabel?: string;

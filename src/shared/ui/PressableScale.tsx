@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from "react-native";
+import { cssInterop } from "nativewind";
 import Animated from "react-native-reanimated";
 import { haptic, type HapticKind } from "./haptics";
 import { usePressScale } from "./usePressScale";
@@ -13,6 +14,10 @@ type PressableScaleProps = Omit<PressableProps, "children" | "style"> & {
   /** Escala al presionar (0.97 por defecto; 0.98 para superficies grandes). */
   scaleTo?: number;
 };
+
+/** Un solo elemento: así `className` (flex-1, márgenes, w-1/2) afecta al área pulsable y al layout. */
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+cssInterop(AnimatedPressable, { className: "style" });
 
 /**
  * Base de todo lo pulsable: escala en el hilo de UI y vibración opcional.
@@ -32,9 +37,11 @@ export function PressableScale({
 }: PressableScaleProps) {
   const press = usePressScale(scaleTo);
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole={accessibilityRole}
       {...rest}
+      className={className}
+      style={[style, press.style]}
       onPressIn={(event) => {
         press.onPressIn();
         onPressIn?.(event);
@@ -52,9 +59,7 @@ export function PressableScale({
           : undefined
       }
     >
-      <Animated.View className={className} style={[style, press.style]}>
-        {children}
-      </Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   );
 }

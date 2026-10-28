@@ -29,7 +29,7 @@ export function ProgressRing({
   size = 36,
   stroke = 4.5,
   color = COLORS.positive,
-  trackColor = "#EDE3DF",
+  trackColor = COLORS.track,
   children,
   accessibilityLabel,
 }: ProgressRingProps) {
@@ -44,6 +44,8 @@ export function ProgressRing({
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: circumference * (1 - value.get()),
+    // Con extremo redondeado, un arco de largo 0 se vería como un punto.
+    strokeOpacity: value.get() < 0.005 ? 0 : 1,
   }));
 
   return (

@@ -8,7 +8,7 @@ jest.mock("@expo/vector-icons", () => {
     Icon.glyphMap = new Proxy({}, { get: () => 0 });
     return Icon;
   };
-  return { Ionicons: make(), MaterialCommunityIcons: make() };
+  return new Proxy({ __esModule: true }, { get: (target, key) => (key in target ? target[key] : make()) });
 });
 
 jest.mock("expo-haptics", () => ({

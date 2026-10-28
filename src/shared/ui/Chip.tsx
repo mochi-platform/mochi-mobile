@@ -11,9 +11,11 @@ type ChipProps = {
   selected?: boolean;
   onPress?: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
+  /** Dentro de una tarjeta blanca: fondo hundido en vez de sombra, para que se distinga. */
+  onSurface?: boolean;
 };
 
-export function Chip({ label, selected = false, onPress, icon }: ChipProps) {
+export function Chip({ label, selected = false, onPress, icon, onSurface = false }: ChipProps) {
   const press = usePressScale();
   return (
     <Pressable
@@ -32,8 +34,8 @@ export function Chip({ label, selected = false, onPress, icon }: ChipProps) {
       }
     >
       <Animated.View
-        style={[selected ? null : ELEVATION[1], press.style]}
-        className={`min-h-[44px] flex-row items-center gap-2 rounded-2xl px-4 ${selected ? "bg-accent" : "bg-surface"}`}
+        style={[selected || onSurface ? null : ELEVATION[1], press.style]}
+        className={`min-h-[44px] flex-row items-center gap-2 rounded-2xl px-4 ${selected ? "bg-accent" : onSurface ? "bg-surface-muted" : "bg-surface"}`}
       >
         {icon ? (
           <Ionicons name={icon} size={17} color={selected ? COLORS.accentInk : COLORS.accent} />
