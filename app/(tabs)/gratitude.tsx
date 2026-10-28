@@ -22,7 +22,11 @@ import {
   haptic,
 } from "@/src/shared/ui";
 
-const PROMPTS = ["Algo que te hizo sonreír", "Alguien que te ayudó", "Algo pequeño que disfrutaste"];
+const PROMPTS = [
+  "Algo que te hizo sonreír",
+  "Alguien que te ayudó",
+  "Algo pequeño que disfrutaste",
+];
 
 export function GratitudeScreen() {
   const { session } = useSession();
@@ -76,7 +80,11 @@ export function GratitudeScreen() {
         <MochiBubble
           className="flex-1"
           tail="left"
-          text={today ? "Gracias por compartirlo conmigo. Lo guardé en tu diario." : "¿Qué fue lo bonito de hoy? Basta con una cosa."}
+          text={
+            today
+              ? "Gracias por compartirlo conmigo. Lo guardé en tu diario."
+              : "¿Qué fue lo bonito de hoy? Basta con una cosa."
+          }
         />
       </View>
 
@@ -86,7 +94,9 @@ export function GratitudeScreen() {
             key={prompt}
             label={index === 0 ? prompt : `${prompt} (opcional)`}
             value={items[index]}
-            onChangeText={(text) => setItems((prev) => prev.map((v, i) => (i === index ? text : v)))}
+            onChangeText={(text) =>
+              setItems((prev) => prev.map((v, i) => (i === index ? text : v)))
+            }
             placeholder="Escribe una línea…"
             maxLength={200}
           />
@@ -97,7 +107,11 @@ export function GratitudeScreen() {
           disabled={!items[0].trim()}
           onPress={() => void save()}
         />
-        {!today ? <Caption className="mt-2 text-center">Sumas 3 puntos con tu primer registro del día.</Caption> : null}
+        {!today ? (
+          <Caption className="mt-2 text-center">
+            Sumas 3 puntos con tu primer registro del día.
+          </Caption>
+        ) : null}
       </Surface>
 
       {history.length > 0 ? (

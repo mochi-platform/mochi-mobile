@@ -26,7 +26,13 @@ import {
 } from "@/src/shared/ui";
 
 const MOODS: Mood[] = [1, 2, 3, 4, 5];
-const MOOD_LABEL: Record<Mood, string> = { 1: "Muy mal", 2: "Mal", 3: "Normal", 4: "Bien", 5: "Muy bien" };
+const MOOD_LABEL: Record<Mood, string> = {
+  1: "Muy mal",
+  2: "Mal",
+  3: "Normal",
+  4: "Bien",
+  5: "Muy bien",
+};
 const ENERGY = [
   { value: 1, label: "Baja" },
   { value: 3, label: "Media" },
@@ -129,7 +135,11 @@ export function MoodScreen() {
                 accessibilityState={{ selected: on }}
                 className={`h-11 flex-1 items-center justify-center rounded-control ${on ? "bg-accent" : "bg-surface-muted"}`}
               >
-                <Text className={`font-body-extrabold text-sm ${on ? "text-accent-ink" : "text-ink"}`}>{e.label}</Text>
+                <Text
+                  className={`font-body-extrabold text-sm ${on ? "text-accent-ink" : "text-ink"}`}
+                >
+                  {e.label}
+                </Text>
               </PressableScale>
             );
           })}
@@ -151,13 +161,28 @@ export function MoodScreen() {
       </Surface>
 
       <SectionHeader title="Esta semana" />
-      <View className="flex-row justify-between rounded-card bg-surface px-3 py-3.5" style={ELEVATION[1]}>
+      <View
+        className="flex-row justify-between rounded-card bg-surface px-3 py-3.5"
+        style={ELEVATION[1]}
+      >
         {week.map((d) => {
           const value = byDate.get(d.iso);
           return (
-            <View key={d.iso} className="items-center gap-1.5" accessibilityLabel={`${d.letter}: ${value ? MOOD_LABEL[value] : "sin registro"}`}>
-              <Text className={`font-body-extrabold text-[11px] ${d.isToday ? "text-accent-strong" : "text-ink-muted"}`}>{d.letter}</Text>
-              {value ? <MoodFace mood={value} size={30} /> : <View className="h-[30px] w-[30px] rounded-full bg-surface-muted" />}
+            <View
+              key={d.iso}
+              className="items-center gap-1.5"
+              accessibilityLabel={`${d.letter}: ${value ? MOOD_LABEL[value] : "sin registro"}`}
+            >
+              <Text
+                className={`font-body-extrabold text-[11px] ${d.isToday ? "text-accent-strong" : "text-ink-muted"}`}
+              >
+                {d.letter}
+              </Text>
+              {value ? (
+                <MoodFace mood={value} size={30} />
+              ) : (
+                <View className="h-[30px] w-[30px] rounded-full bg-surface-muted" />
+              )}
             </View>
           );
         })}

@@ -121,7 +121,8 @@ export function HabitsScreen() {
       const habit = await createHabit(userId, name.trim(), icon);
       await saveHabitNotificationEnabled(habit.id, true);
       const prefs = await loadNotificationPrefs();
-      if (prefs.enabled && prefs.habitEnabled) await scheduleHabitReminderForHabit(habit, prefs.habitTime);
+      if (prefs.enabled && prefs.habitEnabled)
+        await scheduleHabitReminderForHabit(habit, prefs.habitTime);
       haptic("success");
       setName("");
       setIcon("leaf");
@@ -148,7 +149,8 @@ export function HabitsScreen() {
       await saveHabitNotificationEnabled(habit.id, enabled);
       const prefs = await loadNotificationPrefs();
       if (!prefs.enabled || !prefs.habitEnabled) return;
-      if (enabled) await scheduleHabitReminderForHabit({ id: habit.id, name: habit.name }, prefs.habitTime);
+      if (enabled)
+        await scheduleHabitReminderForHabit({ id: habit.id, name: habit.name }, prefs.habitTime);
       else await cancelHabitReminder(habit.id);
     } catch (e) {
       reportError(e, { scope: "habits/reminder" });
@@ -196,7 +198,9 @@ export function HabitsScreen() {
         </PressableScale>
       }
     >
-      {error && !data ? <ErrorState message="No pudimos cargar tus hábitos." onRetry={() => void load()} /> : null}
+      {error && !data ? (
+        <ErrorState message="No pudimos cargar tus hábitos." onRetry={() => void load()} />
+      ) : null}
       {!data && !error ? (
         <View className="mt-4 gap-3">
           <Skeleton height={110} className="rounded-card" />
@@ -236,7 +240,10 @@ export function HabitsScreen() {
                   : (tip ?? "Uno a la vez. Cada check cuenta.")}
               </Caption>
               <View className="mt-2.5 h-2 overflow-hidden rounded-full bg-surface-muted">
-                <View className="h-full rounded-full bg-positive" style={{ width: `${(done / total) * 100}%` }} />
+                <View
+                  className="h-full rounded-full bg-positive"
+                  style={{ width: `${(done / total) * 100}%` }}
+                />
               </View>
             </View>
           </Surface>
@@ -270,7 +277,11 @@ export function HabitsScreen() {
                     <View className="min-w-0 flex-1">
                       <View className="flex-row items-center gap-1.5">
                         <Ionicons
-                          name={(ICONS as readonly string[]).includes(habit.icon) ? (habit.icon as (typeof ICONS)[number]) : "leaf"}
+                          name={
+                            (ICONS as readonly string[]).includes(habit.icon)
+                              ? (habit.icon as (typeof ICONS)[number])
+                              : "leaf"
+                          }
                           size={15}
                           color={COLORS.inkMuted}
                         />
@@ -278,7 +289,10 @@ export function HabitsScreen() {
                           {habit.name}
                         </Strong>
                       </View>
-                      <View className="mt-1.5 flex-row gap-1" accessibilityLabel={`${week.size} de 7 días esta semana`}>
+                      <View
+                        className="mt-1.5 flex-row gap-1"
+                        accessibilityLabel={`${week.size} de 7 días esta semana`}
+                      >
                         {days.map((iso) => {
                           const [y, m, d] = iso.split("-").map(Number);
                           const letter = DAY_LETTER[new Date(y, m - 1, d).getDay()];
@@ -288,7 +302,9 @@ export function HabitsScreen() {
                               key={iso}
                               className={`h-5 w-5 items-center justify-center rounded-md ${hit ? "bg-tint-ok" : "bg-surface-muted"}`}
                             >
-                              <Text className={`font-body-extrabold text-[9px] ${hit ? "text-tint-ok-ink" : "text-ink-faint"}`}>
+                              <Text
+                                className={`font-body-extrabold text-[9px] ${hit ? "text-tint-ok-ink" : "text-ink-faint"}`}
+                              >
                                 {letter}
                               </Text>
                             </View>
@@ -321,14 +337,31 @@ export function HabitsScreen() {
       ) : null}
 
       <Sheet visible={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo hábito">
-        <Input label="¿Qué quieres hacer cada día?" value={name} onChangeText={setName} placeholder="Tomar 8 vasos de agua" maxLength={60} />
+        <Input
+          label="¿Qué quieres hacer cada día?"
+          value={name}
+          onChangeText={setName}
+          placeholder="Tomar 8 vasos de agua"
+          maxLength={60}
+        />
         <Text className="mb-2 ml-1 font-body-bold text-sm text-ink">Ícono</Text>
         <View className="mb-5 flex-row flex-wrap gap-2">
           {ICONS.map((i) => (
-            <Chip key={i} icon={i} label={ICON_LABEL[i]} selected={icon === i} onPress={() => setIcon(i)} />
+            <Chip
+              key={i}
+              icon={i}
+              label={ICON_LABEL[i]}
+              selected={icon === i}
+              onPress={() => setIcon(i)}
+            />
           ))}
         </View>
-        <Button title="Crear hábito" loading={saving} disabled={!name.trim()} onPress={() => void create()} />
+        <Button
+          title="Crear hábito"
+          loading={saving}
+          disabled={!name.trim()}
+          onPress={() => void create()}
+        />
       </Sheet>
     </Screen>
   );
