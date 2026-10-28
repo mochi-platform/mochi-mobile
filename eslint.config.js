@@ -55,6 +55,7 @@ const MIGRATED = [
   "src/features/cooking/components/RecipeFiltersCard.tsx",
   "src/features/cooking/components/PublicRecipeCard.tsx",
   "src/features/cooking/components/PublicRecipesCatalog.tsx",
+  "src/features/cooking/components/RecipeGeneratorModal.tsx",
   "src/features/today/**/*.{ts,tsx}",
   "src/features/companion/**/*.{ts,tsx}",
   "app/(tabs)/wellness.tsx",

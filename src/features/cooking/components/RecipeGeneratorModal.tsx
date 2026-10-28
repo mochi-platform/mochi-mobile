@@ -1,27 +1,30 @@
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import type { Dispatch, SetStateAction } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
-} from "react-native";
+import { Text, View } from "react-native";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import type { RecipeGenerationType } from "@/src/shared/lib/ai";
 import type { MochiCyclePersonality } from "@/src/shared/lib/cyclePersonality";
+import { COLORS } from "@/src/shared/theme/tokens";
 import type { RecipeDifficulty } from "@/src/shared/types/database";
+import {
+  Button,
+  Caption,
+  Chip,
+  Input,
+  MochiBubble,
+  MochiQuote,
+  PressableScale,
+  Sheet,
+  Surface,
+} from "@/src/shared/ui";
 import { complexityOptions, recipeTypeOptions } from "@/src/features/cooking/helpers";
 
 type RecipeGeneratorModalProps = {
   visible: boolean;
   generating: boolean;
   generatingStep: string;
-  keyboardInset: number;
+  /** Se conserva por compatibilidad: la hoja ya maneja el teclado. */
+  keyboardInset?: number;
   personality: MochiCyclePersonality | null;
   prompt: string;
   onPromptChange: (value: string) => void;
@@ -36,11 +39,11 @@ type RecipeGeneratorModalProps = {
   onGenerate: () => void;
 };
 
+/** Crear una receta con Mochi: mismas opciones de siempre (tipo, personas, complejidad). */
 export function RecipeGeneratorModal({
   visible,
   generating,
   generatingStep,
-  keyboardInset,
   personality,
   prompt,
   onPromptChange,
@@ -55,158 +58,99 @@ export function RecipeGeneratorModal({
   onGenerate,
 }: RecipeGeneratorModalProps) {
   return (
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={onRequestClose}>
-      <TouchableWithoutFeedback onPress={onRequestClose}>
-        <View className="flex-1 justify-end bg-black/40" style={{ paddingBottom: keyboardInset }}>
-          <TouchableWithoutFeedback onPress={() => undefined}>
-            <View className="max-h-[90%] rounded-t-3xl bg-white px-5 pb-10 pt-5 dark:bg-surface">
-              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                <View className="mb-4 h-1.5 w-16 self-center rounded-full bg-slate-200 dark:bg-slate-800" />
-
-                {generating ? (
-                  <View className="items-center py-8">
-                    <MochiCharacter mood="thinking" size={90} />
-                    <Text className="mt-4 text-center text-base font-extrabold text-orange-900 dark:text-orange-100">
-                      {generatingStep}
-                    </Text>
-                    <ActivityIndicator className="mt-4" size="large" color={tc("#f97316")} />
-                  </View>
-                ) : (
-                  <>
-                    <Text className="text-xl font-extrabold text-orange-900 dark:text-orange-100">
-                      ¿Qué quieres cocinar?
-                    </Text>
-                    <Text className="mt-1 text-sm font-semibold text-orange-600 dark:text-orange-400">
-                      Descríbelo con tus palabras, yo me encargo del resto
-                    </Text>
-                    {personality && (
-                      <View
-                        className={`mt-3 self-start rounded-full border px-3 py-1 ${personality.phaseBadgeClass}`}
-                      >
-                        <View className="flex-row items-center">
-                          <Ionicons
-                            name={personality.phaseIconName}
-                            size={12}
-                            color={tc("#334155")}
-                          />
-                          <Text className="ml-1 text-xs font-extrabold text-slate-700 dark:text-slate-300">
-                            {personality.phaseLabel}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-                    <View className="mt-4 rounded-2xl border-2 border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800 dark:bg-orange-950">
-                      <Text className="mb-1 text-xs font-bold text-orange-700 dark:text-orange-300">
-                        Ejemplos:
-                      </Text>
-                      <Text className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                        • "pasta con atún rápida para 1 persona"{"\n"}• "algo dulce con plátano,
-                        huevo y avena"{"\n"}• "pollo al horno fácil para 4, menos de 40 minutos"
-                      </Text>
-                    </View>
-                    <View className="mt-4 rounded-2xl border-2 border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800 dark:bg-orange-950">
-                      <Text className="text-xs font-bold text-orange-700 dark:text-orange-300">
-                        Tipo de receta
-                      </Text>
-                      <View className="mt-2 flex-row flex-wrap gap-2">
-                        {recipeTypeOptions.map((option) => {
-                          const selected = recipeType === option.value;
-                          return (
-                            <TouchableOpacity
-                              key={option.value}
-                              className={`rounded-full border px-3 py-1 ${selected ? "border-orange-500 bg-orange-500" : "border-orange-200 bg-white dark:border-orange-800 dark:bg-surface"}`}
-                              onPress={() => onRecipeTypeChange(option.value)}
-                            >
-                              <Text
-                                className={`text-xs font-bold ${selected ? "text-white" : "text-orange-700 dark:text-orange-300"}`}
-                              >
-                                {option.label}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-
-                      <Text className="mt-4 text-xs font-bold text-orange-700 dark:text-orange-300">
-                        Cantidad de personas
-                      </Text>
-                      <View className="mt-2 flex-row items-center justify-between rounded-2xl border border-orange-200 bg-white px-3 py-2 dark:border-orange-800 dark:bg-surface">
-                        <TouchableOpacity
-                          className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 dark:border-orange-800 dark:bg-orange-950"
-                          onPress={() => onServingsChange((prev) => Math.max(1, prev - 1))}
-                        >
-                          <Text className="text-sm font-extrabold text-orange-700 dark:text-orange-300">
-                            -
-                          </Text>
-                        </TouchableOpacity>
-                        <Text className="text-base font-extrabold text-orange-900 dark:text-orange-100">
-                          {servings} {servings === 1 ? "persona" : "personas"}
-                        </Text>
-                        <TouchableOpacity
-                          className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 dark:border-orange-800 dark:bg-orange-950"
-                          onPress={() => onServingsChange((prev) => Math.min(12, prev + 1))}
-                        >
-                          <Text className="text-sm font-extrabold text-orange-700 dark:text-orange-300">
-                            +
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-
-                      <Text className="mt-4 text-xs font-bold text-orange-700 dark:text-orange-300">
-                        Nivel de complejidad
-                      </Text>
-                      <View className="mt-2 flex-row gap-2">
-                        {complexityOptions.map((option) => {
-                          const selected = complexity === option.value;
-                          return (
-                            <TouchableOpacity
-                              key={option.value}
-                              className={`flex-1 rounded-xl border px-3 py-2 ${selected ? "border-orange-500 bg-orange-500" : "border-orange-200 bg-white dark:border-orange-800 dark:bg-surface"}`}
-                              onPress={() => onComplexityChange(option.value)}
-                            >
-                              <Text
-                                className={`text-center text-xs font-bold ${selected ? "text-white" : "text-orange-700 dark:text-orange-300"}`}
-                              >
-                                {option.label}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </View>
-                    <TextInput
-                      className="mt-4 min-h-24 rounded-2xl border-2 border-orange-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 dark:border-orange-800 dark:bg-surface dark:text-slate-200"
-                      placeholder="Quiero hacer..."
-                      placeholderTextColor={tc("#fdba74")}
-                      value={prompt}
-                      onChangeText={onPromptChange}
-                      multiline
-                      textAlignVertical="top"
-                    />
-                    <View className="mt-5 flex-row gap-3">
-                      <TouchableOpacity
-                        className="flex-1 rounded-2xl border-2 border-orange-200 py-3 dark:border-orange-800"
-                        onPress={onCancel}
-                      >
-                        <Text className="text-center font-bold text-orange-700 dark:text-orange-300">
-                          Cancelar
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        className={`flex-1 rounded-2xl py-3 ${prompt.trim() ? "bg-orange-500" : "bg-orange-200 dark:bg-orange-800"}`}
-                        onPress={onGenerate}
-                        disabled={!prompt.trim()}
-                      >
-                        <Text className="text-center font-extrabold text-white">Generar</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
-              </ScrollView>
-            </View>
-          </TouchableWithoutFeedback>
+    <Sheet visible={visible} onClose={generating ? () => undefined : onRequestClose}>
+      {generating ? (
+        <View className="items-center py-6">
+          <MochiCharacter expression="thinking" size={130} />
+          <MochiQuote className="mt-3 text-center">{generatingStep}</MochiQuote>
         </View>
-      </TouchableWithoutFeedback>
-    </Modal>
+      ) : (
+        <>
+          <MochiBubble
+            tail="none"
+            text="¿Qué quieres cocinar? Dímelo con tus palabras y yo me encargo del resto."
+          />
+          {personality ? (
+            <View className="mt-3 flex-row items-center gap-1.5 self-start rounded-full bg-tint-me px-3 py-1">
+              <Ionicons name={personality.phaseIconName} size={13} color={COLORS.ink} />
+              <Text className="font-body-bold text-xs text-ink">{personality.phaseLabel}</Text>
+            </View>
+          ) : null}
+
+          <View className="mt-4">
+            <Input
+              label="Tu idea"
+              placeholder="Pollo al horno fácil para 4, menos de 40 minutos"
+              value={prompt}
+              onChangeText={onPromptChange}
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+          <Surface tone="sunken" className="mb-4 p-3">
+            <Caption>
+              Ejemplos: «pasta con atún rápida para 1 persona», «algo dulce con plátano, huevo y
+              avena».
+            </Caption>
+          </Surface>
+
+          <Text className="mb-2 ml-1 font-body-bold text-sm text-ink">Tipo de receta</Text>
+          <View className="mb-4 flex-row flex-wrap gap-2">
+            {recipeTypeOptions.map((option) => (
+              <Chip
+                key={option.value}
+                label={option.label}
+                selected={recipeType === option.value}
+                onPress={() => onRecipeTypeChange(option.value)}
+              />
+            ))}
+          </View>
+
+          <Text className="mb-2 ml-1 font-body-bold text-sm text-ink">¿Para cuántas personas?</Text>
+          <View className="mb-4 flex-row items-center justify-between rounded-control bg-surface-muted px-2 py-1.5">
+            <PressableScale
+              haptics="selection"
+              onPress={() => onServingsChange((prev) => Math.max(1, prev - 1))}
+              accessibilityLabel="Menos personas"
+              className="h-10 w-10 items-center justify-center rounded-full bg-surface"
+            >
+              <Ionicons name="remove" size={20} color={COLORS.ink} />
+            </PressableScale>
+            <Text className="font-display text-lg text-ink">
+              {servings} {servings === 1 ? "persona" : "personas"}
+            </Text>
+            <PressableScale
+              haptics="selection"
+              onPress={() => onServingsChange((prev) => Math.min(12, prev + 1))}
+              accessibilityLabel="Más personas"
+              className="h-10 w-10 items-center justify-center rounded-full bg-surface"
+            >
+              <Ionicons name="add" size={20} color={COLORS.ink} />
+            </PressableScale>
+          </View>
+
+          <Text className="mb-2 ml-1 font-body-bold text-sm text-ink">Nivel de complejidad</Text>
+          <View className="mb-5 flex-row flex-wrap gap-2">
+            {complexityOptions.map((option) => (
+              <Chip
+                key={option.value}
+                label={option.label}
+                selected={complexity === option.value}
+                onPress={() => onComplexityChange(option.value)}
+              />
+            ))}
+          </View>
+
+          <View className="flex-row gap-2">
+            <View className="flex-1">
+              <Button title="Cancelar" variant="outline" onPress={onCancel} />
+            </View>
+            <View className="flex-1">
+              <Button title="Crear receta" disabled={!prompt.trim()} onPress={onGenerate} />
+            </View>
+          </View>
+        </>
+      )}
+    </Sheet>
   );
 }

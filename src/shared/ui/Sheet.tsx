@@ -1,6 +1,20 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from "react-native";
-import Animated, { FadeIn, FadeOut, runOnJS, SlideInDown, SlideOutDown } from "react-native-reanimated";
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  runOnJS,
+  SlideInDown,
+  SlideOutDown,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ELEVATION } from "./elevation";
 import { DURATION, EASE_OUT, REDUCE } from "./motion";
@@ -19,6 +33,7 @@ type SheetProps = {
  */
 export function Sheet({ visible, onClose, title, children }: SheetProps) {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const [mounted, setMounted] = useState(visible);
 
   useEffect(() => {
@@ -69,7 +84,15 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
           >
             <View className="mb-3 h-1.5 w-10 self-center rounded-full bg-ink-faint/50" />
             {title ? <Title className="mb-3">{title}</Title> : null}
-            {children}
+            {/* Contenido alto (formularios) se desplaza dentro de la hoja en vez de salirse. */}
+            <ScrollView
+              style={{ maxHeight: height * 0.72 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
+              {children}
+            </ScrollView>
           </Animated.View>
         ) : null}
       </KeyboardAvoidingView>
