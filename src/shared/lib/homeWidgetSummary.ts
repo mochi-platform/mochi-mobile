@@ -2,6 +2,8 @@ import { reportError } from "@/src/shared/lib/observability/reportError";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { isExpoGo } from "@/lib/env";
+import { pickLine, WIDGET_LINES } from "@/src/features/companion/lines";
+import { toLocalISODate } from "@/src/shared/lib/dates";
 
 export type HomeWidgetSummaryPayload = {
   userId: string;
@@ -42,6 +44,7 @@ async function syncWidgetSnapshot(payload: HomeWidgetSummaryPayload): Promise<vo
       streak: payload.streak,
       nextBlock: payload.nextBlock,
       updatedAtLabel: formatUpdatedLabel(payload.updatedAt),
+      line: pickLine(WIDGET_LINES, toLocalISODate(new Date())),
     });
     widgetModule.mochiSummaryWidget.reload();
   } catch (error) {

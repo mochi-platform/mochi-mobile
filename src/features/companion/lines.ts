@@ -59,3 +59,14 @@ export function pickLine(lines: readonly string[], seed: string): string {
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
   return lines[Math.abs(hash) % lines.length];
 }
+
+/** Frases cortas para el widget: afirmaciones, no preguntas (no se puede responder desde ahí). */
+export const WIDGET_LINES: string[] = [
+  "Un paso pequeño hoy también cuenta.",
+  "Aquí estoy. Vamos a tu ritmo.",
+  "Hoy puede salir algo bonito.",
+  "Sin prisa: lo importante primero.",
+  "Respira. Tú puedes con esto.",
+  "Cuida de ti, que yo te acompaño.",
+  "Un ratito de estudio y listo.",
+];
