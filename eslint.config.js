@@ -30,6 +30,7 @@ const MIGRATED = [
   "app/vouchers.tsx",
   "app/mochi-duo-invite.tsx",
   "app/study-timer.tsx",
+  "app/recipe-detail.tsx",
   "src/features/study/timer/components/StudySetupView.tsx",
   "src/features/study/timer/components/StudyTimerView.tsx",
   "src/features/study/timer/components/StudyCompleteView.tsx",

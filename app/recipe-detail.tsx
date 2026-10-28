@@ -1,23 +1,30 @@
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  ActivityIndicator,
-  ImageBackground,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ImageBackground, Text, View } from "react-native";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useAchievement } from "@/src/core/providers/AchievementContext";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
-import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
+import { COLORS } from "@/src/shared/theme/tokens";
+import {
+  Body,
+  Button,
+  Caption,
+  ELEVATION,
+  ErrorState,
+  Eyebrow,
+  Input,
+  MochiQuote,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Strong,
+  Surface,
+  Title,
+} from "@/src/shared/ui";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { checkFavoriteRecipeAchievement } from "@/src/shared/lib/gamification";
 import { getRecipeGenerationTypeFromPrompt } from "@/src/shared/lib/recipeCatalog";
@@ -30,22 +37,10 @@ import type {
   RecipeCookSession,
 } from "@/src/shared/types/database";
 
-const difficultyConfig: Record<string, { label: string; className: string; textClass: string }> = {
-  fácil: {
-    label: "Fácil",
-    className: "bg-green-100 dark:bg-green-900",
-    textClass: "text-green-800 dark:text-green-200",
-  },
-  media: {
-    label: "Media",
-    className: "bg-yellow-100 dark:bg-yellow-900",
-    textClass: "text-yellow-800 dark:text-yellow-200",
-  },
-  difícil: {
-    label: "Difícil",
-    className: "bg-red-100 dark:bg-red-900",
-    textClass: "text-red-800 dark:text-red-200",
-  },
+const difficultyConfig: Record<string, { label: string }> = {
+  fácil: { label: "Fácil" },
+  media: { label: "Media" },
+  difícil: { label: "Difícil" },
 };
 
 function formatDuration(seconds: number): string {
@@ -78,6 +73,7 @@ export function RecipeDetailScreen() {
   const { session } = useSession();
   const { showAchievement } = useAchievement();
   const { showAlert, AlertComponent } = useCustomAlert();
+  const insets = useSafeAreaInsets();
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
@@ -284,29 +280,19 @@ export function RecipeDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 dark:bg-orange-950">
-        <MochiCharacter mood="thinking" size={88} />
-        <Text className="mt-3 text-sm font-semibold text-orange-700 dark:text-orange-300">
-          Cargando receta...
-        </Text>
-      </SafeAreaView>
+      <View className="flex-1 items-center justify-center bg-canvas">
+        <MochiCharacter expression="thinking" size={120} />
+        <Caption className="mt-3">Abriendo la receta…</Caption>
+      </View>
     );
   }
 
   if (error || !recipe) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 px-6 dark:bg-orange-950">
-        <MochiCharacter mood="sleepy" size={80} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
-          {error}
-        </Text>
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-orange-500 px-6 py-3"
-          onPress={() => router.back()}
-        >
-          <Text className="font-bold text-white">Volver</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      <View className="flex-1 justify-center bg-canvas px-6">
+        <ErrorState message={error ?? "No encontramos esta receta."} />
+        <Button title="Volver" variant="soft" onPress={() => router.back()} />
+      </View>
     );
   }
 
@@ -315,362 +301,283 @@ export function RecipeDetailScreen() {
     recipe.total_time_minutes > 0
       ? recipe.total_time_minutes
       : recipe.prep_time_minutes + recipe.cook_time_minutes;
+  const pills: { icon?: keyof typeof Ionicons.glyphMap; label: string }[] = [
+    ...(totalTime > 0 ? [{ icon: "time" as const, label: `${totalTime} min` }] : []),
+    ...(recipe.prep_time_minutes > 0
+      ? [{ icon: "cut" as const, label: `${recipe.prep_time_minutes} min prep` }]
+      : []),
+    ...(recipe.cook_time_minutes > 0
+      ? [{ icon: "flame" as const, label: `${recipe.cook_time_minutes} min cocción` }]
+      : []),
+    { label: diff.label },
+    ...(recipe.cuisine_type ? [{ label: formatRecipeTag(recipe.cuisine_type) }] : []),
+  ];
 
   return (
     <>
       <View className="flex-1 bg-canvas">
-        <SafeAreaView className="flex-1">
-          <ScrollView
-            className="flex-1 px-5"
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Nav */}
-            <View className="mt-4 flex-row items-center justify-between">
-              <TouchableOpacity className="flex-row items-center" onPress={() => router.back()}>
-                <Ionicons name="chevron-back" size={22} color={tc("#c2410c")} />
-                <Text className="ml-1 font-bold text-orange-900 dark:text-orange-100">Volver</Text>
-              </TouchableOpacity>
-              <View className="flex-row items-center gap-3">
-                <TouchableOpacity onPress={handleToggleFavorite}>
-                  <Ionicons
-                    name={recipe.is_favorite ? "heart" : "heart"}
-                    size={22}
-                    color={tc("#f97316")}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleDelete}>
-                  <Ionicons name="trash" size={20} color={tc("#ef4444")} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Título y meta */}
-            <View className="mt-5 overflow-hidden rounded-3xl border-2 border-orange-200 bg-orange-100 dark:border-orange-800 dark:bg-orange-900">
-              {heroImageUrl ? (
-                <ImageBackground
-                  source={{ uri: heroImageUrl }}
-                  className="h-52 w-full"
-                  resizeMode="cover"
-                >
-                  <LinearGradient
-                    colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.55)"]}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                    className="flex-1 justify-end px-4 pb-4"
-                  >
-                    <Text className="text-2xl font-extrabold text-white">{recipe.title}</Text>
-                  </LinearGradient>
-                </ImageBackground>
-              ) : (
-                <View className="h-52 items-center justify-center">
-                  <MochiCharacter mood="thinking" size={72} />
-                  <Text className="mt-2 text-sm font-semibold text-orange-700 dark:text-orange-300">
-                    {heroImageLoading ? "Buscando imagen de receta..." : recipe.title}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-5 dark:border-orange-800 dark:bg-surface">
-              {recipe.description ? (
-                <Text className="mt-2 text-sm font-semibold text-orange-700 dark:text-orange-300">
-                  {recipe.description}
-                </Text>
-              ) : null}
-
-              <View className="mt-4 flex-row flex-wrap gap-2">
-                {totalTime > 0 && (
-                  <View className="flex-row items-center rounded-full bg-orange-100 px-3 py-1.5 dark:bg-orange-900">
-                    <Ionicons name="time" size={13} color={tc("#c2410c")} />
-                    <Text className="ml-1 text-xs font-bold text-orange-800 dark:text-orange-200">
-                      {totalTime} min total
-                    </Text>
-                  </View>
-                )}
-                {recipe.prep_time_minutes > 0 && (
-                  <View className="flex-row items-center rounded-full bg-amber-100 px-3 py-1.5 dark:bg-amber-900">
-                    <Ionicons name="cut" size={13} color={tc("#92400e")} />
-                    <Text className="ml-1 text-xs font-bold text-amber-800 dark:text-amber-200">
-                      {recipe.prep_time_minutes} min prep
-                    </Text>
-                  </View>
-                )}
-                {recipe.cook_time_minutes > 0 && (
-                  <View className="flex-row items-center rounded-full bg-red-100 px-3 py-1.5 dark:bg-red-900">
-                    <Ionicons name="flame" size={13} color={tc("#b91c1c")} />
-                    <Text className="ml-1 text-xs font-bold text-red-800 dark:text-red-200">
-                      {recipe.cook_time_minutes} min cocción
-                    </Text>
-                  </View>
-                )}
-                <View className={`rounded-full px-3 py-1.5 ${diff.className}`}>
-                  <Text className={`text-xs font-bold ${diff.textClass}`}>{diff.label}</Text>
-                </View>
-                {recipe.cuisine_type ? (
-                  <View className="rounded-full bg-purple-100 px-3 py-1.5 dark:bg-purple-900">
-                    <Text className="text-xs font-bold text-purple-800 dark:text-purple-200">
-                      {formatRecipeTag(recipe.cuisine_type)}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-
-              {recipe.tags.length > 0 && (
-                <View className="mt-3 flex-row flex-wrap gap-1">
-                  {recipe.tags.map((tag, index) => (
-                    <View
-                      key={`${tag}-${index}`}
-                      className="shrink-0 self-start rounded-full border border-orange-200 px-2.5 py-1 dark:border-orange-800"
-                    >
-                      <Text className="text-xs font-semibold leading-4 text-orange-600 dark:text-orange-400">
-                        {formatRecipeTag(tag)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              <IconCtaButton
-                label={
-                  publication?.is_published
-                    ? "Quitar del catálogo público"
-                    : "Publicar en catálogo público"
+        <Screen
+          withTabBar={false}
+          headerRight={
+            <View className="flex-row gap-2">
+              <PressableScale
+                haptics="selection"
+                onPress={handleToggleFavorite}
+                accessibilityLabel={
+                  recipe.is_favorite ? "Quitar de favoritas" : "Marcar como favorita"
                 }
-                onPress={() => void handleTogglePublication()}
-                iconName={publication?.is_published ? "eye-off" : "globe"}
-                iconColor={tc("#c2410c")}
-                iconSize={16}
-                containerClassName="mt-4 w-full rounded-2xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950 py-3"
-                textClassName="text-orange-800 dark:text-orange-200"
-                loading={publishing}
-                loadingColor={tc("#c2410c")}
-              />
+                className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+              >
+                <Ionicons
+                  name={recipe.is_favorite ? "heart" : "heart-outline"}
+                  size={20}
+                  color={recipe.is_favorite ? COLORS.accent : COLORS.inkMuted}
+                />
+              </PressableScale>
+              <PressableScale
+                haptics="warning"
+                onPress={handleDelete}
+                accessibilityLabel="Eliminar receta"
+                className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+              >
+                <Ionicons name="trash-outline" size={19} color={COLORS.danger} />
+              </PressableScale>
+              <PressableScale
+                onPress={() => router.back()}
+                accessibilityLabel="Volver"
+                className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+              >
+                <Ionicons name="close" size={20} color={COLORS.inkMuted} />
+              </PressableScale>
             </View>
-
-            {/* Sesión activa */}
-            {activeSession && (
-              <View className="mt-4 rounded-3xl border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950">
-                <View className="flex-row items-center">
-                  <Ionicons name="play-circle" size={20} color={tc("#d97706")} />
-                  <Text className="ml-2 text-sm font-extrabold text-amber-900 dark:text-amber-100">
-                    Sesión activa — paso {activeSession.last_step_completed + 1} de {steps.length}
-                  </Text>
-                </View>
-                <Text className="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
-                  Empezaste esta receta. ¿Continuamos?
-                </Text>
-              </View>
-            )}
-
-            {/* Escalado de porciones */}
-            <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-4 dark:border-orange-800 dark:bg-surface">
-              <Text className="text-sm font-bold text-orange-900 dark:text-orange-100">
-                Porciones
-              </Text>
-              <View className="mt-3 flex-row items-center justify-between rounded-2xl bg-orange-50 px-4 py-3 dark:bg-orange-950">
-                <TouchableOpacity
-                  className="h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-surface"
-                  onPress={() => setServings((s) => Math.max(1, s - 1))}
+          }
+        >
+          <View className="mt-3 overflow-hidden rounded-card bg-tint-kitchen" style={ELEVATION[2]}>
+            {heroImageUrl ? (
+              <ImageBackground
+                source={{ uri: heroImageUrl }}
+                className="h-56 w-full"
+                resizeMode="cover"
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0)", "rgba(40,20,20,0.6)"]}
+                  start={{ x: 0.5, y: 0.2 }}
+                  end={{ x: 0.5, y: 1 }}
+                  className="flex-1 justify-end px-5 pb-4"
                 >
-                  <Ionicons name="remove" size={18} color={tc("#c2410c")} />
-                </TouchableOpacity>
-                <Text className="text-xl font-extrabold text-orange-900 dark:text-orange-100">
-                  {servings}
-                </Text>
-                <TouchableOpacity
-                  className="h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-surface"
-                  onPress={() => setServings((s) => s + 1)}
-                >
-                  <Ionicons name="add" size={18} color={tc("#c2410c")} />
-                </TouchableOpacity>
-              </View>
-              {servings !== recipe.servings && (
-                <Text className="mt-2 text-center text-xs font-semibold text-orange-500">
-                  Receta original para {recipe.servings} porciones — cantidades ajustadas
-                </Text>
-              )}
-            </View>
-
-            {/* Ingredientes */}
-            {ingredients.length > 0 && (
-              <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-4 dark:border-orange-800 dark:bg-surface">
-                <View className="flex-row items-center">
-                  <Ionicons name="list" size={18} color={tc("#c2410c")} />
-                  <Text className="ml-2 text-lg font-extrabold text-orange-900 dark:text-orange-100">
-                    Ingredientes
+                  <Text className="font-display text-[26px] leading-[30px] text-white">
+                    {recipe.title}
                   </Text>
-                </View>
-                <View className="mt-3">
-                  {ingredients.map((ing, idx) => {
-                    const scaled =
-                      ing.amount !== null
-                        ? scaleAmount(ing.amount, recipe.servings, servings)
-                        : null;
-                    return (
-                      <View
-                        key={ing.id}
-                        className={`flex-row items-start py-2.5 ${idx < ingredients.length - 1 ? "border-b border-orange-100 dark:border-orange-900" : ""}`}
-                      >
-                        <View className="mr-3 mt-0.5 h-2 w-2 rounded-full bg-orange-400" />
-                        <View className="flex-1">
-                          <Text className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                            {scaled ? `${scaled}${ing.unit ? ` ${ing.unit}` : ""} ` : ""}
-                            <Text className="font-semibold">{ing.name}</Text>
-                          </Text>
-                          {ing.notes ? (
-                            <Text className="mt-0.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
-                              {ing.notes}
-                            </Text>
-                          ) : null}
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
+                </LinearGradient>
+              </ImageBackground>
+            ) : (
+              <View className="items-center px-5 pb-5 pt-4">
+                <MochiCharacter expression="excited" size={96} animated={false} shadow={false} />
+                {heroImageLoading ? <Caption className="mt-1">Buscando una foto…</Caption> : null}
+                <Title className="mt-2 text-center text-[24px] leading-[28px]">
+                  {recipe.title}
+                </Title>
               </View>
             )}
+          </View>
 
-            {/* Pasos */}
-            {steps.length > 0 && (
-              <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-4 dark:border-orange-800 dark:bg-surface">
-                <View className="flex-row items-center">
-                  <Ionicons name="footsteps" size={18} color={tc("#c2410c")} />
-                  <Text className="ml-2 text-lg font-extrabold text-orange-900 dark:text-orange-100">
-                    Preparación
-                  </Text>
-                </View>
-                <View className="mt-3">
-                  {steps.map((step) => (
-                    <View key={step.id} className="mb-4">
-                      <View className="flex-row items-start">
-                        <View className="mr-3 h-7 w-7 items-center justify-center rounded-full bg-orange-500">
-                          <Text className="text-xs font-extrabold text-white">
-                            {step.step_number}
-                          </Text>
-                        </View>
-                        <View className="flex-1">
-                          <Text className="text-sm font-extrabold text-orange-900 dark:text-orange-100">
-                            {step.title}
-                          </Text>
-                          {step.duration_seconds ? (
-                            <View className="mt-1 flex-row items-center">
-                              <Ionicons name="timer" size={12} color={tc("#9a3412")} />
-                              <Text className="ml-1 text-xs font-bold text-orange-700 dark:text-orange-300">
-                                {formatDuration(step.duration_seconds)}
-                              </Text>
-                              {step.temperature ? (
-                                <Text className="ml-2 text-xs font-bold text-red-600 dark:text-red-400">
-                                  · {step.temperature}
-                                </Text>
-                              ) : null}
-                            </View>
-                          ) : null}
-                          <Text className="mt-1.5 text-sm font-semibold leading-5 text-slate-700 dark:text-slate-300">
-                            {step.instructions}
-                          </Text>
-                          {step.tip ? (
-                            <View className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-950">
-                              <View className="flex-row items-center">
-                                <Ionicons name="bulb" size={13} color={tc("#d97706")} />
-                                <Text className="ml-1 text-xs font-bold text-amber-800 dark:text-amber-200">
-                                  Consejo de Mochi
-                                </Text>
-                              </View>
-                              <Text className="mt-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
-                                {step.tip}
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </View>
+          {recipe.description ? (
+            <Body className="mt-4 text-ink-muted">{recipe.description}</Body>
+          ) : null}
+
+          <View className="mt-3 flex-row flex-wrap gap-2">
+            {pills.map((p) => (
+              <View
+                key={p.label}
+                className="flex-row items-center gap-1 rounded-full bg-tint-kitchen px-3 py-1.5"
+              >
+                {p.icon ? <Ionicons name={p.icon} size={13} color={COLORS.ink} /> : null}
+                <Text className="font-body-bold text-xs text-ink">{p.label}</Text>
               </View>
-            )}
-
-            {/* Notas personales */}
-            <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-4 dark:border-orange-800 dark:bg-surface">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                  <Ionicons name="create" size={18} color={tc("#c2410c")} />
-                  <Text className="ml-2 text-lg font-extrabold text-orange-900 dark:text-orange-100">
-                    Mis notas
-                  </Text>
-                </View>
-                {!editingNotes && (
-                  <TouchableOpacity
-                    className="rounded-full bg-orange-100 px-3 py-1 dark:bg-orange-900"
-                    onPress={() => setEditingNotes(true)}
-                  >
-                    <Text className="text-xs font-extrabold text-orange-800 dark:text-orange-200">
-                      Editar
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {editingNotes ? (
-                <>
-                  <TextInput
-                    className="mt-3 min-h-20 rounded-2xl border-2 border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-orange-800 dark:bg-orange-950 dark:text-slate-200"
-                    placeholder="Tus trucos, variantes, recordatorios..."
-                    placeholderTextColor={tc("#fdba74")}
-                    value={notesInput}
-                    onChangeText={setNotesInput}
-                    multiline
-                    textAlignVertical="top"
-                  />
-                  <View className="mt-3 flex-row gap-3">
-                    <TouchableOpacity
-                      className="flex-1 rounded-2xl border-2 border-orange-200 py-2 dark:border-orange-800"
-                      onPress={() => {
-                        setEditingNotes(false);
-                        setNotesInput(recipe.personal_notes ?? "");
-                      }}
-                      disabled={savingNotes}
-                    >
-                      <Text className="text-center font-bold text-orange-700 dark:text-orange-300">
-                        Cancelar
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      className="flex-1 rounded-2xl bg-orange-500 py-2"
-                      onPress={() => void handleSaveNotes()}
-                      disabled={savingNotes}
-                    >
-                      {savingNotes ? (
-                        <ActivityIndicator size="small" color="white" />
-                      ) : (
-                        <Text className="text-center font-extrabold text-white">Guardar</Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </>
-              ) : (
-                <Text className="mt-3 text-sm font-semibold text-slate-600 dark:text-slate-400">
-                  {recipe.personal_notes || "Aún no tienes notas para esta receta."}
+            ))}
+            {recipe.tags.map((tag, index) => (
+              <View key={`${tag}-${index}`} className="rounded-full bg-surface-muted px-3 py-1.5">
+                <Text className="font-body-bold text-xs text-ink-muted">
+                  {formatRecipeTag(tag)}
                 </Text>
-              )}
-            </View>
+              </View>
+            ))}
+          </View>
 
-            <View className="h-32" />
-          </ScrollView>
-
-          {/* CTA fijo */}
-          <View className="absolute bottom-0 left-0 right-0 border-t border-orange-200 bg-orange-50 px-5 pb-8 pt-3 dark:border-orange-800 dark:bg-orange-950">
-            <IconCtaButton
-              label={activeSession ? "Continuar cocinando" : "Empezar a cocinar"}
-              onPress={handleStartCooking}
-              iconName="restaurant"
-              iconColor={tc("#ffffff")}
-              iconSize={20}
-              containerClassName="w-full rounded-2xl bg-orange-500 py-4"
-              textClassName="text-base text-white"
+          <View className="mt-4">
+            <Button
+              title={
+                publication?.is_published
+                  ? "Quitar del catálogo público"
+                  : "Publicar en catálogo público"
+              }
+              variant="outline"
+              loading={publishing}
+              onPress={() => void handleTogglePublication()}
             />
           </View>
-        </SafeAreaView>
+
+          {activeSession ? (
+            <Surface tone="sunken" className="mt-4 flex-row items-center gap-3 p-4">
+              <Ionicons name="play-circle" size={24} color={COLORS.accent} />
+              <View className="flex-1">
+                <Strong>
+                  Vas en el paso {activeSession.last_step_completed + 1} de {steps.length}
+                </Strong>
+                <Caption>Empezaste esta receta. ¿Continuamos?</Caption>
+              </View>
+            </Surface>
+          ) : null}
+
+          <Surface className="mt-4 flex-row items-center justify-between p-4">
+            <View className="flex-1 pr-3">
+              <Strong>Porciones</Strong>
+              {servings !== recipe.servings ? (
+                <Caption>Receta original para {recipe.servings}; cantidades ajustadas</Caption>
+              ) : null}
+            </View>
+            <View className="flex-row items-center gap-3">
+              <PressableScale
+                haptics="selection"
+                onPress={() => setServings((s) => Math.max(1, s - 1))}
+                accessibilityLabel="Menos porciones"
+                className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+              >
+                <Ionicons name="remove" size={20} color={COLORS.ink} />
+              </PressableScale>
+              <Text
+                className="min-w-[28px] text-center font-display text-2xl text-ink"
+                accessibilityLabel={`${servings} porciones`}
+              >
+                {servings}
+              </Text>
+              <PressableScale
+                haptics="selection"
+                onPress={() => setServings((s) => s + 1)}
+                accessibilityLabel="Más porciones"
+                className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+              >
+                <Ionicons name="add" size={20} color={COLORS.ink} />
+              </PressableScale>
+            </View>
+          </Surface>
+
+          {ingredients.length > 0 ? (
+            <>
+              <SectionHeader title="Ingredientes" />
+              <Surface className="px-4 py-1">
+                {ingredients.map((ing, idx) => {
+                  const scaled =
+                    ing.amount !== null ? scaleAmount(ing.amount, recipe.servings, servings) : null;
+                  return (
+                    <View
+                      key={ing.id}
+                      className={`flex-row items-start gap-3 py-3 ${idx < ingredients.length - 1 ? "border-b border-line" : ""}`}
+                    >
+                      <View className="mt-[7px] h-2 w-2 rounded-full bg-tint-kitchen-ink" />
+                      <View className="flex-1">
+                        <Text className="font-body text-[15px] leading-[21px] text-ink">
+                          {scaled ? (
+                            <Text className="font-body-extrabold">{`${scaled}${ing.unit ? ` ${ing.unit}` : ""} `}</Text>
+                          ) : null}
+                          {ing.name}
+                        </Text>
+                        {ing.notes ? <Caption className="mt-0.5">{ing.notes}</Caption> : null}
+                      </View>
+                    </View>
+                  );
+                })}
+              </Surface>
+            </>
+          ) : null}
+
+          {steps.length > 0 ? (
+            <>
+              <SectionHeader title="Pasos" />
+              <View className="gap-3">
+                {steps.map((step) => (
+                  <Surface key={step.id} className="flex-row gap-3 p-4">
+                    <View className="h-8 w-8 items-center justify-center rounded-full bg-accent">
+                      <Text className="font-display text-sm text-accent-ink">
+                        {step.step_number}
+                      </Text>
+                    </View>
+                    <View className="flex-1">
+                      <Strong>{step.title}</Strong>
+                      {step.duration_seconds ? (
+                        <Caption className="mt-0.5">
+                          {formatDuration(step.duration_seconds)}
+                          {step.temperature ? ` · ${step.temperature}` : ""}
+                        </Caption>
+                      ) : null}
+                      <Body className="mt-1.5">{step.instructions}</Body>
+                      {step.tip ? (
+                        <View className="mt-2.5 rounded-[14px] bg-accent-soft px-3 py-2.5">
+                          <Eyebrow className="text-accent-strong">Consejo de Mochi</Eyebrow>
+                          <MochiQuote className="mt-1 text-[15px] leading-[20px]">
+                            {step.tip}
+                          </MochiQuote>
+                        </View>
+                      ) : null}
+                    </View>
+                  </Surface>
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          <SectionHeader
+            title="Mis notas"
+            actionLabel={editingNotes ? undefined : "Editar"}
+            onAction={editingNotes ? undefined : () => setEditingNotes(true)}
+          />
+          {editingNotes ? (
+            <Surface className="p-4">
+              <Input
+                label="Tus trucos, variantes o recordatorios"
+                value={notesInput}
+                onChangeText={setNotesInput}
+                multiline
+                textAlignVertical="top"
+                placeholder="Con menos sal le queda mejor…"
+              />
+              <View className="flex-row gap-2">
+                <View className="flex-1">
+                  <Button
+                    title="Cancelar"
+                    variant="outline"
+                    onPress={() => {
+                      setEditingNotes(false);
+                      setNotesInput(recipe.personal_notes ?? "");
+                    }}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Button
+                    title="Guardar"
+                    loading={savingNotes}
+                    onPress={() => void handleSaveNotes()}
+                  />
+                </View>
+              </View>
+            </Surface>
+          ) : (
+            <Surface tone="sunken" className="p-4">
+              <Caption>{recipe.personal_notes || "Aún no tienes notas para esta receta."}</Caption>
+            </Surface>
+          )}
+          <View className="h-24" />
+        </Screen>
+
+        <View
+          className="absolute inset-x-0 bottom-0 bg-canvas/95 px-5 pt-3"
+          style={{ paddingBottom: insets.bottom + 14 }}
+        >
+          <Button
+            title={activeSession ? "Continuar cocinando" : "Empezar a cocinar"}
+            onPress={handleStartCooking}
+          />
+        </View>
       </View>
       {AlertComponent}
     </>
