@@ -7,18 +7,18 @@ export const difficultyConfig: Record<
 > = {
   fácil: {
     label: "Fácil",
-    className: "bg-green-100 dark:bg-green-900",
-    textClass: "text-green-800 dark:text-green-200",
+    className: "bg-tint-ok",
+    textClass: "text-positive",
   },
   media: {
     label: "Media",
-    className: "bg-yellow-100 dark:bg-yellow-900",
-    textClass: "text-yellow-800 dark:text-yellow-200",
+    className: "bg-tint-kitchen",
+    textClass: "text-ink",
   },
   difícil: {
     label: "Difícil",
-    className: "bg-red-100 dark:bg-red-900",
-    textClass: "text-red-800 dark:text-red-200",
+    className: "bg-tint-me",
+    textClass: "text-danger",
   },
 };
 

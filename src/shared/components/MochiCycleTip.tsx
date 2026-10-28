@@ -81,17 +81,13 @@ export function MochiCycleTip({
     <Animated.View entering={FadeInDown.duration(350)} className={className}>
       <MochiCharacter mood={personality.mochiMood} size={style === "inline" ? 40 : 48} />
       <View className="ml-2 flex-1">
-        <Text className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
-          {personality.phaseLabel}
-        </Text>
-        <Text className="mt-0.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-          {tip}
-        </Text>
+        <Text className="text-xs font-extrabold text-ink">{personality.phaseLabel}</Text>
+        <Text className="mt-0.5 text-xs font-semibold text-ink">{tip}</Text>
       </View>
       {dismissible && (
         <TouchableOpacity
           onPress={() => void handleDismiss()}
-          className="ml-2 rounded-full bg-white/80 p-1.5 dark:bg-surface/80"
+          className="ml-2 rounded-full bg-white/80 p-1.5"
         >
           <Ionicons name="close" size={14} color={tc("#334155")} />
         </TouchableOpacity>

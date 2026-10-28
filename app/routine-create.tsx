@@ -176,13 +176,13 @@ export function RoutineCreateScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-teal-100 dark:bg-teal-900">
+    <SafeAreaView className="flex-1 bg-tint-ok">
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
-          className="flex-1 bg-teal-100 dark:bg-teal-900"
+          className="flex-1 bg-tint-ok"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
@@ -190,24 +190,18 @@ export function RoutineCreateScreen() {
           <View className="px-5 py-6">
             <TouchableOpacity onPress={() => router.back()} className="mb-4 flex-row items-center">
               <Ionicons name="chevron-back" size={24} color={tc("#0d9488")} />
-              <Text className="ml-2 text-lg font-bold text-teal-700 dark:text-teal-300">
-                Volver
-              </Text>
+              <Text className="ml-2 text-lg font-bold text-positive">Volver</Text>
             </TouchableOpacity>
 
-            <Text className="text-3xl font-extrabold text-teal-900 dark:text-teal-100">
-              Nueva rutina
-            </Text>
-            <Text className="mt-1 text-sm font-semibold text-teal-600 dark:text-teal-400">
+            <Text className="text-3xl font-extrabold text-positive">Nueva rutina</Text>
+            <Text className="mt-1 text-sm font-semibold text-positive">
               Crea una rutina con tus ejercicios guardados
             </Text>
 
-            <View className="mt-6 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
-              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
-                Nombre de la rutina
-              </Text>
+            <View className="mt-6 rounded-3xl bg-surface p-4">
+              <Text className="text-sm font-bold text-positive">Nombre de la rutina</Text>
               <TextInput
-                className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-base text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
+                className="mt-2 rounded-2xl bg-surface-muted px-4 py-3 text-base text-positive"
                 placeholder="Ejemplo: Fuerza de tren inferior"
                 value={routineName}
                 onChangeText={setRoutineName}
@@ -215,10 +209,8 @@ export function RoutineCreateScreen() {
               />
             </View>
 
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
-              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
-                Días de entrenamiento
-              </Text>
+            <View className="mt-4 rounded-3xl bg-surface p-4">
+              <Text className="text-sm font-bold text-positive">Días de entrenamiento</Text>
               <View className="mt-3 flex-row flex-wrap">
                 {days.map((day) => {
                   const active = selectedDays.includes(day.id);
@@ -226,17 +218,17 @@ export function RoutineCreateScreen() {
                   return (
                     <TouchableOpacity
                       key={day.id}
-                      className={`mb-2 mr-2 rounded-2xl border px-4 py-3 ${active ? "border-teal-600 bg-teal-500" : "border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-950"}`}
+                      className={`mb-2 mr-2 rounded-2xl border px-4 py-3 ${active ? "bg-positive" : "bg-surface-muted"}`}
                       onPress={() => toggleDay(day.id)}
                       disabled={saving}
                     >
                       <Text
-                        className={`text-sm font-extrabold ${active ? "text-white" : "text-teal-800 dark:text-teal-200"}`}
+                        className={`text-sm font-extrabold ${active ? "text-white" : "text-positive"}`}
                       >
                         {day.short}
                       </Text>
                       <Text
-                        className={`text-xs font-semibold ${active ? "text-teal-50" : "text-teal-600 dark:text-teal-400"}`}
+                        className={`text-xs font-semibold ${active ? "text-accent-ink" : "text-positive"}`}
                       >
                         {day.label}
                       </Text>
@@ -246,38 +238,32 @@ export function RoutineCreateScreen() {
               </View>
             </View>
 
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
+            <View className="mt-4 rounded-3xl bg-surface p-4">
               <View className="flex-row items-center justify-between">
-                <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
-                  Ejercicios para la rutina
-                </Text>
+                <Text className="text-sm font-bold text-positive">Ejercicios para la rutina</Text>
                 <TouchableOpacity
-                  className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 dark:border-teal-800 dark:bg-teal-950"
+                  className="rounded-xl bg-surface-muted px-3 py-2"
                   onPress={() => router.push("/exercise-create?returnTo=/routine-create")}
                   disabled={saving}
                 >
-                  <Text className="text-xs font-bold text-teal-700 dark:text-teal-300">
-                    Añadir ejercicio nuevo
-                  </Text>
+                  <Text className="text-xs font-bold text-positive">Añadir ejercicio nuevo</Text>
                 </TouchableOpacity>
               </View>
 
               {loadingExercises ? (
                 <View className="items-center py-8">
                   <ActivityIndicator size="small" color={tc("#14b8a6")} />
-                  <Text className="mt-3 text-sm font-semibold text-teal-700 dark:text-teal-300">
+                  <Text className="mt-3 text-sm font-semibold text-positive">
                     Cargando ejercicios...
                   </Text>
                 </View>
               ) : error ? (
-                <View className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
-                  <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
-                    {error}
-                  </Text>
+                <View className="mt-4 rounded-2xl bg-surface-muted p-3">
+                  <Text className="text-sm font-semibold text-danger">{error}</Text>
                 </View>
               ) : exercises.length === 0 ? (
-                <View className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-800 dark:bg-teal-950">
-                  <Text className="text-sm font-semibold text-teal-700 dark:text-teal-300">
+                <View className="mt-4 rounded-2xl bg-surface-muted p-4">
+                  <Text className="text-sm font-semibold text-positive">
                     Aún no tienes ejercicios guardados. Crea el primero para armar tu rutina.
                   </Text>
                 </View>
@@ -289,7 +275,7 @@ export function RoutineCreateScreen() {
                     return (
                       <TouchableOpacity
                         key={exercise.id}
-                        className="mb-3 flex-row items-center rounded-2xl border border-teal-100 bg-teal-50 p-3 dark:border-teal-900 dark:bg-teal-950"
+                        className="mb-3 flex-row items-center rounded-2xl bg-surface-muted p-3"
                         onPress={() => toggleExercise(exercise.id)}
                         disabled={saving}
                       >
@@ -299,10 +285,8 @@ export function RoutineCreateScreen() {
                           color={isSelected ? tc("#0d9488") : tc("#94a3b8")}
                         />
                         <View className="ml-3 flex-1">
-                          <Text className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                            {exercise.name}
-                          </Text>
-                          <Text className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                          <Text className="text-sm font-bold text-ink">{exercise.name}</Text>
+                          <Text className="text-xs font-semibold text-ink">
                             {exercise.sets} series • {exercise.reps} repeticiones •{" "}
                             {Math.ceil(exercise.duration_seconds / 60)} min
                           </Text>
@@ -315,7 +299,7 @@ export function RoutineCreateScreen() {
             </View>
 
             <TouchableOpacity
-              className="mb-10 mt-8 rounded-2xl bg-teal-600 py-4 disabled:opacity-60"
+              className="mb-10 mt-8 rounded-2xl bg-positive py-4 disabled:opacity-60"
               onPress={handleCreateRoutine}
               disabled={saving || loadingExercises}
             >

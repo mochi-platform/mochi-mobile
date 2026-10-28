@@ -63,20 +63,20 @@ export function getResultBadge(
   if (percentage >= 0.9) {
     return {
       label: "Excelente",
-      className: "bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100",
+      className: "bg-tint-ok text-positive",
     };
   }
 
   if (percentage >= 0.7) {
     return {
       label: "Aprobado",
-      className: "bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100",
+      className: "bg-tint-kitchen text-ink",
     };
   }
 
   return {
     label: "Reprobado",
-    className: "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300",
+    className: "bg-tint-me text-danger",
   };
 }
 

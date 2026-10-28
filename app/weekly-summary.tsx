@@ -400,17 +400,17 @@ export function WeeklySummaryScreen() {
   };
 
   const moodClass = (mood: number | null): string => {
-    if (mood === null) return "bg-slate-200 dark:bg-slate-800";
-    if (mood <= 2) return "bg-orange-300 dark:bg-orange-700";
-    if (mood === 3) return "bg-yellow-300 dark:bg-yellow-700";
-    return "bg-emerald-300 dark:bg-emerald-700";
+    if (mood === null) return "bg-surface-muted";
+    if (mood <= 2) return "bg-tint-kitchen";
+    if (mood === 3) return "bg-tint-kitchen";
+    return "bg-tint-ok";
   };
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-indigo-50 dark:bg-indigo-950">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted">
         <ActivityIndicator size="large" color={tc("#6366f1")} />
-        <Text className="mt-3 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        <Text className="mt-3 text-sm font-semibold text-ink">
           Preparando tu resumen semanal...
         </Text>
       </SafeAreaView>
@@ -419,15 +419,13 @@ export function WeeklySummaryScreen() {
 
   if (summaryError) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-indigo-50 px-6 dark:bg-indigo-950">
-        <View className="w-full rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
-          <Text className="text-base font-extrabold text-red-700 dark:text-red-300">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted px-6">
+        <View className="w-full rounded-2xl bg-surface-muted p-4">
+          <Text className="text-base font-extrabold text-danger">
             No pudimos cargar tu resumen semanal
           </Text>
-          <Text className="mt-2 text-sm font-semibold text-red-700 dark:text-red-300">
-            {summaryError}
-          </Text>
-          <Text className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">
+          <Text className="mt-2 text-sm font-semibold text-danger">{summaryError}</Text>
+          <Text className="mt-2 text-xs font-semibold text-danger">
             Intenta abrir esta pantalla nuevamente en unos segundos.
           </Text>
         </View>
@@ -440,65 +438,47 @@ export function WeeklySummaryScreen() {
   return (
     <SafeAreaView className="flex-1 bg-canvas">
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <View className="mt-4 rounded-3xl border border-indigo-200 bg-white p-4 dark:border-indigo-800 dark:bg-surface">
-          <Text className="text-lg font-extrabold text-indigo-900 dark:text-indigo-100">
+        <View className="mt-4 rounded-3xl bg-surface p-4">
+          <Text className="text-lg font-extrabold text-ink">
             Tu semana del {range.startISO} al {range.endISO}
           </Text>
           <View className="mt-3 items-center">
             <MochiCharacter mood={moodCharacter} size={84} />
-            <Text className="mt-3 text-center text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-              {message}
-            </Text>
+            <Text className="mt-3 text-center text-sm font-semibold text-ink">{message}</Text>
           </View>
         </View>
 
         <View className="mt-4 grid gap-3">
-          <View className="rounded-2xl border border-indigo-200 bg-indigo-100 p-3 dark:border-indigo-800 dark:bg-indigo-900">
-            <Text className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
-              Horas de estudio
-            </Text>
-            <Text className="text-2xl font-black text-indigo-900 dark:text-indigo-100">
-              {stats.studyHours}
-            </Text>
+          <View className="rounded-2xl bg-tint-study p-3">
+            <Text className="text-xs font-bold text-ink">Horas de estudio</Text>
+            <Text className="text-2xl font-black text-ink">{stats.studyHours}</Text>
           </View>
-          <View className="rounded-2xl border border-blue-200 bg-blue-100 p-3 dark:border-blue-800 dark:bg-blue-900">
-            <Text className="text-xs font-bold text-blue-700 dark:text-blue-300">Sesiones</Text>
-            <Text className="text-2xl font-black text-blue-900 dark:text-blue-100">
-              {stats.sessions}
-            </Text>
+          <View className="rounded-2xl bg-surface-muted p-3">
+            <Text className="text-xs font-bold text-ink">Sesiones</Text>
+            <Text className="text-2xl font-black text-ink">{stats.sessions}</Text>
           </View>
-          <View className="rounded-2xl border border-teal-200 bg-teal-100 p-3 dark:border-teal-800 dark:bg-teal-900">
-            <Text className="text-xs font-bold text-teal-700 dark:text-teal-300">Rutinas</Text>
-            <Text className="text-2xl font-black text-teal-900 dark:text-teal-100">
-              {stats.routines}
-            </Text>
+          <View className="rounded-2xl bg-tint-ok p-3">
+            <Text className="text-xs font-bold text-positive">Rutinas</Text>
+            <Text className="text-2xl font-black text-positive">{stats.routines}</Text>
           </View>
-          <View className="rounded-2xl border border-green-200 bg-green-100 p-3 dark:border-green-800 dark:bg-green-900">
-            <Text className="text-xs font-bold text-green-700 dark:text-green-300">Hábitos</Text>
-            <Text className="text-2xl font-black text-green-900 dark:text-green-100">
+          <View className="rounded-2xl bg-tint-ok p-3">
+            <Text className="text-xs font-bold text-positive">Hábitos</Text>
+            <Text className="text-2xl font-black text-positive">
               {stats.habitsCompleted}/{stats.habitsTotal}
             </Text>
           </View>
-          <View className="rounded-2xl border border-yellow-200 bg-yellow-100 p-3 dark:border-yellow-800 dark:bg-yellow-900">
-            <Text className="text-xs font-bold text-yellow-700 dark:text-yellow-300">
-              Puntos ganados
-            </Text>
-            <Text className="text-2xl font-black text-yellow-900 dark:text-yellow-100">
-              {stats.points}
-            </Text>
+          <View className="rounded-2xl bg-tint-kitchen p-3">
+            <Text className="text-xs font-bold text-ink">Puntos ganados</Text>
+            <Text className="text-2xl font-black text-ink">{stats.points}</Text>
           </View>
-          <View className="rounded-2xl border border-orange-200 bg-orange-100 p-3 dark:border-orange-800 dark:bg-orange-900">
-            <Text className="text-xs font-bold text-orange-700 dark:text-orange-300">
-              Racha más larga
-            </Text>
-            <Text className="text-2xl font-black text-orange-900 dark:text-orange-100">
-              {stats.streak}
-            </Text>
+          <View className="rounded-2xl bg-tint-kitchen p-3">
+            <Text className="text-xs font-bold text-ink">Racha más larga</Text>
+            <Text className="text-2xl font-black text-ink">{stats.streak}</Text>
           </View>
         </View>
 
-        <View className="mt-4 rounded-2xl border border-pink-200 bg-white p-3 dark:border-pink-800 dark:bg-surface">
-          <Text className="text-sm font-bold text-pink-800 dark:text-pink-200">Ánimo semanal</Text>
+        <View className="mt-4 rounded-2xl bg-surface p-3">
+          <Text className="text-sm font-bold text-ink">Ánimo semanal</Text>
           <View className="mt-2 flex-row">
             {stats.moods.map((mood, index) => (
               <View
@@ -509,28 +489,22 @@ export function WeeklySummaryScreen() {
           </View>
         </View>
 
-        <View className="mt-4 rounded-2xl border border-violet-200 bg-white p-3 dark:border-violet-800 dark:bg-surface">
-          <Text className="text-base font-extrabold text-violet-900 dark:text-violet-100">
-            Atlas de semestre
-          </Text>
-          <Text className="mt-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
+        <View className="mt-4 rounded-2xl bg-surface p-3">
+          <Text className="text-base font-extrabold text-ink">Atlas de semestre</Text>
+          <Text className="mt-1 text-xs font-semibold text-ink">
             16 semanas de carga y presión académica
           </Text>
 
           {atlasLoading ? (
             <View className="items-center py-4">
               <ActivityIndicator size="small" color={tc("#7c3aed")} />
-              <Text className="mt-2 text-xs font-semibold text-violet-700 dark:text-violet-300">
-                Cargando atlas...
-              </Text>
+              <Text className="mt-2 text-xs font-semibold text-ink">Cargando atlas...</Text>
             </View>
           ) : null}
 
           {atlasError ? (
-            <View className="mt-3 rounded-xl border border-red-200 bg-red-50 p-2 dark:border-red-800 dark:bg-red-950">
-              <Text className="text-xs font-semibold text-red-700 dark:text-red-300">
-                {atlasError}
-              </Text>
+            <View className="mt-3 rounded-xl bg-surface-muted p-2">
+              <Text className="text-xs font-semibold text-danger">{atlasError}</Text>
             </View>
           ) : null}
 
@@ -539,25 +513,23 @@ export function WeeklySummaryScreen() {
               {atlasWeeks.map((week) => (
                 <View
                   key={week.key}
-                  className={`mb-2 rounded-xl border p-2 ${week.isCurrentWeek ? "border-violet-400 bg-violet-50 dark:bg-violet-950" : "border-violet-100 bg-violet-50 dark:border-violet-900 dark:bg-violet-950"}`}
+                  className={`mb-2 rounded-xl border p-2 ${week.isCurrentWeek ? "bg-surface-muted" : "bg-surface-muted"}`}
                 >
                   <View className="flex-row items-center justify-between">
-                    <Text className="text-xs font-bold text-violet-900 dark:text-violet-100">
+                    <Text className="text-xs font-bold text-ink">
                       Semana {week.startISO} - {week.endISO}
                     </Text>
                     <View
-                      className={`rounded-full px-2 py-1 ${week.intensity === "Alta" ? "bg-rose-100 dark:bg-rose-900" : week.intensity === "Media" ? "bg-amber-100 dark:bg-amber-900" : "bg-emerald-100 dark:bg-emerald-900"}`}
+                      className={`rounded-full px-2 py-1 ${week.intensity === "Alta" ? "bg-tint-me" : week.intensity === "Media" ? "bg-tint-kitchen" : "bg-tint-ok"}`}
                     >
-                      <Text className="text-[10px] font-bold text-slate-800 dark:text-slate-200">
-                        {week.intensity}
-                      </Text>
+                      <Text className="text-[10px] font-bold text-ink">{week.intensity}</Text>
                     </View>
                   </View>
 
-                  <Text className="mt-1 text-[11px] font-semibold text-violet-800 dark:text-violet-200">
+                  <Text className="mt-1 text-[11px] font-semibold text-ink">
                     Sesiones: {week.sessions} · Exámenes: {week.exams}
                   </Text>
-                  <Text className="mt-1 text-[11px] font-semibold text-violet-700 dark:text-violet-300">
+                  <Text className="mt-1 text-[11px] font-semibold text-ink">
                     {week.recommendation}
                   </Text>
                 </View>
@@ -571,24 +543,22 @@ export function WeeklySummaryScreen() {
             captureViewRef.current = node;
           }}
           collapsable={false}
-          className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4 dark:border-indigo-800 dark:bg-surface"
+          className="mt-4 rounded-2xl bg-surface p-4"
         >
-          <Text className="text-center text-base font-extrabold text-indigo-900 dark:text-indigo-100">
-            Mi semana en Mochi
-          </Text>
-          <Text className="mt-1 text-center text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+          <Text className="text-center text-base font-extrabold text-ink">Mi semana en Mochi</Text>
+          <Text className="mt-1 text-center text-xs font-semibold text-ink">
             Semana: {range.startISO} - {range.endISO}
           </Text>
-          <Text className="mt-2 text-center text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+          <Text className="mt-2 text-center text-sm font-semibold text-ink">
             {stats.studyHours}h estudio · {stats.sessions} sesiones · {stats.points} puntos
           </Text>
-          <Text className="mt-2 text-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+          <Text className="mt-2 text-center text-xs font-semibold text-ink">
             Descarga Mochi en mochi.siramong.tech
           </Text>
         </View>
 
         <TouchableOpacity
-          className="mb-10 mt-4 items-center rounded-2xl bg-indigo-600 py-3"
+          className="mb-10 mt-4 items-center rounded-2xl bg-accent py-3"
           onPress={() => {
             void shareSummary();
           }}
@@ -597,10 +567,8 @@ export function WeeklySummaryScreen() {
         </TouchableOpacity>
 
         {shareError ? (
-          <View className="mb-10 rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
-            <Text className="text-center text-sm font-semibold text-red-700 dark:text-red-300">
-              {shareError}
-            </Text>
+          <View className="mb-10 rounded-2xl bg-surface-muted p-3">
+            <Text className="text-center text-sm font-semibold text-danger">{shareError}</Text>
           </View>
         ) : null}
       </ScrollView>

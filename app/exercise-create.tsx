@@ -122,13 +122,13 @@ export function CreateExerciseScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-teal-100 dark:bg-teal-900">
+    <SafeAreaView className="flex-1 bg-tint-ok">
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
-          className="flex-1 bg-teal-100 dark:bg-teal-900"
+          className="flex-1 bg-tint-ok"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
@@ -137,25 +137,19 @@ export function CreateExerciseScreen() {
             {/* Header */}
             <TouchableOpacity onPress={handleGoBack} className="mb-4 flex-row items-center">
               <Ionicons name="chevron-back" size={24} color={tc("#0d9488")} />
-              <Text className="ml-2 text-lg font-bold text-teal-700 dark:text-teal-300">
-                Volver
-              </Text>
+              <Text className="ml-2 text-lg font-bold text-positive">Volver</Text>
             </TouchableOpacity>
 
-            <Text className="text-3xl font-extrabold text-teal-900 dark:text-teal-100">
-              Nuevo ejercicio
-            </Text>
-            <Text className="mt-1 text-sm font-semibold text-teal-600 dark:text-teal-400">
+            <Text className="text-3xl font-extrabold text-positive">Nuevo ejercicio</Text>
+            <Text className="mt-1 text-sm font-semibold text-positive">
               Añade un ejercicio personalizado a tu banco
             </Text>
 
             {/* Exercise name */}
-            <View className="mt-6 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
-              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
-                Nombre del ejercicio
-              </Text>
+            <View className="mt-6 rounded-3xl bg-surface p-4">
+              <Text className="text-sm font-bold text-positive">Nombre del ejercicio</Text>
               <TextInput
-                className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-base text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
+                className="mt-2 rounded-2xl bg-surface-muted px-4 py-3 text-base text-positive"
                 placeholder="Ejemplo: Flexiones"
                 value={name}
                 onChangeText={setName}
@@ -164,17 +158,13 @@ export function CreateExerciseScreen() {
             </View>
 
             {/* AI Description suggestion */}
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
+            <View className="mt-4 rounded-3xl bg-surface p-4">
               <View className="flex-row items-center justify-between">
-                <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
-                  Sugerencias con IA
-                </Text>
+                <Text className="text-sm font-bold text-positive">Sugerencias con IA</Text>
                 {aiDescription && (
-                  <View className="flex-row items-center gap-1 rounded-full bg-green-100 px-3 py-1 dark:bg-green-900">
+                  <View className="flex-row items-center gap-1 rounded-full bg-tint-ok px-3 py-1">
                     <Ionicons name="checkmark-circle" size={14} color={tc("#059669")} />
-                    <Text className="text-xs font-bold text-green-700 dark:text-green-300">
-                      Aplicable
-                    </Text>
+                    <Text className="text-xs font-bold text-positive">Aplicable</Text>
                   </View>
                 )}
               </View>
@@ -188,35 +178,27 @@ export function CreateExerciseScreen() {
                 loading={aiLoading}
                 loadingColor={tc("#0d9488")}
                 disabled={!name.trim()}
-                containerClassName="mt-3 w-full rounded-2xl bg-gradient-to-r from-yellow-100 dark:from-yellow-900 to-yellow-50 dark:to-yellow-950 py-3"
-                textClassName="text-teal-700 dark:text-teal-300"
+                containerClassName="mt-3 w-full rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 py-3"
+                textClassName="text-positive"
               />
 
               {aiDescription && (
-                <View className="mt-3 rounded-2xl bg-teal-50 p-3 dark:bg-teal-950">
-                  <Text className="text-xs font-semibold text-teal-700 dark:text-teal-300">
-                    Descripción sugerida:
-                  </Text>
-                  <Text className="mt-1 text-sm font-semibold text-teal-900 dark:text-teal-100">
-                    {aiDescription}
-                  </Text>
+                <View className="mt-3 rounded-2xl bg-surface-muted p-3">
+                  <Text className="text-xs font-semibold text-positive">Descripción sugerida:</Text>
+                  <Text className="mt-1 text-sm font-semibold text-positive">{aiDescription}</Text>
                 </View>
               )}
             </View>
 
             {/* Sets, reps, duration */}
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
-              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
-                Configuración
-              </Text>
+            <View className="mt-4 rounded-3xl bg-surface p-4">
+              <Text className="text-sm font-bold text-positive">Configuración</Text>
 
               <View className="mt-3 flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-teal-600 dark:text-teal-400">
-                    Series
-                  </Text>
+                  <Text className="text-xs font-semibold text-positive">Series</Text>
                   <TextInput
-                    className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-center text-base font-bold text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
+                    className="mt-2 rounded-2xl bg-surface-muted px-4 py-3 text-center text-base font-bold text-positive"
                     keyboardType="number-pad"
                     value={sets}
                     onChangeText={setSets}
@@ -225,11 +207,9 @@ export function CreateExerciseScreen() {
                 </View>
 
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-teal-600 dark:text-teal-400">
-                    Repeticiones
-                  </Text>
+                  <Text className="text-xs font-semibold text-positive">Repeticiones</Text>
                   <TextInput
-                    className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-center text-base font-bold text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
+                    className="mt-2 rounded-2xl bg-surface-muted px-4 py-3 text-center text-base font-bold text-positive"
                     keyboardType="number-pad"
                     value={reps}
                     onChangeText={setReps}
@@ -238,11 +218,9 @@ export function CreateExerciseScreen() {
                 </View>
 
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-teal-600 dark:text-teal-400">
-                    Segundos
-                  </Text>
+                  <Text className="text-xs font-semibold text-positive">Segundos</Text>
                   <TextInput
-                    className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-center text-base font-bold text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
+                    className="mt-2 rounded-2xl bg-surface-muted px-4 py-3 text-center text-base font-bold text-positive"
                     keyboardType="number-pad"
                     value={duration}
                     onChangeText={setDuration}
@@ -253,12 +231,10 @@ export function CreateExerciseScreen() {
             </View>
 
             {/* Notes */}
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
-              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
-                Notas (descripción completa)
-              </Text>
+            <View className="mt-4 rounded-3xl bg-surface p-4">
+              <Text className="text-sm font-bold text-positive">Notas (descripción completa)</Text>
               <TextInput
-                className="mt-2 min-h-20 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-base text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
+                className="mt-2 min-h-20 rounded-2xl bg-surface-muted px-4 py-3 text-base text-positive"
                 placeholder="Cómo hacerlo, posición correcta, respiración, etc."
                 value={notes}
                 onChangeText={setNotes}
@@ -270,7 +246,7 @@ export function CreateExerciseScreen() {
 
             {/* Create button */}
             <TouchableOpacity
-              className="mt-8 rounded-2xl bg-teal-600 py-4 disabled:opacity-60"
+              className="mt-8 rounded-2xl bg-positive py-4 disabled:opacity-60"
               onPress={handleCreate}
               disabled={loading}
             >

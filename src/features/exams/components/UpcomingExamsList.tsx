@@ -33,10 +33,8 @@ export function UpcomingExamsList({
   onRegisterResult,
 }: UpcomingExamsListProps) {
   return (
-    <View className="mt-6 rounded-3xl border-2 border-pink-200 bg-white p-4 dark:border-pink-800 dark:bg-surface">
-      <Text className="text-lg font-extrabold text-pink-900 dark:text-pink-100">
-        Próximos exámenes
-      </Text>
+    <View className="mt-6 rounded-3xl bg-surface p-4">
+      <Text className="text-lg font-extrabold text-ink">Próximos exámenes</Text>
 
       {loading ? (
         <View className="items-center py-6">
@@ -45,7 +43,7 @@ export function UpcomingExamsList({
       ) : upcomingExams.length === 0 ? (
         <View className="items-center py-6">
           <MochiCharacter mood="thinking" size={70} />
-          <Text className="mt-3 text-sm font-semibold text-pink-700 dark:text-pink-300">
+          <Text className="mt-3 text-sm font-semibold text-ink">
             No hay exámenes próximos registrados
           </Text>
         </View>
@@ -54,7 +52,7 @@ export function UpcomingExamsList({
           {prepLoading ? (
             <View className="items-center py-4">
               <ActivityIndicator size="small" color={tc("#ec4899")} />
-              <Text className="mt-2 text-xs font-semibold text-pink-700 dark:text-pink-300">
+              <Text className="mt-2 text-xs font-semibold text-ink">
                 Cargando progreso de misión...
               </Text>
             </View>

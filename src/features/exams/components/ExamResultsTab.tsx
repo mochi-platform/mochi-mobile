@@ -34,32 +34,26 @@ export function ExamResultsTab({
   return (
     <>
       {selectedUpcomingId ? (
-        <View className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-800 dark:bg-indigo-950">
-          <Text className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
-            Resultado de examen próximo
-          </Text>
-          <Text className="mt-1 text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+        <View className="mt-4 rounded-2xl bg-surface-muted p-3">
+          <Text className="text-xs font-bold text-ink">Resultado de examen próximo</Text>
+          <Text className="mt-1 text-sm font-semibold text-ink">
             Completa la nota para cerrar este examen pendiente.
           </Text>
         </View>
       ) : null}
 
-      <View className="mt-6 rounded-3xl border-2 border-pink-200 bg-white p-4 dark:border-pink-800 dark:bg-surface">
-        <Text className="text-lg font-extrabold text-pink-900 dark:text-pink-100">
-          Historial de resultados
-        </Text>
+      <View className="mt-6 rounded-3xl bg-surface p-4">
+        <Text className="text-lg font-extrabold text-ink">Historial de resultados</Text>
 
         {loading ? (
           <View className="items-center py-6">
             <ActivityIndicator size="small" color={tc("#ec4899")} />
-            <Text className="mt-3 text-sm font-semibold text-pink-700 dark:text-pink-300">
-              Cargando historial...
-            </Text>
+            <Text className="mt-3 text-sm font-semibold text-ink">Cargando historial...</Text>
           </View>
         ) : examHistory.length === 0 ? (
           <View className="items-center py-6">
             <MochiCharacter mood="happy" size={70} />
-            <Text className="mt-3 text-sm font-semibold text-pink-700 dark:text-pink-300">
+            <Text className="mt-3 text-sm font-semibold text-ink">
               Aún no tienes resultados registrados
             </Text>
           </View>
@@ -71,19 +65,14 @@ export function ExamResultsTab({
               const badge = getResultBadge(gradeValue, maxValue);
 
               return (
-                <View
-                  key={exam.id}
-                  className="mb-3 rounded-2xl border border-pink-200 bg-pink-50 p-3 dark:border-pink-800 dark:bg-pink-950"
-                >
+                <View key={exam.id} className="mb-3 rounded-2xl bg-surface-muted p-3">
                   <View className="flex-row items-start justify-between">
                     <View className="flex-1 pr-3">
-                      <Text className="text-base font-extrabold text-pink-900 dark:text-pink-100">
-                        {exam.subject}
-                      </Text>
-                      <Text className="mt-1 text-sm font-semibold text-pink-700 dark:text-pink-300">
+                      <Text className="text-base font-extrabold text-ink">{exam.subject}</Text>
+                      <Text className="mt-1 text-sm font-semibold text-ink">
                         {gradeValue}/{maxValue}
                       </Text>
-                      <Text className="mt-1 text-xs font-semibold uppercase text-pink-500">
+                      <Text className="mt-1 text-xs font-semibold uppercase text-ink-muted">
                         {formatExamDate(exam.exam_date)}
                       </Text>
                     </View>
@@ -99,9 +88,9 @@ export function ExamResultsTab({
       </View>
 
       <View className="mt-6">
-        <Text className="mb-2 text-sm font-bold text-pink-800 dark:text-pink-200">Materia</Text>
+        <Text className="mb-2 text-sm font-bold text-ink">Materia</Text>
         <TextInput
-          className="rounded-2xl border-2 border-pink-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 dark:border-pink-800 dark:bg-surface dark:text-slate-200"
+          className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="Ej. Cálculo, Historia, Inglés..."
           placeholderTextColor={tc("#f9a8d4")}
           value={subject}
@@ -110,30 +99,26 @@ export function ExamResultsTab({
       </View>
 
       <View className="mt-4">
-        <Text className="mb-2 text-sm font-bold text-pink-800 dark:text-pink-200">
-          Nota obtenida
-        </Text>
+        <Text className="mb-2 text-sm font-bold text-ink">Nota obtenida</Text>
         <View className="flex-row items-center">
           <TextInput
-            className="flex-1 rounded-2xl border-2 border-pink-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 dark:border-pink-800 dark:bg-surface dark:text-slate-200"
+            className="flex-1 rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
             placeholder="0 - 10"
             placeholderTextColor={tc("#f9a8d4")}
             value={grade}
             onChangeText={onGradeChange}
             keyboardType="decimal-pad"
           />
-          <View className="ml-3 items-center justify-center rounded-2xl bg-pink-100 px-4 py-3 dark:bg-pink-900">
-            <Text className="font-bold text-pink-700 dark:text-pink-300">/ 10</Text>
+          <View className="ml-3 items-center justify-center rounded-2xl bg-tint-me px-4 py-3">
+            <Text className="font-bold text-ink">/ 10</Text>
           </View>
         </View>
       </View>
 
       <View className="mt-4">
-        <Text className="mb-2 text-sm font-bold text-pink-800 dark:text-pink-200">
-          Notas (opcional)
-        </Text>
+        <Text className="mb-2 text-sm font-bold text-ink">Notas (opcional)</Text>
         <TextInput
-          className="rounded-2xl border-2 border-pink-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 dark:border-pink-800 dark:bg-surface dark:text-slate-200"
+          className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="¿Qué temas entraron? ¿Cómo te fue?"
           placeholderTextColor={tc("#f9a8d4")}
           value={notes}
@@ -145,7 +130,7 @@ export function ExamResultsTab({
       </View>
 
       <TouchableOpacity
-        className={`mt-6 items-center rounded-2xl py-4 ${saving ? "bg-pink-300 dark:bg-pink-700" : "bg-pink-500"}`}
+        className={`mt-6 items-center rounded-2xl py-4 ${saving ? "bg-tint-me" : "bg-accent"}`}
         onPress={() => {
           onSave();
         }}

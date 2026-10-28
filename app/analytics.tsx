@@ -359,24 +359,20 @@ export function AnalyticsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-sky-50 dark:bg-sky-950">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted">
         <ActivityIndicator size="small" color={tc("#0369a1")} />
-        <Text className="mt-3 text-sm font-semibold text-sky-700 dark:text-sky-300">
-          Cargando analiticas...
-        </Text>
+        <Text className="mt-3 text-sm font-semibold text-ink">Cargando analiticas...</Text>
       </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-sky-50 px-6 dark:bg-sky-950">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted px-6">
         <MochiCharacter mood="sleepy" size={78} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
-          {error}
-        </Text>
+        <Text className="mt-4 text-center text-sm font-semibold text-danger">{error}</Text>
         <TouchableOpacity
-          className="mt-6 rounded-2xl bg-sky-600 px-6 py-3"
+          className="mt-6 rounded-2xl bg-accent px-6 py-3"
           onPress={() => {
             void loadAnalytics();
           }}
@@ -392,31 +388,25 @@ export function AnalyticsScreen() {
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
         <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={tc("#0369a1")} />
-          <Text className="ml-1 font-bold text-sky-800 dark:text-sky-200">Volver</Text>
+          <Text className="ml-1 font-bold text-ink">Volver</Text>
         </TouchableOpacity>
 
-        <View className="mt-6 rounded-3xl border-2 border-sky-200 bg-white p-5 dark:border-sky-800 dark:bg-surface">
-          <Text className="text-2xl font-extrabold text-sky-900 dark:text-sky-100">
-            Analiticas personales
-          </Text>
-          <Text className="mt-1 text-sm font-semibold text-sky-700 dark:text-sky-300">
+        <View className="mt-6 rounded-3xl bg-surface p-5">
+          <Text className="text-2xl font-extrabold text-ink">Analiticas personales</Text>
+          <Text className="mt-1 text-sm font-semibold text-ink">
             Visualiza tu avance real y ajusta tu plan semanal.
           </Text>
 
           <View className="mt-4 flex-row gap-3">
-            <View className="flex-1 rounded-2xl bg-sky-100 px-3 py-3 dark:bg-sky-900">
-              <Text className="text-xs font-bold uppercase text-sky-700 dark:text-sky-300">
-                Horas (8 sem)
-              </Text>
-              <Text className="mt-1 text-xl font-extrabold text-sky-900 dark:text-sky-100">
+            <View className="flex-1 rounded-2xl bg-surface-muted px-3 py-3">
+              <Text className="text-xs font-bold uppercase text-ink">Horas (8 sem)</Text>
+              <Text className="mt-1 text-xl font-extrabold text-ink">
                 {totalWeeklyHours.toFixed(1)}h
               </Text>
             </View>
-            <View className="flex-1 rounded-2xl bg-indigo-100 px-3 py-3 dark:bg-indigo-900">
-              <Text className="text-xs font-bold uppercase text-indigo-700 dark:text-indigo-300">
-                Racha actual
-              </Text>
-              <Text className="mt-1 text-xl font-extrabold text-indigo-900 dark:text-indigo-100">
+            <View className="flex-1 rounded-2xl bg-tint-study px-3 py-3">
+              <Text className="text-xs font-bold uppercase text-ink">Racha actual</Text>
+              <Text className="mt-1 text-xl font-extrabold text-ink">
                 {analyticsData.currentStreak} dias
               </Text>
             </View>
@@ -425,23 +415,21 @@ export function AnalyticsScreen() {
 
         <EnergyStudyCorrelationCard allowed={plan.features.analytics_correlation} />
 
-        <View className="mt-4 rounded-3xl border-2 border-sky-200 bg-white p-4 dark:border-sky-800 dark:bg-surface">
-          <Text className="text-base font-extrabold text-sky-900 dark:text-sky-100">
-            Horas de estudio por semana
-          </Text>
+        <View className="mt-4 rounded-3xl bg-surface p-4">
+          <Text className="text-base font-extrabold text-ink">Horas de estudio por semana</Text>
           {!plan.features.analytics_history ? (
             <TouchableOpacity
               accessibilityRole="button"
-              className="mt-2 min-h-[44px] justify-center rounded-2xl bg-amber-100 px-3 dark:bg-amber-900"
+              className="mt-2 min-h-[44px] justify-center rounded-2xl bg-tint-kitchen px-3"
               onPress={() => router.push("/premium")}
             >
-              <Text className="text-xs font-extrabold text-amber-900 dark:text-amber-100">
+              <Text className="text-xs font-extrabold text-ink">
                 Con Premium ves el histórico de 8 semanas. Conoce Premium
               </Text>
             </TouchableOpacity>
           ) : null}
           {weeklyChartData.length === 0 ? (
-            <Text className="mt-2 text-xs font-semibold text-sky-700 dark:text-sky-300">
+            <Text className="mt-2 text-xs font-semibold text-ink">
               Aun no hay datos de estudio para mostrar.
             </Text>
           ) : (
@@ -468,10 +456,7 @@ export function AnalyticsScreen() {
               </ScrollView>
               <View className="mt-2 flex-row justify-between px-1">
                 {weeklyChartData.map((point) => (
-                  <Text
-                    key={`week-label-${point.x}`}
-                    className="text-[10px] font-bold text-sky-700 dark:text-sky-300"
-                  >
+                  <Text key={`week-label-${point.x}`} className="text-[10px] font-bold text-ink">
                     {point.label}
                   </Text>
                 ))}
@@ -480,12 +465,12 @@ export function AnalyticsScreen() {
           )}
         </View>
 
-        <View className="mt-4 rounded-3xl border-2 border-emerald-200 bg-white p-4 dark:border-emerald-800 dark:bg-surface">
-          <Text className="text-base font-extrabold text-emerald-900 dark:text-emerald-100">
+        <View className="mt-4 rounded-3xl bg-surface p-4">
+          <Text className="text-base font-extrabold text-positive">
             Habitos completados por mes
           </Text>
           {monthlyChartData.length === 0 ? (
-            <Text className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+            <Text className="mt-2 text-xs font-semibold text-positive">
               Aun no hay registros de habitos para mostrar.
             </Text>
           ) : (
@@ -514,7 +499,7 @@ export function AnalyticsScreen() {
                 {monthlyChartData.map((point) => (
                   <Text
                     key={`month-label-${point.x}`}
-                    className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300"
+                    className="text-[10px] font-bold text-positive"
                   >
                     {point.label}
                   </Text>
@@ -524,12 +509,10 @@ export function AnalyticsScreen() {
           )}
         </View>
 
-        <View className="mb-8 mt-4 rounded-3xl border-2 border-violet-200 bg-white p-4 dark:border-violet-800 dark:bg-surface">
-          <Text className="text-base font-extrabold text-violet-900 dark:text-violet-100">
-            Evolucion de racha (30 dias)
-          </Text>
+        <View className="mb-8 mt-4 rounded-3xl bg-surface p-4">
+          <Text className="text-base font-extrabold text-ink">Evolucion de racha (30 dias)</Text>
           {streakChartData.length === 0 ? (
-            <Text className="mt-2 text-xs font-semibold text-violet-700 dark:text-violet-300">
+            <Text className="mt-2 text-xs font-semibold text-ink">
               Aun no hay actividad suficiente para ver la evolucion de racha.
             </Text>
           ) : (
@@ -555,13 +538,13 @@ export function AnalyticsScreen() {
                 </View>
               </ScrollView>
               <View className="mt-2 flex-row items-center justify-between px-1">
-                <Text className="text-[10px] font-bold text-violet-700 dark:text-violet-300">
+                <Text className="text-[10px] font-bold text-ink">
                   {streakChartData[0]?.label ?? ""}
                 </Text>
-                <Text className="text-[10px] font-bold text-violet-700 dark:text-violet-300">
+                <Text className="text-[10px] font-bold text-ink">
                   {streakChartData[Math.floor(streakChartData.length / 2)]?.label ?? ""}
                 </Text>
-                <Text className="text-[10px] font-bold text-violet-700 dark:text-violet-300">
+                <Text className="text-[10px] font-bold text-ink">
                   {streakChartData[streakChartData.length - 1]?.label ?? ""}
                 </Text>
               </View>

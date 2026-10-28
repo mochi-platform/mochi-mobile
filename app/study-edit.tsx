@@ -157,13 +157,13 @@ export function EditStudyBlockScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-purple-100 dark:bg-purple-900">
+      <SafeAreaView className="flex-1 bg-tint-study">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <ScrollView
-            className="flex-1 bg-purple-100 dark:bg-purple-900"
+            className="flex-1 bg-tint-study"
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
@@ -174,32 +174,24 @@ export function EditStudyBlockScreen() {
                 className="mb-4 flex-row items-center"
               >
                 <Ionicons name="chevron-back" size={24} color={tc("#7c3aed")} />
-                <Text className="ml-2 text-lg font-bold text-purple-700 dark:text-purple-300">
-                  Volver
-                </Text>
+                <Text className="ml-2 text-lg font-bold text-ink">Volver</Text>
               </TouchableOpacity>
 
-              <Text className="text-3xl font-extrabold text-purple-900 dark:text-purple-100">
-                Editar bloque de estudio
-              </Text>
-              <Text className="mt-1 text-sm font-semibold text-purple-600 dark:text-purple-400">
+              <Text className="text-3xl font-extrabold text-ink">Editar bloque de estudio</Text>
+              <Text className="mt-1 text-sm font-semibold text-ink">
                 Ajusta materia, horario y color para tu semana
               </Text>
 
               {loading ? (
                 <View className="mt-10 items-center">
                   <ActivityIndicator size="small" color={tc("#7c3aed")} />
-                  <Text className="mt-3 text-sm font-semibold text-purple-700 dark:text-purple-300">
-                    Cargando bloque...
-                  </Text>
+                  <Text className="mt-3 text-sm font-semibold text-ink">Cargando bloque...</Text>
                 </View>
               ) : error ? (
-                <View className="mt-6 rounded-3xl border-2 border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
-                  <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
-                    {error}
-                  </Text>
+                <View className="mt-6 rounded-3xl bg-surface-muted p-4">
+                  <Text className="text-sm font-semibold text-danger">{error}</Text>
                   <TouchableOpacity
-                    className="mt-4 rounded-2xl bg-purple-600 py-3"
+                    className="mt-4 rounded-2xl bg-accent py-3"
                     onPress={() => void loadBlock()}
                   >
                     <Text className="text-center font-bold text-white">Reintentar</Text>
@@ -207,12 +199,10 @@ export function EditStudyBlockScreen() {
                 </View>
               ) : (
                 <>
-                  <View className="mt-6 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
-                    <Text className="text-sm font-bold text-purple-900 dark:text-purple-100">
-                      Materia
-                    </Text>
+                  <View className="mt-6 rounded-3xl bg-surface p-4">
+                    <Text className="text-sm font-bold text-ink">Materia</Text>
                     <TextInput
-                      className="mt-2 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-base text-purple-900 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-100"
+                      className="mt-2 rounded-2xl bg-surface-muted px-4 py-3 text-base text-ink"
                       placeholder="Ejemplo: Matemáticas"
                       placeholderTextColor={tc("#c4b5fd")}
                       value={subject}
@@ -221,10 +211,8 @@ export function EditStudyBlockScreen() {
                     />
                   </View>
 
-                  <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
-                    <Text className="text-sm font-bold text-purple-900 dark:text-purple-100">
-                      Día de la semana
-                    </Text>
+                  <View className="mt-4 rounded-3xl bg-surface p-4">
+                    <Text className="text-sm font-bold text-ink">Día de la semana</Text>
                     <ScrollView
                       horizontal
                       showsHorizontalScrollIndicator={false}
@@ -233,11 +221,11 @@ export function EditStudyBlockScreen() {
                       {daysOfWeek.map((day) => (
                         <TouchableOpacity
                           key={day.value}
-                          className={`mx-2 rounded-2xl px-4 py-2 ${dayOfWeek === day.value ? "bg-purple-600" : "bg-purple-100 dark:bg-purple-900"}`}
+                          className={`mx-2 rounded-2xl px-4 py-2 ${dayOfWeek === day.value ? "bg-accent" : "bg-tint-study"}`}
                           onPress={() => setDayOfWeek(day.value)}
                         >
                           <Text
-                            className={`font-bold ${dayOfWeek === day.value ? "text-white" : "text-purple-700 dark:text-purple-300"}`}
+                            className={`font-bold ${dayOfWeek === day.value ? "text-white" : "text-ink"}`}
                           >
                             {day.label}
                           </Text>
@@ -246,22 +234,18 @@ export function EditStudyBlockScreen() {
                     </ScrollView>
                   </View>
 
-                  <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
-                    <Text className="text-sm font-bold text-purple-900 dark:text-purple-100">
-                      Horario
-                    </Text>
+                  <View className="mt-4 rounded-3xl bg-surface p-4">
+                    <Text className="text-sm font-bold text-ink">Horario</Text>
 
                     <View className="mt-3 flex-row gap-3">
                       <View className="flex-1">
-                        <Text className="text-xs font-semibold text-purple-600 dark:text-purple-400">
-                          Inicio
-                        </Text>
+                        <Text className="text-xs font-semibold text-ink">Inicio</Text>
                         <TouchableOpacity
-                          className="mt-2 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 dark:border-purple-800 dark:bg-purple-950"
+                          className="mt-2 rounded-2xl bg-surface-muted px-4 py-3"
                           onPress={() => setShowStartPicker(true)}
                           disabled={saving}
                         >
-                          <Text className="text-center text-lg font-extrabold text-purple-900 dark:text-purple-100">
+                          <Text className="text-center text-lg font-extrabold text-ink">
                             {startTime}
                           </Text>
                         </TouchableOpacity>
@@ -272,15 +256,13 @@ export function EditStudyBlockScreen() {
                       </View>
 
                       <View className="flex-1">
-                        <Text className="text-xs font-semibold text-purple-600 dark:text-purple-400">
-                          Fin
-                        </Text>
+                        <Text className="text-xs font-semibold text-ink">Fin</Text>
                         <TouchableOpacity
-                          className="mt-2 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 dark:border-purple-800 dark:bg-purple-950"
+                          className="mt-2 rounded-2xl bg-surface-muted px-4 py-3"
                           onPress={() => setShowEndPicker(true)}
                           disabled={saving}
                         >
-                          <Text className="text-center text-lg font-extrabold text-purple-900 dark:text-purple-100">
+                          <Text className="text-center text-lg font-extrabold text-ink">
                             {endTime}
                           </Text>
                         </TouchableOpacity>
@@ -288,20 +270,18 @@ export function EditStudyBlockScreen() {
                     </View>
                   </View>
 
-                  <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
-                    <Text className="text-sm font-bold text-purple-900 dark:text-purple-100">
-                      Color
-                    </Text>
+                  <View className="mt-4 rounded-3xl bg-surface p-4">
+                    <Text className="text-sm font-bold text-ink">Color</Text>
                     <View className="mt-3 flex-row flex-wrap gap-2">
                       {colors.map((col) => (
                         <TouchableOpacity
                           key={col.value}
-                          className={`min-w-[28%] flex-1 rounded-2xl border-4 py-3 ${color === col.value ? "border-purple-700" : "border-transparent"}`}
+                          className={`min-w-[28%] flex-1 rounded-2xl border-4 py-3 ${color === col.value ? "" : "border-transparent"}`}
                           style={{ backgroundColor: col.hex }}
                           onPress={() => setColor(col.value)}
                           disabled={saving}
                         >
-                          <Text className="text-center text-xs font-bold text-purple-900 dark:text-purple-100">
+                          <Text className="text-center text-xs font-bold text-ink">
                             {col.label}
                           </Text>
                         </TouchableOpacity>
@@ -310,7 +290,7 @@ export function EditStudyBlockScreen() {
                   </View>
 
                   <TouchableOpacity
-                    className="mt-8 rounded-2xl bg-purple-600 py-4 disabled:opacity-60"
+                    className="mt-8 rounded-2xl bg-accent py-4 disabled:opacity-60"
                     onPress={() => void handleSave()}
                     disabled={saving}
                   >

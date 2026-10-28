@@ -14,8 +14,8 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
 
   if (isLoading) {
     return (
-      <View className="rounded-2xl bg-white p-4 dark:bg-surface">
-        <Text className="text-center text-sm text-slate-500">Cargando progreso...</Text>
+      <View className="rounded-2xl bg-surface p-4">
+        <Text className="text-center text-sm text-ink-muted">Cargando progreso...</Text>
       </View>
     );
   }
@@ -48,19 +48,19 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
   });
 
   return (
-    <View className="rounded-2xl border border-purple-100 bg-white p-4 dark:border-purple-900 dark:bg-surface">
+    <View className="rounded-2xl bg-surface p-4">
       {/* Header */}
       <View className="mb-4">
         <View className="mb-2 flex-row items-center justify-between">
-          <Text className="text-base font-bold text-slate-800 dark:text-slate-200">
+          <Text className="text-base font-bold text-ink">
             Progreso: {completedDays}/{totalDays} días
           </Text>
         </View>
 
         {/* Progress Bar */}
-        <View className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+        <View className="h-2 overflow-hidden rounded-full bg-surface-muted">
           <View
-            className="h-full bg-green-500"
+            className="h-full bg-positive"
             style={{ width: `${(completedDays / totalDays) * 100}%` }}
           />
         </View>
@@ -74,9 +74,7 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
               key={day.dayNumber}
               activeOpacity={0.85}
               className={`h-12 w-12 items-center justify-center rounded-lg border-2 ${
-                day.completed
-                  ? "border-green-400 bg-green-100 dark:bg-green-900"
-                  : "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950"
+                day.completed ? "bg-tint-ok" : "bg-surface-muted"
               }`}
             >
               <Text className="text-center text-xs font-semibold">{day.dayNumber}</Text>
@@ -87,11 +85,11 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
       </ScrollView>
 
       {/* Stats */}
-      <View className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-800">
+      <View className="mt-4 pt-3">
         <View className="flex-row justify-between">
           <View>
-            <Text className="text-xs text-slate-600 dark:text-slate-400">Horas promedio</Text>
-            <Text className="text-sm font-bold text-slate-800 dark:text-slate-200">
+            <Text className="text-xs text-ink">Horas promedio</Text>
+            <Text className="text-sm font-bold text-ink">
               {(
                 progressEntries.reduce((sum, p) => sum + p.hours_studied, 0) / (completedDays || 1)
               ).toFixed(1)}
@@ -99,10 +97,8 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
             </Text>
           </View>
           <View>
-            <Text className="text-xs text-slate-600 dark:text-slate-400">Meta diaria</Text>
-            <Text className="text-sm font-bold text-slate-800 dark:text-slate-200">
-              {sprint.daily_target_hours}h
-            </Text>
+            <Text className="text-xs text-ink">Meta diaria</Text>
+            <Text className="text-sm font-bold text-ink">{sprint.daily_target_hours}h</Text>
           </View>
         </View>
       </View>

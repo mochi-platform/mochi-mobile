@@ -94,6 +94,24 @@ module.exports = defineConfig([
     rules: { "@typescript-eslint/no-explicit-any": "error" },
   },
   {
+    // Ya no quedan colores sueltos en ninguna pantalla: prohibidos en todo el código.
+    files: ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+    ignores: ["src/shared/theme/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: `Literal[value=/\\b(bg|text|border)-(${HUES})-\\d{2,3}\\b/]`,
+          message: "Usa tokens (bg-surface, text-ink, bg-tint-*), no colores sueltos.",
+        },
+        {
+          selector: `TemplateElement[value.raw=/\\b(bg|text|border)-(${HUES})-\\d{2,3}\\b/]`,
+          message: "Usa tokens (bg-surface, text-ink, bg-tint-*), no colores sueltos.",
+        },
+      ],
+    },
+  },
+  {
     files: ["jest.setup.js"],
     languageOptions: { globals: { jest: "readonly" } },
   },

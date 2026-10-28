@@ -11,9 +11,9 @@ export function OfflineBanner() {
   return (
     <View
       accessibilityRole="alert"
-      className="absolute left-0 right-0 top-0 z-50 bg-amber-100 px-4 py-1.5 dark:bg-amber-900"
+      className="absolute left-0 right-0 top-0 z-50 bg-tint-kitchen px-4 py-1.5"
     >
-      <Text className="text-center text-xs font-bold text-amber-900 dark:text-amber-100">
+      <Text className="text-center text-xs font-bold text-ink">
         Sin conexión · verás lo último que guardamos
       </Text>
     </View>

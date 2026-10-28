@@ -1,19 +1,19 @@
 export const colorMap: Record<string, string> = {
-  pink: "bg-pink-100 dark:bg-pink-900",
-  blue: "bg-blue-100 dark:bg-blue-900",
-  yellow: "bg-yellow-100 dark:bg-yellow-900",
-  teal: "bg-teal-100 dark:bg-teal-900",
-  purple: "bg-purple-100 dark:bg-purple-900",
-  green: "bg-green-100 dark:bg-green-900",
+  pink: "bg-tint-me",
+  blue: "bg-surface-muted",
+  yellow: "bg-tint-kitchen",
+  teal: "bg-tint-ok",
+  purple: "bg-tint-study",
+  green: "bg-tint-ok",
 };
 
 export const colorBorderMap: Record<string, string> = {
-  pink: "border-pink-300 dark:border-pink-700",
-  blue: "border-blue-300 dark:border-blue-700",
-  yellow: "border-yellow-300 dark:border-yellow-700",
-  teal: "border-teal-300 dark:border-teal-700",
-  purple: "border-purple-300 dark:border-purple-700",
-  green: "border-green-300 dark:border-green-700",
+  pink: "",
+  blue: "",
+  yellow: "",
+  teal: "",
+  purple: "",
+  green: "",
 };
 
 export const POMODORO_FOCUS_SECONDS = 25 * 60;

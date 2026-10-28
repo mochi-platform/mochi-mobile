@@ -4,49 +4,49 @@ import type { RoutineWithExercises } from "@/src/shared/types/database";
 import type { MoodDisplay, QuickAccessItem } from "@/src/features/home/dashboard/types";
 
 export const colorMap: Record<string, string> = {
-  pink: "bg-pink-200 dark:bg-pink-800",
-  blue: "bg-blue-200 dark:bg-blue-800",
-  yellow: "bg-yellow-200 dark:bg-yellow-800",
-  teal: "bg-teal-200 dark:bg-teal-800",
-  purple: "bg-purple-200 dark:bg-purple-800",
-  green: "bg-green-200 dark:bg-green-800",
+  pink: "bg-tint-me",
+  blue: "bg-surface-muted",
+  yellow: "bg-tint-kitchen",
+  teal: "bg-tint-ok",
+  purple: "bg-tint-study",
+  green: "bg-tint-ok",
 };
 
 export const moodDisplayMap: Record<number, MoodDisplay> = {
   1: {
     label: "Mal",
     icon: "sad",
-    cardClass: "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950",
+    cardClass: "bg-surface-muted",
     iconColor: tc("#b91c1c"),
-    textColor: "text-red-800 dark:text-red-200",
+    textColor: "text-danger",
   },
   2: {
     label: "Regular",
     icon: "sad-outline",
-    cardClass: "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950",
+    cardClass: "bg-surface-muted",
     iconColor: tc("#c2410c"),
-    textColor: "text-orange-800 dark:text-orange-200",
+    textColor: "text-ink",
   },
   3: {
     label: "Bien",
     icon: "happy-outline",
-    cardClass: "border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950",
+    cardClass: "bg-surface-muted",
     iconColor: tc("#a16207"),
-    textColor: "text-yellow-800 dark:text-yellow-200",
+    textColor: "text-ink",
   },
   4: {
     label: "Muy bien",
     icon: "happy",
-    cardClass: "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950",
+    cardClass: "bg-surface-muted",
     iconColor: tc("#15803d"),
-    textColor: "text-green-800 dark:text-green-200",
+    textColor: "text-positive",
   },
   5: {
     label: "Excelente",
     icon: "heart",
-    cardClass: "border-pink-200 dark:border-pink-800 bg-pink-50 dark:bg-pink-950",
+    cardClass: "bg-surface-muted",
     iconColor: tc("#be185d"),
-    textColor: "text-pink-800 dark:text-pink-200",
+    textColor: "text-ink",
   },
 };
 
@@ -56,9 +56,9 @@ export function getMoodDisplay(mood: number | null | undefined): MoodDisplay {
     : {
         label: "Sin registro",
         icon: "ellipse-outline",
-        cardClass: "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950",
+        cardClass: "bg-surface-muted",
         iconColor: tc("#94a3b8"),
-        textColor: "text-slate-500",
+        textColor: "text-ink-muted",
       };
 }
 
@@ -122,7 +122,7 @@ export const quickAccessItems: QuickAccessItem[] = [
     route: "/goals",
     enabledKey: "goals_enabled",
     icon: "flag",
-    cardClass: "border-pink-200 dark:border-pink-800 bg-pink-100 dark:bg-pink-900",
+    cardClass: "bg-tint-me",
     iconColor: tc("#be185d"),
   },
   {
@@ -130,7 +130,7 @@ export const quickAccessItems: QuickAccessItem[] = [
     route: "/vouchers",
     enabledKey: "vouchers_enabled",
     icon: "ticket",
-    cardClass: "border-yellow-200 dark:border-yellow-800 bg-yellow-100 dark:bg-yellow-900",
+    cardClass: "bg-tint-kitchen",
     iconColor: tc("#92400e"),
   },
   {
@@ -138,7 +138,7 @@ export const quickAccessItems: QuickAccessItem[] = [
     route: "/mochi-duo",
     enabledKey: "partner_features_enabled",
     icon: "people",
-    cardClass: "border-emerald-200 dark:border-emerald-800 bg-emerald-100 dark:bg-emerald-900",
+    cardClass: "bg-tint-ok",
     iconColor: tc("#047857"),
   },
   {
@@ -146,7 +146,7 @@ export const quickAccessItems: QuickAccessItem[] = [
     route: "/mood",
     enabledKey: "mood_enabled",
     icon: "heart",
-    cardClass: "border-purple-200 dark:border-purple-800 bg-purple-100 dark:bg-purple-900",
+    cardClass: "bg-tint-study",
     iconColor: tc("#7c3aed"),
   },
   {
@@ -154,7 +154,7 @@ export const quickAccessItems: QuickAccessItem[] = [
     route: "/gratitude",
     enabledKey: "gratitude_enabled",
     icon: "flower",
-    cardClass: "border-emerald-200 dark:border-emerald-800 bg-emerald-100 dark:bg-emerald-900",
+    cardClass: "bg-tint-ok",
     iconColor: tc("#047857"),
   },
 ];
@@ -196,26 +196,26 @@ export function getDaysUntilExam(examDate: string): number {
 export function getUrgencyStyles(days: number): { badgeClass: string; text: string } {
   if (days <= 0)
     return {
-      badgeClass: "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300",
+      badgeClass: "bg-tint-me text-danger",
       text: "Hoy",
     };
   if (days === 1)
     return {
-      badgeClass: "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300",
+      badgeClass: "bg-tint-me text-danger",
       text: "Mañana",
     };
   if (days <= 3)
     return {
-      badgeClass: "bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300",
+      badgeClass: "bg-tint-me text-ink",
       text: `En ${days} días`,
     };
   if (days <= 7)
     return {
-      badgeClass: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
+      badgeClass: "bg-tint-kitchen text-ink",
       text: `En ${days} días`,
     };
   return {
-    badgeClass: "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300",
+    badgeClass: "bg-tint-ok text-positive",
     text: `En ${days} días`,
   };
 }

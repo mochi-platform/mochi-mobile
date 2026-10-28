@@ -48,18 +48,13 @@ export function StudyCompanionModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => onClose()}>
       <View className="flex-1 justify-end bg-black/40">
-        <View className="max-h-[90%] rounded-t-3xl bg-white px-5 pb-10 pt-5 dark:bg-surface">
-          <View className="mb-2 h-1.5 w-16 self-center rounded-full bg-slate-200 dark:bg-slate-800" />
+        <View className="max-h-[90%] rounded-t-3xl bg-surface px-5 pb-10 pt-5">
+          <View className="mb-2 h-1.5 w-16 self-center rounded-full bg-surface-muted" />
 
           <View className="flex-row items-center justify-between">
             <View>
-              <Text className="text-base font-extrabold text-purple-900 dark:text-purple-100">
-                Compañera de estudio
-              </Text>
-              <Text
-                className="text-xs font-semibold text-purple-600 dark:text-purple-400"
-                numberOfLines={1}
-              >
+              <Text className="text-base font-extrabold text-ink">Compañera de estudio</Text>
+              <Text className="text-xs font-semibold text-ink" numberOfLines={1}>
                 {specificTopic}
               </Text>
             </View>
@@ -70,9 +65,9 @@ export function StudyCompanionModal({
 
           <ScrollView className="mt-3 max-h-[45%]" showsVerticalScrollIndicator={false}>
             {messages.length === 0 ? (
-              <View className="items-center rounded-2xl border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-950">
+              <View className="items-center rounded-2xl bg-surface-muted p-4">
                 <MochiCharacter mood="happy" size={56} />
-                <Text className="mt-2 text-center text-xs font-semibold text-purple-700 dark:text-purple-300">
+                <Text className="mt-2 text-center text-xs font-semibold text-ink">
                   Estoy lista para ayudarte con teoría, ejercicios, dudas o resúmenes.
                 </Text>
               </View>
@@ -80,70 +75,59 @@ export function StudyCompanionModal({
               messages.map((message, index) => (
                 <View
                   key={`${message.role}-${index}`}
-                  className={`mb-2 rounded-2xl p-3 ${message.role === "assistant" ? "bg-purple-100 dark:bg-purple-900" : "bg-slate-100 dark:bg-slate-900"}`}
+                  className={`mb-2 rounded-2xl p-3 ${message.role === "assistant" ? "bg-tint-study" : "bg-surface-muted"}`}
                 >
-                  <Text className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {message.content}
-                  </Text>
+                  <Text className="text-sm font-semibold text-ink">{message.content}</Text>
                 </View>
               ))
             )}
             {asking ? (
-              <View className="mb-2 flex-row items-center rounded-2xl bg-purple-100 p-3 dark:bg-purple-900">
+              <View className="mb-2 flex-row items-center rounded-2xl bg-tint-study p-3">
                 <ActivityIndicator color={tc("#7c3aed")} />
-                <Text className="ml-2 text-xs font-semibold text-purple-700 dark:text-purple-300">
-                  Mochi está pensando...
-                </Text>
+                <Text className="ml-2 text-xs font-semibold text-ink">Mochi está pensando...</Text>
               </View>
             ) : null}
           </ScrollView>
 
           <View className="mt-3 flex-row flex-wrap gap-2">
             <TouchableOpacity
-              className="rounded-xl bg-purple-100 px-3 py-2 dark:bg-purple-900"
+              className="rounded-xl bg-tint-study px-3 py-2"
               onPress={() => onPickCamera()}
             >
-              <Text className="text-xs font-bold text-purple-800 dark:text-purple-200">Cámara</Text>
+              <Text className="text-xs font-bold text-ink">Cámara</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="rounded-xl bg-purple-100 px-3 py-2 dark:bg-purple-900"
+              className="rounded-xl bg-tint-study px-3 py-2"
               onPress={() => onPickGallery()}
             >
-              <Text className="text-xs font-bold text-purple-800 dark:text-purple-200">
-                Galería
-              </Text>
+              <Text className="text-xs font-bold text-ink">Galería</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="rounded-xl bg-purple-100 px-3 py-2 dark:bg-purple-900"
+              className="rounded-xl bg-tint-study px-3 py-2"
               onPress={() => onPickDocument()}
             >
-              <Text className="text-xs font-bold text-purple-800 dark:text-purple-200">
-                Archivo
-              </Text>
+              <Text className="text-xs font-bold text-ink">Archivo</Text>
             </TouchableOpacity>
             {chatAttachment ? (
               <TouchableOpacity
-                className="rounded-xl bg-red-100 px-3 py-2 dark:bg-red-900"
+                className="rounded-xl bg-tint-me px-3 py-2"
                 onPress={() => onRemoveAttachment()}
               >
-                <Text className="text-xs font-bold text-red-700 dark:text-red-300">Quitar</Text>
+                <Text className="text-xs font-bold text-danger">Quitar</Text>
               </TouchableOpacity>
             ) : null}
           </View>
 
           {chatAttachment ? (
-            <View className="mt-2 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 dark:border-purple-800 dark:bg-purple-950">
-              <Text
-                className="text-xs font-semibold text-purple-700 dark:text-purple-300"
-                numberOfLines={1}
-              >
+            <View className="mt-2 rounded-xl bg-surface-muted px-3 py-2">
+              <Text className="text-xs font-semibold text-ink" numberOfLines={1}>
                 {chatAttachment.name}
               </Text>
             </View>
           ) : null}
 
           <TextInput
-            className="mt-3 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-purple-800 dark:bg-purple-950 dark:text-slate-200"
+            className="mt-3 rounded-2xl bg-surface-muted px-4 py-3 text-sm font-semibold text-ink"
             placeholder="Escribe tu duda o pide un resumen..."
             placeholderTextColor={tc("#a78bfa")}
             value={question}
@@ -152,13 +136,11 @@ export function StudyCompanionModal({
           />
 
           {chatError ? (
-            <Text className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">
-              {chatError}
-            </Text>
+            <Text className="mt-2 text-xs font-semibold text-danger">{chatError}</Text>
           ) : null}
 
           <TouchableOpacity
-            className={`mt-3 items-center rounded-2xl py-3 ${(question.trim() || chatAttachment) && !asking ? "bg-purple-500" : "bg-purple-200 dark:bg-purple-800"}`}
+            className={`mt-3 items-center rounded-2xl py-3 ${(question.trim() || chatAttachment) && !asking ? "bg-accent" : "bg-tint-study"}`}
             onPress={() => onSend()}
             disabled={!(question.trim() || chatAttachment) || asking}
           >

@@ -35,9 +35,9 @@ export function UpcomingExamForm({
   return (
     <>
       <View className="mt-6">
-        <Text className="mb-2 text-sm font-bold text-pink-800 dark:text-pink-200">Materia</Text>
+        <Text className="mb-2 text-sm font-bold text-ink">Materia</Text>
         <TextInput
-          className="rounded-2xl border-2 border-pink-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 dark:border-pink-800 dark:bg-surface dark:text-slate-200"
+          className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="Ej. Biología"
           placeholderTextColor={tc("#f9a8d4")}
           value={subject}
@@ -46,11 +46,9 @@ export function UpcomingExamForm({
       </View>
 
       <View className="mt-4">
-        <Text className="mb-2 text-sm font-bold text-pink-800 dark:text-pink-200">
-          Fecha futura (AAAA-MM-DD)
-        </Text>
+        <Text className="mb-2 text-sm font-bold text-ink">Fecha futura (AAAA-MM-DD)</Text>
         <TextInput
-          className="rounded-2xl border-2 border-pink-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 dark:border-pink-800 dark:bg-surface dark:text-slate-200"
+          className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="2026-04-10"
           placeholderTextColor={tc("#f9a8d4")}
           value={date}
@@ -59,11 +57,9 @@ export function UpcomingExamForm({
       </View>
 
       <View className="mt-4">
-        <Text className="mb-2 text-sm font-bold text-pink-800 dark:text-pink-200">
-          Notas de preparación
-        </Text>
+        <Text className="mb-2 text-sm font-bold text-ink">Notas de preparación</Text>
         <TextInput
-          className="rounded-2xl border-2 border-pink-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 dark:border-pink-800 dark:bg-surface dark:text-slate-200"
+          className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="Temas a repasar, fórmulas, prioridades..."
           placeholderTextColor={tc("#f9a8d4")}
           value={notes}
@@ -74,11 +70,11 @@ export function UpcomingExamForm({
         />
       </View>
 
-      <View className="mt-4 rounded-2xl border border-pink-200 bg-white p-3 dark:border-pink-800 dark:bg-surface">
-        <Text className="text-xs font-bold uppercase tracking-wide text-pink-700 dark:text-pink-300">
+      <View className="mt-4 rounded-2xl bg-surface p-3">
+        <Text className="text-xs font-bold uppercase tracking-wide text-ink">
           Recordatorios personalizados
         </Text>
-        <Text className="mt-1 text-xs font-semibold text-pink-600 dark:text-pink-400">
+        <Text className="mt-1 text-xs font-semibold text-ink">
           Elige cuándo quieres recibir aviso antes del examen.
         </Text>
 
@@ -90,19 +86,13 @@ export function UpcomingExamForm({
               <TouchableOpacity
                 key={day}
                 className={`rounded-full border px-3 py-1.5 ${
-                  active
-                    ? "border-pink-500 bg-pink-500"
-                    : "border-pink-200 bg-pink-50 dark:border-pink-800 dark:bg-pink-950"
+                  active ? "bg-accent" : "bg-surface-muted"
                 }`}
                 onPress={() => {
                   onToggleReminderDay(day);
                 }}
               >
-                <Text
-                  className={`text-xs font-bold ${
-                    active ? "text-white" : "text-pink-700 dark:text-pink-300"
-                  }`}
-                >
+                <Text className={`text-xs font-bold ${active ? "text-white" : "text-ink"}`}>
                   {day} días
                 </Text>
               </TouchableOpacity>
@@ -111,12 +101,10 @@ export function UpcomingExamForm({
         </View>
 
         <TouchableOpacity
-          className="mt-3 flex-row items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 dark:border-indigo-800 dark:bg-indigo-950"
+          className="mt-3 flex-row items-center justify-between rounded-xl bg-surface-muted px-3 py-2"
           onPress={onToggleCalendar}
         >
-          <Text className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
-            Agregar también al calendario
-          </Text>
+          <Text className="text-xs font-bold text-ink">Agregar también al calendario</Text>
           <Ionicons
             name={addToCalendar ? "checkmark-circle" : "ellipse-outline"}
             size={18}
@@ -126,7 +114,7 @@ export function UpcomingExamForm({
       </View>
 
       <TouchableOpacity
-        className={`mt-6 items-center rounded-2xl py-4 ${saving ? "bg-pink-300 dark:bg-pink-700" : "bg-pink-500"}`}
+        className={`mt-6 items-center rounded-2xl py-4 ${saving ? "bg-tint-me" : "bg-accent"}`}
         onPress={() => {
           onSave();
         }}

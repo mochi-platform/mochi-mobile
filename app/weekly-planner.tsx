@@ -179,24 +179,24 @@ function getRiskTone(risk: number): {
 } {
   if (risk >= 70) {
     return {
-      cardClass: "border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950",
-      textClass: "text-rose-700 dark:text-rose-300",
-      badgeClass: "bg-rose-500",
+      cardClass: "bg-surface-muted",
+      textClass: "text-danger",
+      badgeClass: "bg-danger",
     };
   }
 
   if (risk >= 40) {
     return {
-      cardClass: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950",
-      textClass: "text-amber-700 dark:text-amber-300",
-      badgeClass: "bg-amber-500",
+      cardClass: "bg-surface-muted",
+      textClass: "text-ink",
+      badgeClass: "bg-accent",
     };
   }
 
   return {
-    cardClass: "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950",
-    textClass: "text-emerald-700 dark:text-emerald-300",
-    badgeClass: "bg-emerald-500",
+    cardClass: "bg-surface-muted",
+    textClass: "text-positive",
+    badgeClass: "bg-positive",
   };
 }
 
@@ -477,9 +477,9 @@ export function WeeklyPlannerScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-indigo-50 dark:bg-indigo-950">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted">
         <ActivityIndicator size="small" color={tc("#4f46e5")} />
-        <Text className="mt-3 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        <Text className="mt-3 text-sm font-semibold text-ink">
           Preparando tu planner semanal...
         </Text>
       </SafeAreaView>
@@ -495,22 +495,18 @@ export function WeeklyPlannerScreen() {
           activeOpacity={0.8}
         >
           <Ionicons name="chevron-back" size={22} color={tc("#3730a3")} />
-          <Text className="ml-1 text-sm font-bold text-indigo-800 dark:text-indigo-200">
-            Volver
-          </Text>
+          <Text className="ml-1 text-sm font-bold text-ink">Volver</Text>
         </TouchableOpacity>
 
-        <View className="mt-5 rounded-3xl border-2 border-indigo-200 bg-white p-5 dark:border-indigo-800 dark:bg-surface">
+        <View className="mt-5 rounded-3xl bg-surface p-5">
           <View className="flex-row items-start justify-between">
             <View className="flex-1 pr-3">
-              <Text className="text-2xl font-extrabold text-indigo-900 dark:text-indigo-100">
-                Mochi Weekly Planner
-              </Text>
-              <Text className="mt-1 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+              <Text className="text-2xl font-extrabold text-ink">Mochi Weekly Planner</Text>
+              <Text className="mt-1 text-sm font-semibold text-ink">
                 Sugerencias proactivas segun examenes, ciclo y habitos recientes.
               </Text>
             </View>
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-900">
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-tint-study">
               <Ionicons name="sparkles" size={20} color={tc("#4338ca")} />
             </View>
           </View>
@@ -526,7 +522,7 @@ export function WeeklyPlannerScreen() {
               iconSize={14}
               loading={generating}
               loadingColor={tc("#ffffff")}
-              containerClassName="flex-1 rounded-2xl bg-indigo-600 px-3 py-3"
+              containerClassName="flex-1 rounded-2xl bg-accent px-3 py-3"
               textClassName="text-xs text-white"
             />
 
@@ -541,22 +537,20 @@ export function WeeklyPlannerScreen() {
               loading={saving}
               loadingColor={tc("#ffffff")}
               disabled={suggestions.length === 0}
-              containerClassName={`flex-1 rounded-2xl px-3 py-3 ${saving ? "bg-emerald-300 dark:bg-emerald-700" : "bg-emerald-500"}`}
+              containerClassName={`flex-1 rounded-2xl px-3 py-3 ${saving ? "bg-tint-ok" : "bg-positive"}`}
               textClassName="text-xs text-white"
             />
           </View>
 
           {saveMessage ? (
-            <View className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-950">
-              <Text className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                {saveMessage}
-              </Text>
+            <View className="mt-3 rounded-2xl bg-surface-muted px-3 py-2">
+              <Text className="text-xs font-bold text-positive">{saveMessage}</Text>
             </View>
           ) : null}
 
           {error ? (
-            <View className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 dark:border-rose-800 dark:bg-rose-950">
-              <Text className="text-xs font-bold text-rose-700 dark:text-rose-300">{error}</Text>
+            <View className="mt-3 rounded-2xl bg-surface-muted px-3 py-2">
+              <Text className="text-xs font-bold text-danger">{error}</Text>
             </View>
           ) : null}
         </View>
@@ -582,62 +576,53 @@ export function WeeklyPlannerScreen() {
               {wellness.recommendations.slice(0, 3).map((recommendation, index) => (
                 <View
                   key={`${recommendation.type}-${index}`}
-                  className="rounded-2xl border border-white/60 bg-white/80 p-3 dark:bg-surface/80"
+                  className="rounded-2xl border border-white/60 bg-white/80 p-3"
                 >
-                  <Text className="text-xs font-bold uppercase text-slate-500">
+                  <Text className="text-xs font-bold uppercase text-ink-muted">
                     {recommendation.urgency === "high"
                       ? "Prioridad alta"
                       : recommendation.urgency === "medium"
                         ? "Prioridad media"
                         : "Prioridad baja"}
                   </Text>
-                  <Text className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    {recommendation.text}
-                  </Text>
+                  <Text className="mt-1 text-sm font-semibold text-ink">{recommendation.text}</Text>
                 </View>
               ))}
             </View>
           </View>
         ) : null}
 
-        <View className="mb-8 mt-4 rounded-3xl border-2 border-violet-200 bg-white p-4 dark:border-violet-800 dark:bg-surface">
-          <Text className="text-base font-extrabold text-violet-900 dark:text-violet-100">
+        <View className="mb-8 mt-4 rounded-3xl bg-surface p-4">
+          <Text className="text-base font-extrabold text-ink">
             Bloques sugeridos para esta semana
           </Text>
 
           {suggestions.length === 0 ? (
-            <View className="mt-4 items-center rounded-2xl border border-violet-200 bg-violet-50 p-5 dark:border-violet-800 dark:bg-violet-950">
+            <View className="mt-4 items-center rounded-2xl bg-surface-muted p-5">
               <MochiCharacter mood="thinking" size={84} />
-              <Text className="mt-3 text-center text-sm font-bold text-violet-800 dark:text-violet-200">
+              <Text className="mt-3 text-center text-sm font-bold text-ink">
                 Aun no hay sugerencias disponibles
               </Text>
-              <Text className="mt-1 text-center text-xs font-semibold text-violet-600 dark:text-violet-400">
+              <Text className="mt-1 text-center text-xs font-semibold text-ink">
                 Regenera el plan y Mochi te propondra bloques concretos.
               </Text>
             </View>
           ) : (
             <View className="mt-3 gap-2">
               {suggestions.map((suggestion) => (
-                <View
-                  key={suggestion.key}
-                  className="rounded-2xl border border-violet-200 bg-violet-50 p-3 dark:border-violet-800 dark:bg-violet-950"
-                >
+                <View key={suggestion.key} className="rounded-2xl bg-surface-muted p-3">
                   <View className="flex-row items-center justify-between">
-                    <Text className="text-sm font-extrabold text-violet-900 dark:text-violet-100">
-                      {suggestion.subject}
-                    </Text>
-                    <Text className="text-xs font-bold text-violet-700 dark:text-violet-300">
+                    <Text className="text-sm font-extrabold text-ink">{suggestion.subject}</Text>
+                    <Text className="text-xs font-bold text-ink">
                       {DAY_LABELS[suggestion.day_of_week]}
                     </Text>
                   </View>
 
-                  <Text className="mt-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
+                  <Text className="mt-1 text-xs font-semibold text-ink">
                     {suggestion.start_time} - {suggestion.end_time}
                   </Text>
 
-                  <Text className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                    {suggestion.reason}
-                  </Text>
+                  <Text className="mt-2 text-xs font-semibold text-ink">{suggestion.reason}</Text>
                 </View>
               ))}
             </View>

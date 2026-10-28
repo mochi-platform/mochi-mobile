@@ -373,33 +373,31 @@ export function ExamLogScreen() {
         >
           <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={22} color={tc("#9d174d")} />
-            <Text className="ml-1 font-bold text-pink-800 dark:text-pink-200">Volver</Text>
+            <Text className="ml-1 font-bold text-ink">Volver</Text>
           </TouchableOpacity>
 
           <View className="mt-6">
-            <Text className="text-2xl font-extrabold text-pink-900 dark:text-pink-100">
-              Exámenes
-            </Text>
-            <Text className="mt-1 text-sm font-semibold capitalize text-pink-500">{today}</Text>
+            <Text className="text-2xl font-extrabold text-ink">Exámenes</Text>
+            <Text className="mt-1 text-sm font-semibold capitalize text-ink-muted">{today}</Text>
           </View>
 
-          <View className="mt-4 flex-row rounded-2xl border border-pink-200 bg-white p-1 dark:border-pink-800 dark:bg-surface">
+          <View className="mt-4 flex-row rounded-2xl bg-surface p-1">
             <TouchableOpacity
-              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "results" ? "bg-pink-500" : ""}`}
+              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "results" ? "bg-accent" : ""}`}
               onPress={() => setActiveTab("results")}
             >
               <Text
-                className={`text-sm font-bold ${activeTab === "results" ? "text-white" : "text-pink-700 dark:text-pink-300"}`}
+                className={`text-sm font-bold ${activeTab === "results" ? "text-white" : "text-ink"}`}
               >
                 Registrar resultado
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "upcoming" ? "bg-pink-500" : ""}`}
+              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "upcoming" ? "bg-accent" : ""}`}
               onPress={() => setActiveTab("upcoming")}
             >
               <Text
-                className={`text-sm font-bold ${activeTab === "upcoming" ? "text-white" : "text-pink-700 dark:text-pink-300"}`}
+                className={`text-sm font-bold ${activeTab === "upcoming" ? "text-white" : "text-ink"}`}
               >
                 Próximos exámenes
               </Text>
@@ -407,24 +405,20 @@ export function ExamLogScreen() {
           </View>
 
           {error ? (
-            <View className="mt-4 rounded-2xl border-2 border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
-              <Text className="text-sm font-semibold text-red-700 dark:text-red-300">{error}</Text>
+            <View className="mt-4 rounded-2xl bg-surface-muted p-3">
+              <Text className="text-sm font-semibold text-danger">{error}</Text>
             </View>
           ) : null}
 
           {gamificationWarning ? (
-            <View className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950">
-              <Text className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                {gamificationWarning}
-              </Text>
+            <View className="mt-4 rounded-2xl bg-surface-muted p-3">
+              <Text className="text-sm font-semibold text-ink">{gamificationWarning}</Text>
             </View>
           ) : null}
 
           {prepError ? (
-            <View className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
-              <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
-                {prepError}
-              </Text>
+            <View className="mt-4 rounded-2xl bg-surface-muted p-3">
+              <Text className="text-sm font-semibold text-danger">{prepError}</Text>
             </View>
           ) : null}
 
