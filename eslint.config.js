@@ -34,6 +34,7 @@ const MIGRATED = [
   "app/recipe-player.tsx",
   "app/routine-player.tsx",
   "app/settings.tsx",
+  "app/premium.tsx",
   "src/shared/components/CustomAlert.tsx",
   "src/shared/components/AchievementToast.tsx",
   "src/shared/components/QuickCaptureModal.tsx",

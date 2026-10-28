@@ -1,11 +1,25 @@
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Linking, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Linking, Text, View } from "react-native";
 import type { PurchasesOfferings, PurchasesPackage } from "react-native-purchases";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { COLORS } from "@/src/shared/theme/tokens";
+import {
+  Button,
+  Caption,
+  Display,
+  Eyebrow,
+  MochiQuote,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Skeleton,
+  Strong,
+  Surface,
+  Title,
+} from "@/src/shared/ui";
 import { track } from "@/src/shared/lib/observability/analytics";
 import { usePlan } from "@/src/shared/hooks/usePlan";
 import {
@@ -107,103 +121,110 @@ export function PremiumScreen() {
   const packages = offerings?.current?.availablePackages ?? [];
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <View className="flex-row items-center px-4 pb-2 pt-2">
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          className="h-11 w-11 items-center justify-center rounded-full"
+    <Screen
+      withTabBar={false}
+      headerRight={
+        <PressableScale
           onPress={() => router.back()}
+          accessibilityLabel="Volver"
+          className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
         >
-          <Ionicons name="chevron-back" size={24} color={tc("#34244c")} />
-        </TouchableOpacity>
-        <Text className="ml-1 text-xl font-extrabold text-ink">Mochi Premium</Text>
+          <Ionicons name="close" size={20} color={COLORS.inkMuted} />
+        </PressableScale>
+      }
+    >
+      <View className="items-center">
+        <MochiCharacter expression="love" size={150} interactive />
+        <Display className="mt-1 text-center">Mochi Premium</Display>
+        <MochiQuote className="mt-1 text-center text-[17px] leading-[23px] text-ink-muted">
+          Más de mí, cuando más me necesitas.
+        </MochiQuote>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        {plan.isPremium ? (
-          <View className="mb-4 rounded-3xl bg-accent-soft p-5">
-            <Text className="text-lg font-extrabold text-ink">Tu plan Premium está activo</Text>
-            {plan.periodEndsAt ? (
-              <Text className="mt-1 text-sm font-semibold text-ink">
-                Vigente hasta {new Date(plan.periodEndsAt).toLocaleDateString("es-EC")}
-              </Text>
-            ) : null}
-            <TouchableOpacity
-              accessibilityRole="link"
-              className="mt-3 min-h-[44px] justify-center"
+      {plan.isPremium ? (
+        <Surface elevation={2} className="mt-5 p-5">
+          <Title>Tu Premium está activo</Title>
+          {plan.periodEndsAt ? (
+            <Caption className="mt-1">
+              Vigente hasta {new Date(plan.periodEndsAt).toLocaleDateString("es-EC")}
+            </Caption>
+          ) : null}
+          <View className="mt-3">
+            <Button
+              title="Gestionar en Google Play"
+              variant="soft"
               onPress={() => void Linking.openURL(PLAY_SUBSCRIPTIONS_URL)}
-            >
-              <Text className="font-extrabold text-ink">Gestionar suscripción en Google Play</Text>
-            </TouchableOpacity>
+            />
           </View>
-        ) : null}
+        </Surface>
+      ) : null}
 
-        <View className="mb-4 overflow-hidden rounded-3xl border border-line bg-surface">
-          <View className="flex-row bg-surface-muted px-4 py-3">
-            <Text className="flex-1 text-xs font-extrabold text-ink">Qué incluye</Text>
-            <Text className="w-28 text-xs font-extrabold text-ink">Gratis</Text>
-            <Text className="w-28 text-xs font-extrabold text-ink">Premium</Text>
-          </View>
-          {ROWS.map((row) => (
-            <View key={row.label} className="flex-row border-t border-line px-4 py-3">
-              <Text className="flex-1 pr-2 text-xs font-bold text-ink">{row.label}</Text>
-              <Text className="w-28 text-xs font-semibold text-ink-muted">{row.free}</Text>
-              <Text className="w-28 text-xs font-bold text-ink">{row.premium}</Text>
-            </View>
-          ))}
-        </View>
-
-        {!plan.isPremium ? (
-          loading ? (
-            <ActivityIndicator color={tc("#8b6fd6")} />
-          ) : packages.length > 0 ? (
-            packages.map((pkg) => (
-              <View
-                key={pkg.identifier}
-                className="mb-3 rounded-2xl border-2 border-accent bg-surface p-4"
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1 pr-3">
-                    <Text className="text-sm font-extrabold text-ink">{pkg.product.title}</Text>
-                    <Text className="mt-1 text-xs font-semibold text-ink-muted">
-                      {pkg.product.description}
-                    </Text>
-                  </View>
-                  <Text className="text-base font-extrabold text-ink">
-                    {pkg.product.priceString}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  className={`mt-3 min-h-[44px] justify-center rounded-2xl ${busy ? "bg-accent/60" : "bg-canvas0"}`}
-                  disabled={busy}
-                  onPress={() => void handlePurchase(pkg)}
-                >
-                  <Text className="text-center font-extrabold text-accent-ink">Elegir plan</Text>
-                </TouchableOpacity>
+      <SectionHeader title="Qué incluye" />
+      <Surface className="px-4 py-1">
+        {ROWS.map((row, index) => (
+          <View key={row.label} className={`py-3 ${index > 0 ? "border-t border-line" : ""}`}>
+            <Strong>{row.label}</Strong>
+            <View className="mt-1.5 flex-row gap-3">
+              <View className="flex-1">
+                <Eyebrow>Gratis</Eyebrow>
+                <Caption>{row.free}</Caption>
               </View>
-            ))
-          ) : (
-            <View className="rounded-2xl border border-line bg-surface p-4">
-              <Text className="text-sm font-semibold text-ink-muted">
-                Los planes no están disponibles en este momento.
-              </Text>
+              <View className="flex-1">
+                <Eyebrow className="text-accent-strong">Premium</Eyebrow>
+                <Caption className="text-ink">{row.premium}</Caption>
+              </View>
             </View>
-          )
-        ) : null}
+          </View>
+        ))}
+      </Surface>
 
-        <TouchableOpacity
-          accessibilityRole="button"
-          className="mt-4 min-h-[44px] items-center justify-center"
+      {!plan.isPremium ? (
+        <>
+          <SectionHeader title="Elige tu plan" />
+          {loading ? (
+            <Skeleton height={120} className="rounded-card" />
+          ) : packages.length > 0 ? (
+            <View className="gap-3">
+              {packages.map((pkg) => (
+                <Surface key={pkg.identifier} elevation={2} className="p-4">
+                  <View className="flex-row items-start justify-between gap-3">
+                    <View className="flex-1">
+                      <Strong>{pkg.product.title}</Strong>
+                      <Caption className="mt-0.5">{pkg.product.description}</Caption>
+                    </View>
+                    <Text className="font-display text-xl text-ink">{pkg.product.priceString}</Text>
+                  </View>
+                  <View className="mt-3">
+                    <Button
+                      title="Elegir plan"
+                      loading={busy}
+                      onPress={() => void handlePurchase(pkg)}
+                    />
+                  </View>
+                </Surface>
+              ))}
+            </View>
+          ) : (
+            <Surface tone="sunken" className="p-4">
+              <Caption>Los planes no están disponibles en este momento.</Caption>
+            </Surface>
+          )}
+        </>
+      ) : null}
+
+      <View className="mt-4">
+        <Button
+          title="Restaurar compras"
+          variant="ghost"
           disabled={busy}
           onPress={() => void handleRestore()}
-        >
-          <Text className="font-extrabold text-ink">Restaurar compras</Text>
-        </TouchableOpacity>
-      </ScrollView>
+        />
+      </View>
+      <Caption className="mt-1 text-center">
+        La suscripción se renueva sola. Puedes cancelarla cuando quieras en Google Play.
+      </Caption>
       {AlertComponent}
-    </SafeAreaView>
+    </Screen>
   );
 }
 
