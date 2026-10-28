@@ -2,10 +2,10 @@ import type { PartnerSpace } from "@/src/shared/types/database";
 import type { ModuleItem, ModuleSettings } from "./types";
 
 export const moduleItems: ModuleItem[] = [
-  { key: "partner_features_enabled", label: "Mochi Duo™", icon: "people" },
-  { key: "quick_capture_enabled", label: "QuickCapture", icon: "flash" },
+  { key: "partner_features_enabled", label: "Mochi Duo", icon: "people" },
+  { key: "quick_capture_enabled", label: "Captura rápida", icon: "flash" },
   { key: "study_enabled", label: "Estudio", icon: "book" },
-  { key: "exercise_enabled", label: "Ejercicio", icon: "barbell" },
+  { key: "exercise_enabled", label: "Moverme", icon: "barbell" },
   { key: "habits_enabled", label: "Hábitos", icon: "leaf" },
   { key: "goals_enabled", label: "Metas", icon: "flag" },
   { key: "mood_enabled", label: "Estado de ánimo", icon: "heart" },

@@ -1,6 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Switch, Text, View } from "react-native";
-import { tc } from "@/src/shared/theme/colors";
+import { View } from "react-native";
+import { Caption, Surface, Title, Toggle } from "@/src/shared/ui";
 import { moduleItems } from "../helpers";
 import type { ModuleSettings, ModuleToggleKey } from "../types";
 
@@ -9,40 +8,22 @@ type ModulesSectionProps = {
   onToggleModule: (key: ModuleToggleKey, value: boolean) => Promise<void>;
 };
 
+/** Qué módulos ve la usuaria: cambia al instante las pestañas y lo que muestra Hoy. */
 export function ModulesSection({ moduleSettings, onToggleModule }: ModulesSectionProps) {
   return (
-    <View className="mt-6 rounded-3xl border-2 border-blue-200 bg-white p-4 dark:border-blue-800 dark:bg-surface">
-      <Text className="text-lg font-extrabold text-blue-900 dark:text-blue-100">Módulos</Text>
-
-      <View className="mt-4">
+    <Surface className="mt-6 p-4">
+      <Title>Módulos</Title>
+      <Caption className="mb-2 mt-1">Activa solo lo que uses; el resto se oculta de tus pestañas y de Hoy.</Caption>
+      <View>
         {moduleItems.map((module) => (
-          <View
+          <Toggle
             key={module.key}
-            className="mb-3 flex-row items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 px-3 py-3 dark:border-blue-800 dark:bg-blue-950"
-          >
-            <View className="flex-row items-center">
-              <Ionicons name={module.icon} size={18} color={tc("#1d4ed8")} />
-              <Text className="ml-2 text-sm font-bold text-blue-900 dark:text-blue-100">
-                {module.label}
-              </Text>
-            </View>
-            <Switch
-              value={moduleSettings[module.key]}
-              onValueChange={(nextValue) => {
-                void onToggleModule(module.key, nextValue);
-              }}
-              thumbColor={moduleSettings[module.key] ? tc("#1d4ed8") : tc("#94a3b8")}
-              trackColor={{ false: tc("#cbd5e1"), true: tc("#bfdbfe") }}
-            />
-          </View>
+            label={module.label}
+            value={moduleSettings[module.key]}
+            onValueChange={(next) => void onToggleModule(module.key, next)}
+          />
         ))}
       </View>
-
-      <View className="rounded-2xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
-        <Text className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-          Los módulos desactivados se ocultarán del perfil.
-        </Text>
-      </View>
-    </View>
+    </Surface>
   );
 }

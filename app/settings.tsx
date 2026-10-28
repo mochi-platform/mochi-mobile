@@ -18,6 +18,7 @@ import {
 import type {} from "react-native-purchases";
 import { router, useFocusEffect } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useModuleVisibility } from "@/src/core/providers/ModuleVisibilityContext";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
 import { getAiCreditBalance, type AiCreditBalance } from "@/src/shared/lib/aiCredits";
@@ -65,6 +66,7 @@ import { AccountSection } from "@/src/features/settings/components/AccountSectio
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
+  const { refreshModuleVisibility } = useModuleVisibility();
   const { showAlert, AlertComponent } = useCustomAlert();
 
   const [profile, setProfile] = useState<ProfileSettings>({
@@ -418,6 +420,8 @@ export function SettingsScreen() {
         .upsert(payload, { onConflict: "user_id" });
 
       if (upsertError) throw upsertError;
+      // Pestañas, Hoy y el guardián de rutas leen la visibilidad del contexto: se recarga ya.
+      await refreshModuleVisibility();
     } catch (err) {
       setModuleSettings(previousSettings);
       showAlert({
