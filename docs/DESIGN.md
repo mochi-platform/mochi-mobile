@@ -58,6 +58,11 @@ Mochi se dibuja en código con Skia (`src/shared/mochi/`), fiel al PNG original:
 - Regla: una sola Mochi animada por pantalla; las pequeñas con `animated={false}`.
 - Galería para revisar el arte: `mochi://mochi-gallery`.
 
+## Navegación y compañía (Fase 2 del Remaster)
+- Pestañas dinámicas (`src/features/navigation/tabs.ts`): Hoy · Estudio · Cocina · Yo · Duo según los módulos activos; en modo pareja, Hoy · Duo · Yo. `TabBar` flotante en `app/_layout.tsx`; solo se muestra en las rutas de `activeTabFor`.
+- Hoy (`src/features/today/TodayScreen.tsx`): Mochi habla primero (frases locales en `src/features/companion/lines.ts`, nunca sobre el ciclo), check-in de 5 caritas en `mood_logs` y, tras el check-in, la frase de IA del día. "Tu día" oculta lo vacío en vez de mostrar ceros.
+- Yo (`app/(tabs)/me.tsx`) reemplaza a Bienestar (`/wellness` redirige).
+
 ## Estado de la migración
 - **Modo oscuro activo** (`userInterfaceStyle: automatic`). Se logró con una migración mecánica de todas las pantallas: cada clase de color claro (`bg-purple-50`, `text-slate-900`, `border-pink-200`, `bg-white`) tiene su variante `dark:`, y los colores hex de iconos/props pasan por `tc()` (`src/shared/theme/colors.ts`), que invierte la luminosidad en oscuro.
 - Pantallas nuevas y componentes de `src/shared/ui` usan tokens semánticos directamente.
