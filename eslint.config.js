@@ -32,6 +32,7 @@ const MIGRATED = [
   "app/study-timer.tsx",
   "app/recipe-detail.tsx",
   "app/recipe-player.tsx",
+  "app/routine-player.tsx",
   "src/features/study/timer/components/StudySetupView.tsx",
   "src/features/study/timer/components/StudyTimerView.tsx",
   "src/features/study/timer/components/StudyCompleteView.tsx",

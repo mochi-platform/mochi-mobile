@@ -1,17 +1,10 @@
 import { reportError } from "@/src/shared/lib/observability/reportError";
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
-import {
-  Animated as RNAnimated,
-  ImageBackground,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Animated as RNAnimated, ImageBackground, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -31,6 +24,17 @@ import {
   checkStreakAchievements,
 } from "@/src/shared/lib/gamification";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
+import { COLORS } from "@/src/shared/theme/tokens";
+import {
+  Button,
+  Caption,
+  Display,
+  ErrorState,
+  Eyebrow,
+  PressableScale,
+  ProgressRing,
+  Title,
+} from "@/src/shared/ui";
 import type { RoutineWithExercises } from "@/src/shared/types/database";
 
 type Phase = "exercise" | "rest" | "complete";
@@ -54,7 +58,7 @@ function StarIcon({ delay }: { delay: number }) {
 
   return (
     <Animated.View style={animStyle} className="mx-2">
-      <Ionicons name="star" size={36} color={tc("#f59e0b")} />
+      <Ionicons name="star" size={36} color={COLORS.warning} />
     </Animated.View>
   );
 }
@@ -63,6 +67,7 @@ export function RoutinePlayerScreen() {
   const { routineId } = useLocalSearchParams<{ routineId: string }>();
   const { session } = useSession();
   const { showAchievement } = useAchievement();
+  const insets = useSafeAreaInsets();
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("exercise");
@@ -241,61 +246,62 @@ export function RoutinePlayerScreen() {
     void loadExerciseImage();
   }, [currentExercise?.name, currentExerciseIndex, imageOpacity, phase]);
 
+  const phaseTotal =
+    phase === "rest"
+      ? 30
+      : currentExercise && currentExercise.duration_seconds > 0
+        ? currentExercise.duration_seconds
+        : 60;
+  const ringProgress = phaseTotal > 0 ? 1 - timeLeft / phaseTotal : 0;
+
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-teal-50 dark:bg-teal-950">
-        <MochiCharacter mood="thinking" size={96} />
-        <Text className="mt-4 text-sm font-semibold text-teal-700 dark:text-teal-300">
-          Preparando tu rutina...
-        </Text>
-      </SafeAreaView>
+      <View className="flex-1 items-center justify-center bg-canvas">
+        <MochiCharacter expression="excited" size={120} />
+        <Caption className="mt-3">Preparando tu rutina…</Caption>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-teal-50 px-6 dark:bg-teal-950">
-        <MochiCharacter mood="sleepy" size={80} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
-          {error}
-        </Text>
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-teal-500 px-6 py-3"
-          onPress={() => router.back()}
-        >
-          <Text className="font-bold text-white">Volver</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      <View className="flex-1 justify-center bg-canvas px-6">
+        <ErrorState message={error} />
+        <Button title="Volver" variant="soft" onPress={() => router.back()} />
+      </View>
     );
   }
 
   if (phase === "complete") {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-teal-50 px-6 dark:bg-teal-950">
-        <MochiCharacter mood="excited" size={120} />
-        <Text className="mt-6 text-2xl font-extrabold text-teal-900 dark:text-teal-100">
-          ¡Rutina completada!
-        </Text>
-        <Text className="mt-2 text-sm font-semibold text-teal-600 dark:text-teal-400">
-          Terminaste {routine?.routine_exercises.length} ejercicios
-        </Text>
-        <View className="mt-4 rounded-full bg-yellow-200 px-5 py-2 dark:bg-yellow-800">
-          <Text className="font-extrabold text-yellow-900 dark:text-yellow-100">+10 puntos</Text>
+      <View
+        className="flex-1 justify-center bg-canvas px-6"
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom + 16 }}
+      >
+        <View className="items-center">
+          <MochiCharacter expression="celebrating" size={180} interactive />
+          <Display className="mt-2 text-center">¡Rutina completada!</Display>
+          <Caption className="mt-1">
+            Terminaste {routine?.routine_exercises.length} ejercicios
+          </Caption>
+          <View className="mt-3 rounded-full bg-tint-kitchen px-4 py-1.5">
+            <Text className="font-body-extrabold text-sm text-tint-kitchen-ink">+10 puntos</Text>
+          </View>
+          <View className="mt-5 flex-row items-center justify-center">
+            <StarIcon delay={0} />
+            <StarIcon delay={150} />
+            <StarIcon delay={300} />
+          </View>
         </View>
-        <View className="mt-6 flex-row items-center justify-center">
-          <StarIcon delay={0} />
-          <StarIcon delay={150} />
-          <StarIcon delay={300} />
+        <View className="mt-8">
+          <Button title="Listo" onPress={() => router.back()} />
         </View>
-        <TouchableOpacity
-          className="mt-8 rounded-2xl bg-teal-500 px-8 py-4"
-          onPress={() => router.back()}
-        >
-          <Text className="font-extrabold text-white">Volver al inicio</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     );
   }
+
+  const nextName =
+    routine?.routine_exercises[currentExerciseIndex + 1]?.exercise?.name ?? "Último ejercicio";
 
   return (
     <View className="flex-1 bg-canvas">
@@ -305,14 +311,10 @@ export function RoutinePlayerScreen() {
             source={{ uri: exerciseImageUrl }}
             className="h-full w-full"
             resizeMode="cover"
-            blurRadius={1}
+            blurRadius={2}
           >
             <LinearGradient
-              colors={[
-                "rgba(255,255,255,0.58)",
-                "rgba(255,255,255,0.72)",
-                "rgba(255,255,255,0.82)",
-              ]}
+              colors={["rgba(251,246,239,0.7)", "rgba(251,246,239,0.86)", "rgba(251,246,239,0.95)"]}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
               className="h-full w-full"
@@ -321,85 +323,80 @@ export function RoutinePlayerScreen() {
         </RNAnimated.View>
       ) : null}
 
-      <SafeAreaView className="flex-1 px-6">
-        <TouchableOpacity className="mt-2 flex-row items-center" onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color={tc("#0d9488")} />
-          <Text className="ml-1 font-bold text-teal-700 dark:text-teal-300">Volver</Text>
-        </TouchableOpacity>
-
-        <View className="mt-4">
-          <Text className="text-xl font-extrabold text-teal-900 dark:text-teal-100">
-            {routine?.name}
-          </Text>
-          <Text className="mt-1 text-sm font-semibold text-teal-500">
-            Ejercicio {currentExerciseIndex + 1} de {totalExercises}
-          </Text>
-        </View>
-
-        <View className="mt-4">
-          <View className="h-3 w-full overflow-hidden rounded-full bg-teal-100 dark:bg-teal-900">
-            <Animated.View style={progressStyle} className="h-3 rounded-full bg-teal-500" />
+      <View
+        className="flex-1 px-6"
+        style={{ paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }}
+      >
+        <View className="flex-row items-center justify-between">
+          <View className="min-w-0 flex-1 pr-3">
+            <Eyebrow>
+              Ejercicio {currentExerciseIndex + 1} de {totalExercises}
+            </Eyebrow>
+            <Title className="mt-1" numberOfLines={1}>
+              {routine?.name}
+            </Title>
           </View>
+          <PressableScale
+            onPress={() => router.back()}
+            accessibilityLabel="Salir de la rutina"
+            className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+          >
+            <Ionicons name="close" size={20} color={COLORS.inkMuted} />
+          </PressableScale>
+        </View>
+        <View className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-muted">
+          <Animated.View style={progressStyle} className="h-2 rounded-full bg-accent" />
         </View>
 
-        {phase === "exercise" ? (
-          <View className="mt-8 flex-1 items-center">
-            <View className="h-52 w-52 items-center justify-center rounded-full border-8 border-teal-200 bg-teal-100 dark:border-teal-800 dark:bg-teal-900">
-              <Text className="text-5xl font-extrabold text-teal-900 dark:text-teal-100">
+        <View className="flex-1 items-center justify-center">
+          <Eyebrow>{phase === "rest" ? "Descanso" : "Ahora"}</Eyebrow>
+          <Title className="mt-1 text-center text-[24px] leading-[29px]" numberOfLines={2}>
+            {phase === "rest" ? "Respira un momento" : currentExercise?.name}
+          </Title>
+          {phase === "exercise" &&
+          currentExercise &&
+          (currentExercise.sets > 0 || currentExercise.reps > 0) ? (
+            <Caption className="mt-1">
+              {currentExercise.sets > 0 ? `${currentExercise.sets} series` : ""}
+              {currentExercise.sets > 0 && currentExercise.reps > 0 ? " × " : ""}
+              {currentExercise.reps > 0 ? `${currentExercise.reps} repeticiones` : ""}
+            </Caption>
+          ) : null}
+
+          <View className="mt-6">
+            <ProgressRing
+              progress={ringProgress}
+              size={236}
+              stroke={14}
+              color={phase === "rest" ? COLORS.positive : COLORS.accent}
+              accessibilityLabel={`Quedan ${formatTime(timeLeft)}`}
+            >
+              <MochiCharacter
+                expression={phase === "rest" ? "sleepy" : "excited"}
+                size={88}
+                shadow={false}
+              />
+              <Text className="font-display text-[42px] leading-[46px] text-ink">
                 {formatTime(timeLeft)}
               </Text>
-              <Text className="mt-1 text-sm font-semibold text-teal-500">restante</Text>
-            </View>
-            <Text className="mt-6 text-xl font-extrabold text-teal-900 dark:text-teal-100">
-              {currentExercise?.name}
-            </Text>
-            {currentExercise && (currentExercise.sets > 0 || currentExercise.reps > 0) && (
-              <Text className="mt-2 text-sm font-semibold text-teal-600 dark:text-teal-400">
-                {currentExercise.sets > 0 ? `${currentExercise.sets} series` : ""}
-                {currentExercise.sets > 0 && currentExercise.reps > 0 ? " × " : ""}
-                {currentExercise.reps > 0 ? `${currentExercise.reps} reps` : ""}
-              </Text>
-            )}
-            {currentExercise?.notes ? (
-              <Text className="mt-2 px-4 text-center text-xs font-semibold text-teal-800 dark:text-teal-200">
-                {currentExercise.notes}
-              </Text>
-            ) : null}
-            {imageLoading ? (
-              <Text className="mt-2 text-xs font-semibold text-teal-800 dark:text-teal-200">
-                Cargando imagen del ejercicio...
-              </Text>
-            ) : null}
-            <TouchableOpacity
-              className="mt-8 rounded-2xl bg-teal-500 px-8 py-4"
-              onPress={handleSkip}
-            >
-              <Text className="font-extrabold text-white">Siguiente</Text>
-            </TouchableOpacity>
+            </ProgressRing>
           </View>
-        ) : (
-          <View className="mt-8 flex-1 items-center">
-            <MochiCharacter mood="happy" size={80} />
-            <Text className="mt-4 text-xl font-extrabold text-teal-900 dark:text-teal-100">
-              Descansa
-            </Text>
-            <Text className="mt-2 text-4xl font-extrabold text-teal-700 dark:text-teal-300">
-              {timeLeft}s
-            </Text>
-            <Text className="mt-2 text-sm font-semibold text-teal-500">
-              Siguiente:{" "}
-              {routine?.routine_exercises[currentExerciseIndex + 1]?.exercise?.name ??
-                "Último ejercicio"}
-            </Text>
-            <TouchableOpacity
-              className="mt-8 rounded-2xl border-2 border-teal-300 bg-white px-8 py-4 dark:border-teal-700 dark:bg-surface"
-              onPress={handleSkip}
-            >
-              <Text className="font-bold text-teal-700 dark:text-teal-300">Saltar descanso</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </SafeAreaView>
+
+          {phase === "exercise" && currentExercise?.notes ? (
+            <Caption className="mt-4 px-4 text-center">{currentExercise.notes}</Caption>
+          ) : null}
+          {phase === "rest" ? <Caption className="mt-4">Siguiente: {nextName}</Caption> : null}
+          {phase === "exercise" && imageLoading ? (
+            <Caption className="mt-2">Buscando una imagen…</Caption>
+          ) : null}
+        </View>
+
+        <Button
+          title={phase === "rest" ? "Saltar descanso" : "Siguiente"}
+          variant={phase === "rest" ? "outline" : "primary"}
+          onPress={handleSkip}
+        />
+      </View>
     </View>
   );
 }
