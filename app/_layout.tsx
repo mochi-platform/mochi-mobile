@@ -13,6 +13,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
+import { useFonts } from "expo-font";
+import { FONT_ASSETS } from "@/src/shared/theme/fonts";
 import {
   bottomNavRoutes,
   getBottomNavScreen,
@@ -436,6 +438,10 @@ function RootLayoutNavigator() {
 initSentry();
 
 export function RootLayout() {
+  // En Android las fuentes ya vienen embebidas; esto las registra en Expo Go, iOS y web.
+  // Si la carga falla se sigue con la fuente del sistema en vez de bloquear la app.
+  const [fontsLoaded, fontError] = useFonts(FONT_ASSETS);
+  if (!fontsLoaded && !fontError) return null;
   return (
     <SystemBarsProvider>
       <SessionProvider>

@@ -10,13 +10,17 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "node ./scripts/fix-expo-tsconfig-shims.mjs",
     "test": "jest --runInBand",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "eslint . --max-warnings=0 && node scripts/ui-debt.mjs",
+    "ui-debt": "node scripts/ui-debt.mjs",
     "format": "prettier --write \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\"",
     "types:gen": "bash scripts/gen-types.sh",
     "test:functions": "cd supabase/functions && deno test --config deno.json --no-lock ai revenuecat-webhook admob-ssv delete-account export-data unsplash-image duo-push"
   },
   "dependencies": {
+    "@expo-google-fonts/fraunces": "^0.4.1",
+    "@expo-google-fonts/fredoka": "^0.4.1",
+    "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/ui": "~58.0.24",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -105,6 +109,9 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1",
       "^@mochi/supabase/(.*)$": "<rootDir>/src/shared/lib/supabase/$1"

@@ -52,6 +52,22 @@ module.exports = ({ config }) => {
     plugins: [
   ...plugins,
   "expo-router",
+  // Fuentes embebidas (sin parpadeo al abrir). Mantener en sincronía con src/shared/theme/fonts.ts.
+  [
+    'expo-font',
+    {
+      fonts: [
+        'node_modules/@expo-google-fonts/fredoka/500Medium/Fredoka_500Medium.ttf',
+        'node_modules/@expo-google-fonts/fredoka/600SemiBold/Fredoka_600SemiBold.ttf',
+        'node_modules/@expo-google-fonts/nunito/500Medium/Nunito_500Medium.ttf',
+        'node_modules/@expo-google-fonts/nunito/600SemiBold/Nunito_600SemiBold.ttf',
+        'node_modules/@expo-google-fonts/nunito/700Bold/Nunito_700Bold.ttf',
+        'node_modules/@expo-google-fonts/nunito/800ExtraBold/Nunito_800ExtraBold.ttf',
+        'node_modules/@expo-google-fonts/fraunces/400Regular_Italic/Fraunces_400Regular_Italic.ttf',
+        'node_modules/@expo-google-fonts/fraunces/500Medium_Italic/Fraunces_500Medium_Italic.ttf',
+      ],
+    },
+  ],
   [
     'react-native-google-mobile-ads',
     {
