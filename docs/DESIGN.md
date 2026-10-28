@@ -1,25 +1,52 @@
 # Sistema de diseño de Mochi
 
-Dirección: **suave y cálido** (crema, lavanda y durazno; esquinas muy redondeadas; Mochi protagonista). Claro y oscuro automáticos.
+Dirección **«Compañera cálida»** (Remaster, oct-2026; maquetas aprobadas en `docs/remaster/`):
+fondo crema, **sin bordes** (la profundidad viene de sombras suaves), tipografía con carácter,
+un solo acento rosa-lavanda y Mochi grande, viva y hablando primero.
 
-## Tokens
-Definidos en `global.css` (canales RGB, claro y `prefers-color-scheme: dark`) y expuestos en `tailwind.config.js`:
+## Reglas
+- Nada de cajas dentro de cajas ni bordes de color: una tarjeta = `Surface`; las filas se agrupan en `ListGroup`.
+- El color de un módulo solo vive en su `IconTile` (tintes). Ninguna pantalla cambia el color de fondo.
+- Un solo acento (`accent`) para la acción principal de cada pantalla.
+- Mochi nunca se superpone al texto ni queda recortada: siempre con espacio reservado (fila flex).
+- Todo lo pulsable usa `PressableScale` (o un componente que lo use): escala + vibración.
 
+## Tipografía (`src/shared/theme/fonts.ts`, embebidas con el plugin `expo-font`)
+| Clase | Fuente | Uso |
+|---|---|---|
+| `font-display` | Fredoka 600 | Títulos y cifras (`Display`, `Title`, `Stat`) |
+| `font-body`, `font-body-bold`, `font-body-extrabold` | Nunito 600/700/800 | Texto (`Body`, `Strong`, `Caption`, `Eyebrow`) |
+| `font-quote` | Fraunces itálica | La voz de Mochi (`MochiQuote`, `MochiBubble`) |
+
+En Android `fontWeight` no elige el archivo de una fuente propia: usa la clase de familia, nunca `font-bold` con estas fuentes.
+
+## Tokens (`global.css`; en hex para iconos/SVG en `src/shared/theme/tokens.ts`)
 | Clase | Uso |
 |---|---|
-| `bg-canvas` | Fondo de pantalla |
-| `bg-surface` / `bg-surface-muted` | Tarjetas / zonas secundarias |
-| `text-ink` / `text-ink-muted` | Texto principal / secundario |
-| `border-line` | Bordes |
-| `bg-accent` + `text-accent-ink` | Acción principal |
-| `bg-accent-soft` | Acento suave |
-| `bg-peach`, `text-positive`, `text-warning`, `text-danger` | Estados |
-| `rounded-card` (24) / `rounded-control` (16) | Radios |
+| `bg-canvas` (#FBF6EF) | Fondo de todas las pantallas |
+| `bg-surface` / `bg-surface-muted` | Tarjetas / zonas hundidas (campos, notas) |
+| `text-ink` / `text-ink-muted` / `text-ink-faint` | Texto principal / secundario / marcadores |
+| `bg-line` | Separadores finos (no bordes de tarjeta) |
+| `bg-accent`, `text-accent-strong`, `bg-accent-soft` | Acción principal, enlaces, acento suave |
+| `bg-tint-{study,me,kitchen,duo,ok}` + `-ink` | Solo fondos e iconos de `IconTile` |
+| `rounded-card` (26) / `rounded-control` (18) / `rounded-tile` (14) | Radios |
 
-Regla: no usar colores sueltos (`bg-purple-50`, hex) en pantallas nuevas; solo tokens.
+Elevación (`src/shared/ui/elevation.ts`): `ELEVATION[0..3]` con `boxShadow` marrón cálido; `ACCENT_GLOW` para el botón principal.
 
 ## Componentes (`src/shared/ui/`)
-`Button`, `Card`, `Chip`, `Toggle`, `Input`, `EmptyState`, `ErrorState`, `Skeleton`. Cada uno: tamaño táctil ≥ 44, rol y estado de accesibilidad, y test en `__tests__/`. `Skeleton` respeta reduced-motion.
+`Screen` (andamio con título grande y espacio para la barra), `Surface`, `Card`, `ListGroup`/`ListRow`, `IconTile`,
+`SectionHeader`, `Button` (primary · soft · outline · ghost · danger), `Chip` (con icono), `Input`, `Toggle`,
+`ProgressRing`, `Stat`, `MochiBubble`, `Sheet`, `EmptyState`, `ErrorState`, `Skeleton`, tipografía
+(`Display`, `Title`, `Body`, `Strong`, `Caption`, `Eyebrow`, `MochiQuote`) y `PressableScale`.
+
+## Movimiento y vibración
+- `motion.ts`: `EASE_OUT`, `DURATION` (150/250/400 ms), `SPRING`, `staggerDelay` (40 ms, máx. 6) y `REDUCE` en toda animación.
+- `haptics.ts`: `selection` (pestañas, chips, interruptores), `light` (acción), `success` (completar), `warning` (destructivo). Nunca al desplazar.
+
+## Freno a la deuda
+- `pnpm lint` corre `scripts/ui-debt.mjs`: cuenta clases de color sueltas, hex, `tc()`, `TouchableOpacity` y
+  llamadas a Supabase en `app/`, y falla si alguna sube. Tras migrar una pantalla: `node scripts/ui-debt.mjs --update`.
+- Los archivos listados en `MIGRATED` (`eslint.config.js`) no pueden usar esos patrones. Añade cada pantalla al terminarla.
 
 ## Mochi
 `MochiCharacter` recibe `expression` (10) y `outfit`. El manifiesto está en `src/shared/mochi/manifest.ts`; guía de arte en `assets/mochi/README.md`.

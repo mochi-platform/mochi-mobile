@@ -1,6 +1,16 @@
 const { defineConfig } = require("eslint/config");
 const expo = require("eslint-config-expo/flat");
 
+const HUES =
+  "red|orange|amber|yellow|green|emerald|teal|sky|blue|indigo|violet|fuchsia|rose|slate|gray|purple|pink";
+const MIGRATED = [
+  "src/shared/ui/**/*.{ts,tsx}",
+  "src/shared/mochi/**/*.{ts,tsx}",
+  "src/features/companion/**/*.{ts,tsx}",
+  "src/features/today/**/*.{ts,tsx}",
+  "src/features/navigation/**/*.{ts,tsx}",
+];
+
 module.exports = defineConfig([
   expo,
   {
@@ -28,5 +38,39 @@ module.exports = defineConfig([
   {
     files: ["**/*.ts", "**/*.tsx"],
     rules: { "@typescript-eslint/no-explicit-any": "error" },
+  },
+  {
+    // Archivos ya migrados al Remaster: solo tokens y componentes de src/shared/ui.
+    // Añade aquí cada carpeta o archivo al terminar de migrarlo (ver docs/DESIGN.md).
+    files: MIGRATED,
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "react-native",
+              importNames: ["TouchableOpacity"],
+              message: "Usa PressableScale de src/shared/ui (escala + vibración).",
+            },
+          ],
+        },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: `Literal[value=/\\b(bg|text|border)-(${HUES})-\\d{2,3}\\b/]`,
+          message: "Usa tokens (bg-surface, text-ink, bg-tint-*), no colores sueltos.",
+        },
+        {
+          selector: `TemplateElement[value.raw=/\\b(bg|text|border)-(${HUES})-\\d{2,3}\\b/]`,
+          message: "Usa tokens (bg-surface, text-ink, bg-tint-*), no colores sueltos.",
+        },
+        {
+          selector: "CallExpression[callee.name='tc']",
+          message: "tc() es del modo oscuro anterior; usa COLORS de src/shared/theme/tokens.",
+        },
+      ],
+    },
   },
 ]);
