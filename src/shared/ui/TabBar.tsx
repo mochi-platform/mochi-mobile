@@ -43,10 +43,14 @@ export function TabBar({ tabs, active, onSelect }: TabBarProps) {
               }}
               className="flex-1 items-center justify-center gap-0.5"
             >
-              <View
-                className="items-center justify-center px-4 py-1"
-                style={{ borderRadius: 14, backgroundColor: on ? accent.soft : "transparent" }}
-              >
+              <View className="items-center justify-center px-4 py-1">
+                {/* La píldora siempre tiene fondo y solo cambia su opacidad: en Android, una vista que
+                    empieza transparente pierde el radio al recibir color después. */}
+                <View
+                  pointerEvents="none"
+                  className="absolute inset-0"
+                  style={{ borderRadius: 14, backgroundColor: accent.soft, opacity: on ? 1 : 0 }}
+                />
                 <Ionicons
                   name={(on ? tab.icon : `${tab.icon}-outline`) as keyof typeof Ionicons.glyphMap}
                   size={23}

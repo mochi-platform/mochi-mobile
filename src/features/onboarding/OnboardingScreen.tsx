@@ -360,7 +360,7 @@ export function OnboardingScreen() {
           <Caption>{subtitle}</Caption>
         </View>
         <View
-          className={`h-6 w-6 items-center justify-center rounded-full ${on ? "bg-accent" : "border-[2.5px] border-ink-faint/50"}`}
+          className={`h-6 w-6 items-center justify-center rounded-full ${on ? "bg-accent" : "border-[2.5px] border-ink-faint/50 bg-surface"}`}
         >
           {on ? <Ionicons name="checkmark" size={16} color={COLORS.accentInk} /> : null}
         </View>

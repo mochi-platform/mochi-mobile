@@ -273,7 +273,7 @@ export function LoginScreen() {
                   onPress={() => switchTab(value)}
                   accessibilityRole="tab"
                   accessibilityState={{ selected: on }}
-                  className={`flex-1 items-center rounded-[14px] py-2.5 ${on ? "bg-surface" : ""}`}
+                  className={`flex-1 items-center rounded-[14px] py-2.5 ${on ? "bg-surface" : "bg-surface-muted"}`}
                   style={on ? ELEVATION[1] : undefined}
                 >
                   <Text

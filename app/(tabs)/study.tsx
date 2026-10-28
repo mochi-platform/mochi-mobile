@@ -133,7 +133,7 @@ export function StudyScreen() {
         {week.map((d) => (
           <View
             key={d.iso}
-            className={`w-11 items-center rounded-2xl py-2 ${d.isToday ? "bg-ink" : ""}`}
+            className={`w-11 items-center rounded-2xl py-2 ${d.isToday ? "bg-ink" : "bg-canvas"}`}
             accessibilityLabel={`${d.letter} ${d.day}${examDays.has(d.iso) ? ", examen" : ""}`}
           >
             <Text

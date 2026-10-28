@@ -383,7 +383,7 @@ export function ExamLogScreen() {
 
           <View className="mt-4 flex-row rounded-2xl bg-surface p-1">
             <TouchableOpacity
-              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "results" ? "bg-accent" : ""}`}
+              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "results" ? "bg-accent" : "bg-surface"}`}
               onPress={() => setActiveTab("results")}
             >
               <Text
@@ -393,7 +393,7 @@ export function ExamLogScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "upcoming" ? "bg-accent" : ""}`}
+              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "upcoming" ? "bg-accent" : "bg-surface"}`}
               onPress={() => setActiveTab("upcoming")}
             >
               <Text

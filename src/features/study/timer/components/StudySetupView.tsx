@@ -64,7 +64,7 @@ export function StudySetupView({
               onPress={() => onTimerModeChange(m.value)}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
-              className={`flex-1 items-center rounded-[14px] py-2.5 ${on ? "bg-surface" : ""}`}
+              className={`flex-1 items-center rounded-[14px] py-2.5 ${on ? "bg-surface" : "bg-surface-muted"}`}
               style={on ? ELEVATION[1] : undefined}
             >
               <Text className={`font-body-extrabold text-sm ${on ? "text-ink" : "text-ink-muted"}`}>

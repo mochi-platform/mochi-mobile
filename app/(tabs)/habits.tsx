@@ -270,7 +270,7 @@ export function HabitsScreen() {
                     className="min-w-0 flex-1 flex-row items-center gap-3"
                   >
                     <View
-                      className={`h-9 w-9 items-center justify-center rounded-full ${on ? "bg-positive" : "border-[2.5px] border-ink-faint/60"}`}
+                      className={`h-9 w-9 items-center justify-center rounded-full ${on ? "bg-positive" : "border-[2.5px] border-ink-faint/60 bg-surface"}`}
                     >
                       {on ? <Ionicons name="checkmark" size={20} color={COLORS.accentInk} /> : null}
                     </View>
