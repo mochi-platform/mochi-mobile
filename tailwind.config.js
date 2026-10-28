@@ -3,11 +3,29 @@ const token = (name) => `rgb(var(--color-${name}) / <alpha-value>)`;
 const SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 // Escala de marca controlada por variables CSS: permite cambiar de tema sin tocar las pantallas.
 const brandScale = (name) =>
-  Object.fromEntries(SHADES.map((shade) => [shade, `rgb(var(--${name}-${shade}) / <alpha-value>)`]));
+  Object.fromEntries(
+    SHADES.map((shade) => [shade, `rgb(var(--${name}-${shade}) / <alpha-value>)`]),
+  );
 
 // Matices cuya escala también va por variables (ver scripts/gen-palette.js): en modo oscuro sus
 // tonos 700–950 se mezclan con la base del tema en ThemeContext.
-const HUES = ["red", "orange", "amber", "yellow", "green", "emerald", "teal", "sky", "blue", "indigo", "violet", "fuchsia", "rose", "slate", "gray"];
+const HUES = [
+  "red",
+  "orange",
+  "amber",
+  "yellow",
+  "green",
+  "emerald",
+  "teal",
+  "sky",
+  "blue",
+  "indigo",
+  "violet",
+  "fuchsia",
+  "rose",
+  "slate",
+  "gray",
+];
 
 module.exports = {
   content: ["./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
@@ -59,5 +77,17 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Las pantallas que aún usan font-semibold/bold/extrabold (sin familia) toman el archivo de
+    // Nunito de ese peso: en Android `fontWeight` solo no cambia a la fuente de la app.
+    require("tailwindcss/plugin")(({ addUtilities }) => {
+      addUtilities({
+        ".font-medium": { fontFamily: "Nunito_500Medium" },
+        ".font-semibold": { fontFamily: "Nunito_600SemiBold" },
+        ".font-bold": { fontFamily: "Nunito_700Bold" },
+        ".font-extrabold": { fontFamily: "Nunito_800ExtraBold" },
+        ".font-black": { fontFamily: "Nunito_800ExtraBold" },
+      });
+    }),
+  ],
 };
