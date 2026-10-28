@@ -5,7 +5,7 @@
     "version": "5.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "scheme": "mochi",
     "ios": {
       "supportsTablet": true,

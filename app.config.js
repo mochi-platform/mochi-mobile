@@ -40,8 +40,12 @@ module.exports = ({ config }) => {
     return plugin !== './plugins/with-mochi-health-connect-delegate.js'
   })
 
+  // Modo oscuro tras feature flag (apagado por defecto): ver src/shared/config/flags.ts.
+  const darkMode = process.env.EXPO_PUBLIC_DARK_MODE === 'true'
+
   return {
     ...baseConfig,
+    userInterfaceStyle: darkMode ? 'automatic' : 'light',
     extra: {
       ...baseExtra,
     },

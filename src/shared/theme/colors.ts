@@ -1,4 +1,9 @@
 import { Appearance } from "react-native";
+import { DARK_MODE_ENABLED } from "@/src/shared/config/flags";
+
+// Con el modo oscuro apagado, la app se ve siempre en claro aunque el sistema esté en oscuro.
+// Va aquí, en el nivel del módulo, porque otros archivos llaman a tc() al importarse.
+if (!DARK_MODE_ENABLED) Appearance.setColorScheme("light");
 
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
@@ -65,5 +70,5 @@ export function invertForDark(hex: string): string {
 
 /** Color adaptado al tema actual (claro: igual; oscuro: luminosidad invertida). */
 export function tc(hex: string): string {
-  return Appearance.getColorScheme() === "dark" ? invertForDark(hex) : hex;
+  return DARK_MODE_ENABLED && Appearance.getColorScheme() === "dark" ? invertForDark(hex) : hex;
 }

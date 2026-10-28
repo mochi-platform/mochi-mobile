@@ -31,3 +31,12 @@ Regla: no usar colores sueltos (`bg-purple-50`, hex) en pantallas nuevas; solo t
 - Limitación: `tc()` se evalúa al renderizar; cambiar el tema del sistema con la app abierta puede dejar iconos con el color anterior hasta re-renderizar.
 - Pendiente (no hecho): partir los archivos de más de 700 líneas (`settings`, `HomeDashboard`, `exam-log`, `study-timer`, `cooking`) y la navegación por tabs Hoy · Estudio · Bienestar · Duo · Perfil.
 - Widget Android: resumen (puntos, racha, bloque del día); falta el botón "Me llegó hoy".
+
+## Modo oscuro (feature flag, apagado)
+
+El modo oscuro está implementado pero **desactivado por defecto**: la app se ve siempre en claro.
+
+- Flag: `EXPO_PUBLIC_DARK_MODE=true` (ver `src/shared/config/flags.ts` y `.env.example`). Se lee al compilar; hay que recompilar para cambiarla.
+- Apagado: `userInterfaceStyle` queda en `light` (app.config.js) y `tc()` no invierte colores.
+- Encendido: sigue el modo del sistema. Las escalas de color van por variables CSS; en oscuro, los tonos 700–950 se mezclan con la base lavanda del tema (`src/shared/theme/darkScale.ts`).
+- Estado al activarlo: la paleta ya es coherente en Inicio, Estudio, Bienestar y Perfil, pero falta revisar pantalla por pantalla (la barra inferior cambia de color por pestaña y algunos iconos tienen poco contraste).

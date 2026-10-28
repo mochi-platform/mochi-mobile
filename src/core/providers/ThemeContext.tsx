@@ -3,6 +3,7 @@ import { vars } from "nativewind";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useColorScheme, View } from "react-native";
 import { useSession } from "@/src/core/providers/SessionContext";
+import { DARK_MODE_ENABLED } from "@/src/shared/config/flags";
 import { usePlan } from "@/src/shared/hooks/usePlan";
 import {
   canUseTheme,
@@ -66,7 +67,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [effective, themesAllowed],
   );
 
-  const dark = useColorScheme() === "dark";
+  const systemDark = useColorScheme() === "dark";
+  const dark = DARK_MODE_ENABLED && systemDark;
   const style = useMemo(() => vars(themeVariables(effective, dark)), [effective, dark]);
 
   return (
