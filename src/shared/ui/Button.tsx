@@ -1,19 +1,23 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
 import Animated from "react-native-reanimated";
+import { ACCENT_GLOW } from "./elevation";
+import { haptic } from "./haptics";
 import { usePressScale } from "./usePressScale";
 
-type Variant = "primary" | "soft" | "outline" | "danger";
+type Variant = "primary" | "soft" | "outline" | "ghost" | "danger";
 
 const container: Record<Variant, string> = {
   primary: "bg-accent",
   soft: "bg-accent-soft",
-  outline: "border-2 border-line bg-surface",
+  outline: "bg-surface",
+  ghost: "",
   danger: "bg-danger",
 };
 const label: Record<Variant, string> = {
   primary: "text-accent-ink",
-  soft: "text-ink",
+  soft: "text-accent-strong",
   outline: "text-ink",
+  ghost: "text-accent-strong",
   danger: "text-white",
 };
 
@@ -44,16 +48,19 @@ export function Button({
       disabled={inactive}
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}
-      onPress={onPress}
+      onPress={() => {
+        haptic(variant === "danger" ? "warning" : "light");
+        onPress();
+      }}
     >
       <Animated.View
-        style={press.style}
-        className={`min-h-[48px] items-center justify-center rounded-control px-5 ${container[variant]} ${inactive ? "opacity-60" : ""}`}
+        style={[variant === "primary" && !inactive ? ACCENT_GLOW : null, press.style]}
+        className={`min-h-[54px] items-center justify-center rounded-control px-5 ${container[variant]} ${inactive ? "opacity-60" : ""}`}
       >
         {loading ? (
-          <ActivityIndicator color="#ffffff" />
+          <ActivityIndicator color={variant === "primary" || variant === "danger" ? "#ffffff" : "#9C5A85"} />
         ) : (
-          <Text className={`text-base font-extrabold ${label[variant]}`}>{title}</Text>
+          <Text className={`font-body-extrabold text-[16.5px] ${label[variant]}`}>{title}</Text>
         )}
       </Animated.View>
     </Pressable>

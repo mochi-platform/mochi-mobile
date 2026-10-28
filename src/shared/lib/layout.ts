@@ -20,3 +20,12 @@ export function getFabBottomOffset(insetBottom: number): number {
 export function getHomeBottomSpacerHeight(insetBottom: number): number {
   return insetBottom + HOME_BOTTOM_SPACER;
 }
+
+/** Barra inferior flotante del Remaster (src/shared/ui/TabBar.tsx). */
+export const TAB_BAR_HEIGHT = 68;
+export const TAB_BAR_MARGIN_BOTTOM = 12;
+
+/** Espacio que deja el contenido desplazable para no quedar bajo la barra flotante. */
+export function getTabBarClearance(insetBottom: number): number {
+  return insetBottom + TAB_BAR_MARGIN_BOTTOM + TAB_BAR_HEIGHT + 24;
+}

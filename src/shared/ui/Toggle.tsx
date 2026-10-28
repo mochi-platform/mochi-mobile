@@ -52,13 +52,13 @@ export function Toggle({ label, value, onValueChange, description }: ToggleProps
         className="min-h-[48px] flex-row items-center justify-between py-1"
       >
         <View className="flex-1 pr-3">
-          <Text className="text-sm font-bold text-ink">{label}</Text>
+          <Text className="font-body-extrabold text-[15px] text-ink">{label}</Text>
           {description ? (
-            <Text className="text-xs font-semibold text-ink-muted">{description}</Text>
+            <Text className="mt-0.5 font-body text-[13px] leading-[18px] text-ink-muted">{description}</Text>
           ) : null}
         </View>
         <View
-          className="justify-center overflow-hidden rounded-full bg-line"
+          className="justify-center overflow-hidden rounded-full bg-surface-muted"
           style={{ width: TRACK_W, height: TRACK_H }}
         >
           {/* Capa "encendido" que se funde sobre la pista apagada: sin leer colores en el worklet. */}

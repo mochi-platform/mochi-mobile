@@ -1,12 +1,9 @@
 import type { ReactNode } from "react";
-import { View } from "react-native";
+import { Surface } from "./Surface";
 
 type CardProps = { children: ReactNode; className?: string };
 
+/** Tarjeta con relleno estándar. Equivale a <Surface className="p-4">: sin borde, con sombra. */
 export function Card({ children, className = "" }: CardProps) {
-  return (
-    <View className={`rounded-card border border-line bg-surface p-4 ${className}`}>
-      {children}
-    </View>
-  );
+  return <Surface className={`p-4 ${className}`}>{children}</Surface>;
 }

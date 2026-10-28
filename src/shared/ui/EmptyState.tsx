@@ -13,8 +13,8 @@ export function EmptyState({ title, message, actionLabel, onAction }: EmptyState
   return (
     <View className="items-center px-6 py-8">
       <MochiCharacter expression="sleepy" size={96} />
-      <Text className="mt-4 text-center text-lg font-extrabold text-ink">{title}</Text>
-      <Text className="mt-1 text-center text-sm font-semibold text-ink-muted">{message}</Text>
+      <Text className="mt-4 text-center font-display text-xl text-ink">{title}</Text>
+      <Text className="mt-1.5 text-center font-quote text-[17px] leading-[23px] text-ink-muted">{message}</Text>
       {actionLabel && onAction ? (
         <View className="mt-4 self-stretch">
           <Button title={actionLabel} onPress={onAction} />

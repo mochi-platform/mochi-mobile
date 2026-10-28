@@ -11,7 +11,7 @@ export function ErrorState({
   return (
     <View accessibilityRole="alert" className="items-center px-6 py-8">
       <MochiCharacter expression="worried" size={96} />
-      <Text className="mt-4 text-center text-sm font-semibold text-ink-muted">{message}</Text>
+      <Text className="mt-4 text-center font-quote text-[17px] leading-[23px] text-ink-muted">{message}</Text>
       {onRetry ? (
         <View className="mt-4 self-stretch">
           <Button title="Reintentar" variant="soft" onPress={onRetry} />
