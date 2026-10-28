@@ -18,7 +18,7 @@
         "android.permission.health.READ_HEALTH_DATA_HISTORY"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FBF6EF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -84,6 +84,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
+          "imageWidth": 240,
           "resizeMode": "contain",
           "backgroundColor": "#fbf6ef"
         }
