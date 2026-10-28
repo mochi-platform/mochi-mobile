@@ -24,6 +24,15 @@ export async function addManualPeriodStart(
   await AsyncStorage.setItem(MANUAL_KEY, JSON.stringify(next));
 }
 
+/** Quita un registro manual (p. ej. «Me llegó hoy» tocado por error). */
+export async function removeManualPeriodStart(
+  dateISO: string = toLocalISODate(new Date()),
+): Promise<void> {
+  const current = await getManualPeriodStarts();
+  if (!current.includes(dateISO)) return;
+  await AsyncStorage.setItem(MANUAL_KEY, JSON.stringify(current.filter((d) => d !== dateISO)));
+}
+
 export async function clearManualPeriods(): Promise<void> {
   await AsyncStorage.removeItem(MANUAL_KEY);
 }

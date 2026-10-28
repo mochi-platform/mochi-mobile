@@ -18,7 +18,15 @@ const ENERGY_COPY = {
  * Health Connect); con datos muestra el día, la energía y cuándo llegaría el próximo periodo.
  */
 export function CycleCard() {
-  const { cycleData, isAvailable, hasPermission, logPeriodToday, requestPermission } = useCycle();
+  const {
+    cycleData,
+    isAvailable,
+    hasPermission,
+    logPeriodToday,
+    loggedToday,
+    undoPeriodToday,
+    requestPermission,
+  } = useCycle();
 
   const connectHealth = async () => {
     const result = await requestPermission();
@@ -36,14 +44,16 @@ export function CycleCard() {
   };
   const [saving, setSaving] = useState(false);
   const accent = useAccent();
-  const [logged, setLogged] = useState(false);
-
   const logToday = async () => {
     setSaving(true);
     try {
-      await logPeriodToday();
-      setLogged(true);
-      haptic("success");
+      if (loggedToday) {
+        await undoPeriodToday();
+        haptic("selection");
+      } else {
+        await logPeriodToday();
+        haptic("success");
+      }
     } catch (error) {
       reportError(error, { scope: "today/cycle-log" });
     } finally {
@@ -53,10 +63,9 @@ export function CycleCard() {
 
   const logButton = (
     <Button
-      title={logged ? "Registrado hoy" : "Me llegó hoy"}
-      variant="soft"
+      title={loggedToday ? "Deshacer registro" : "Me llegó hoy"}
+      variant={loggedToday ? "ghost" : "soft"}
       loading={saving}
-      disabled={logged}
       onPress={() => void logToday()}
     />
   );

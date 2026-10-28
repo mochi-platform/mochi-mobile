@@ -44,8 +44,8 @@ export function TabBar({ tabs, active, onSelect }: TabBarProps) {
               className="flex-1 items-center justify-center gap-0.5"
             >
               <View
-                className={`items-center justify-center px-4 py-1 ${on ? "bg-accent-soft" : ""}`}
-                style={{ borderRadius: 14 }}
+                className="items-center justify-center px-4 py-1"
+                style={{ borderRadius: 14, backgroundColor: on ? accent.soft : "transparent" }}
               >
                 <Ionicons
                   name={(on ? tab.icon : `${tab.icon}-outline`) as keyof typeof Ionicons.glyphMap}
@@ -54,7 +54,8 @@ export function TabBar({ tabs, active, onSelect }: TabBarProps) {
                 />
               </View>
               <Text
-                className={`font-body-extrabold text-[11.5px] ${on ? "text-accent-strong" : "text-ink-muted"}`}
+                className="font-body-extrabold text-[11.5px]"
+                style={{ color: on ? accent.strong : COLORS.inkMuted }}
               >
                 {tab.label}
               </Text>

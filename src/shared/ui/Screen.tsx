@@ -56,24 +56,36 @@ export function Screen({
     );
   }
   return (
-    <ScrollView
-      className="flex-1 bg-canvas"
-      contentContainerStyle={{ paddingTop: insets.top, paddingBottom: bottom, paddingHorizontal: 20 }}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        onRefresh ? (
-          <RefreshControl
-            refreshing={refreshing ?? false}
-            onRefresh={onRefresh}
-            tintColor={COLORS.accent}
-            colors={[COLORS.accent]}
-            progressViewOffset={insets.top}
-          />
-        ) : undefined
-      }
-    >
-      {header}
-      {children}
-    </ScrollView>
+    <View className="flex-1 bg-canvas">
+      <ScrollView
+        className="flex-1 bg-canvas"
+        contentContainerStyle={{
+          paddingTop: insets.top,
+          paddingBottom: bottom,
+          paddingHorizontal: 20,
+        }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing ?? false}
+              onRefresh={onRefresh}
+              tintColor={COLORS.accent}
+              colors={[COLORS.accent]}
+              progressViewOffset={insets.top}
+            />
+          ) : undefined
+        }
+      >
+        {header}
+        {children}
+      </ScrollView>
+      {/* El contenido no se ve por debajo de la barra de estado al desplazarse. */}
+      <View
+        pointerEvents="none"
+        className="absolute inset-x-0 top-0 bg-canvas"
+        style={{ height: insets.top }}
+      />
+    </View>
   );
 }

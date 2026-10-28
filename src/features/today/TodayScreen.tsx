@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import { useCycle } from "@/src/core/providers/CycleContext";
+import { useAccent } from "@/src/core/providers/ThemeContext";
 import { useSession } from "@/src/core/providers/SessionContext";
 import type { ModuleVisibility } from "@/src/core/providers/ModuleVisibilityContext";
 import {
@@ -28,6 +29,7 @@ import {
   ListGroup,
   ListRow,
   MochiBubble,
+  ELEVATION,
   PressableScale,
   ProgressRing,
   Screen,
@@ -76,6 +78,7 @@ export function TodayScreen({
   const { cycleData } = useCycle();
   const data = useDashboardData(userId);
   const mochi = useRef<MochiHandle>(null);
+  const accent = useAccent();
   const [mood, setMood] = useState<Mood | null>(null);
 
   const now = new Date();
@@ -204,7 +207,8 @@ export function TodayScreen({
                 accessibilityRole="radio"
                 accessibilityLabel={MOOD_LABEL[value]}
                 accessibilityState={{ selected: on }}
-                className={`h-[50px] w-[50px] items-center justify-center rounded-[18px] ${on ? "bg-accent" : "bg-surface-muted"}`}
+                className="h-[50px] w-[50px] items-center justify-center rounded-[18px]"
+                style={[ELEVATION[1], { backgroundColor: on ? accent.accent : COLORS.surface }]}
               >
                 <MoodFace mood={value} />
               </PressableScale>

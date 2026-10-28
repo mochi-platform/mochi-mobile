@@ -33,6 +33,9 @@ export function splitPressableClasses(className: string): { outer: string; inner
 }
 
 const FILL: ViewStyle = { flexGrow: 1 };
+/** Solo si la caja exterior tiene tamaño propio la vista de adentro crece para llenarla;
+ * con alto automático, flexGrow hacía que un botón se estirara a toda la pantalla (Cocina). */
+const SIZED = /(^|\s)(-?(h|min-h|size)-|flex-1|grow|basis-|absolute|inset)/;
 
 /**
  * Base de todo lo pulsable: escala en el hilo de UI y vibración opcional.
@@ -74,7 +77,7 @@ export function PressableScale({
           : undefined
       }
     >
-      <Animated.View className={inner} style={[FILL, style, press.style]}>
+      <Animated.View className={inner} style={[SIZED.test(outer) ? FILL : null, style, press.style]}>
         {children}
       </Animated.View>
     </Pressable>

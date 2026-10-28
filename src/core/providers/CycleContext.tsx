@@ -9,7 +9,12 @@ import {
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { syncCycleSummary } from "@/src/shared/lib/consents";
-import { addManualPeriodStart } from "@/src/shared/lib/manualCycle";
+import { toLocalISODate } from "@/src/shared/lib/dates";
+import {
+  addManualPeriodStart,
+  getManualPeriodStarts,
+  removeManualPeriodStart,
+} from "@/src/shared/lib/manualCycle";
 import {
   getCurrentCyclePhase,
   invalidateCyclePhaseCache,
@@ -29,6 +34,9 @@ type CycleContextValue = {
   requestPermission: () => Promise<PermissionResult>;
   refresh: () => Promise<void>;
   logPeriodToday: () => Promise<void>;
+  /** Si hoy hay un registro manual de inicio de periodo (se puede deshacer). */
+  loggedToday: boolean;
+  undoPeriodToday: () => Promise<void>;
 };
 
 const CycleContext = createContext<CycleContextValue>({
@@ -39,6 +47,8 @@ const CycleContext = createContext<CycleContextValue>({
   requestPermission: async () => "unavailable" as PermissionResult,
   refresh: async () => {},
   logPeriodToday: async () => {},
+  loggedToday: false,
+  undoPeriodToday: async () => {},
 });
 
 export function CycleProvider({ children }: { children: ReactNode }) {
@@ -73,11 +83,26 @@ export function CycleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const [loggedToday, setLoggedToday] = useState(false);
+
   const logPeriodToday = useCallback(async () => {
     await addManualPeriodStart();
+    setLoggedToday(true);
     await invalidateCyclePhaseCache();
     await refresh();
   }, [refresh]);
+
+  const undoPeriodToday = useCallback(async () => {
+    await removeManualPeriodStart();
+    setLoggedToday(false);
+    await invalidateCyclePhaseCache();
+    await refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const today = toLocalISODate(new Date());
+    void getManualPeriodStarts().then((starts) => setLoggedToday(starts.includes(today)));
+  }, []);
 
   const requestPermission = useCallback(async (): Promise<PermissionResult> => {
     try {
@@ -133,8 +158,10 @@ export function CycleProvider({ children }: { children: ReactNode }) {
       requestPermission,
       refresh,
       logPeriodToday,
+      loggedToday,
+      undoPeriodToday,
     }),
-    [cycleData, hasPermission, isAvailable, loading, refresh, requestPermission, logPeriodToday],
+    [cycleData, hasPermission, isAvailable, loading, refresh, requestPermission, logPeriodToday, loggedToday, undoPeriodToday],
   );
 
   return <CycleContext.Provider value={value}>{children}</CycleContext.Provider>;
