@@ -160,8 +160,9 @@ function isRouteAllowed(
     return settings.gratitude_enabled;
   }
 
+  // Los vales viven en Duo: basta con tener Duo activo (vouchers_enabled no lo puede activar el cliente).
   if (pathname === "/vouchers") {
-    return settings.vouchers_enabled;
+    return settings.vouchers_enabled || settings.partner_features_enabled;
   }
 
   if (
