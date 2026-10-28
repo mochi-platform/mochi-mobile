@@ -16,6 +16,7 @@ import { formatTimeHHMM } from "@/src/features/home/dashboard/helpers";
 import { useDashboardData } from "@/src/features/home/dashboard/useDashboardData";
 import { CycleWidget } from "@/src/shared/components/CycleWidget";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { getDailyMotivation } from "@/src/shared/lib/ai";
 import { toLocalISODate } from "@/src/shared/lib/dates";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import type { MochiHandle } from "@/src/shared/mochi/MochiCanvas";
@@ -92,13 +93,29 @@ export function TodayScreen({ userName, moduleVisibility: m, onOpenQuickCapture 
     };
   }, [userId]);
 
-  const line = useMemo(
-    () =>
-      mood
-        ? pickLine(CHECKIN_REPLY[mood], `${dayKey}-${mood}`)
-        : pickLine(GREETING_QUESTION[period], dayKey),
-    [mood, dayKey, period],
-  );
+  // Frase de IA del día (en caché diaria, con respaldo local). Solo complementa la respuesta al
+  // check-in; antes del check-in Mochi pregunta. Nunca bloquea: la frase local se ve al instante.
+  const [aiLine, setAiLine] = useState<string | null>(null);
+  const blockCount = m.study_enabled ? data.todayBlocks.length : 0;
+  const hasRoutine = m.exercise_enabled && data.todayRoutines.length > 0;
+  useEffect(() => {
+    if (!mood || data.loading) return;
+    let alive = true;
+    getDailyMotivation(blockCount, hasRoutine, period, cycleData?.phase)
+      .then((text) => {
+        if (alive && text.trim()) setAiLine(text.trim());
+      })
+      .catch((error) => reportError(error, { scope: "today/ai-line" }));
+    return () => {
+      alive = false;
+    };
+  }, [mood, data.loading, blockCount, hasRoutine, period, cycleData?.phase]);
+
+  const line = useMemo(() => {
+    if (!mood) return pickLine(GREETING_QUESTION[period], dayKey);
+    const reply = pickLine(CHECKIN_REPLY[mood], `${dayKey}-${mood}`);
+    return aiLine ? `${reply} ${aiLine}` : reply;
+  }, [mood, dayKey, period, aiLine]);
 
   const checkIn = (value: Mood) => {
     if (!userId) return;
