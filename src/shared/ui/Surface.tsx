@@ -33,7 +33,11 @@ export function Surface({
   accessibilityLabel,
 }: SurfaceProps) {
   const shadow = tone === "sunken" ? ELEVATION[0] : ELEVATION[elevation];
-  const classes = `${TONE[tone]} ${className}`;
+  // Un fondo propio en className reemplaza al del tono (el orden del string no decide en NativeWind).
+  const toneClasses = /(^|\s)bg-/.test(className)
+    ? TONE[tone].replace(/\bbg-[\w-]+/g, "").trim()
+    : TONE[tone];
+  const classes = `${toneClasses} ${className}`;
   if (onPress) {
     return (
       <PressableScale

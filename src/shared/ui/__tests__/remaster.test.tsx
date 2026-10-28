@@ -92,3 +92,19 @@ describe("staggerDelay", () => {
   });
 });
 
+
+describe("mergeTextClasses", () => {
+  const { mergeTextClasses } = jest.requireActual<typeof import("../Typography")>("../Typography");
+  it("el color, tamaño e interlineado de className reemplazan a los de la base", () => {
+    expect(mergeTextClasses("font-body text-[13px] leading-[18px] text-ink-muted", "mt-1 text-ink")).toBe(
+      "font-body text-[13px] leading-[18px] mt-1 text-ink",
+    );
+    expect(mergeTextClasses("font-display text-xl leading-6 text-ink", "text-2xl leading-7")).toBe(
+      "font-display text-ink text-2xl leading-7",
+    );
+  });
+
+  it("la alineación no cuenta como color", () => {
+    expect(mergeTextClasses("font-body text-sm text-ink", "text-center")).toBe("font-body text-sm text-ink text-center");
+  });
+});
