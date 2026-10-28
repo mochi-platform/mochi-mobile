@@ -1,11 +1,12 @@
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect } from "react";
-import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Text, View } from "react-native";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { COLORS } from "@/src/shared/theme/tokens";
 import type { RecipePublication } from "@/src/shared/types/database";
+import { Caption, PressableScale, Surface } from "@/src/shared/ui";
 import { difficultyConfig, formatRecipeTag } from "@/src/features/cooking/helpers";
 
 type PublicRecipeCardProps = {
@@ -57,113 +58,69 @@ export function PublicRecipeCard({
   }, [onLoadImage, publication.id, publication.title]);
 
   return (
-    <TouchableOpacity
-      className="mb-3 rounded-3xl border-2 border-fuchsia-200 bg-white p-4 dark:border-fuchsia-800 dark:bg-surface"
-      onPress={onPress}
-      activeOpacity={0.85}
-    >
-      <View className="mb-3 h-28 overflow-hidden rounded-2xl bg-fuchsia-100 dark:bg-fuchsia-900">
+    <Surface onPress={onPress} accessibilityLabel={`Receta pública: ${publication.title}`} className="mb-3 overflow-hidden">
+      <View className="h-32 items-center justify-center bg-tint-duo">
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} className="h-full w-full" resizeMode="cover" />
         ) : (
-          <View className="h-full items-center justify-center">
-            <MochiCharacter mood="thinking" size={48} />
-            {imageLoading ? (
-              <Text className="mt-1 text-xs font-semibold text-fuchsia-700 dark:text-fuchsia-300">
-                Buscando imagen...
-              </Text>
-            ) : null}
+          <View className="items-center">
+            <MochiCharacter expression="thinking" size={56} animated={false} shadow={false} />
+            {imageLoading ? <Caption className="mt-1">Buscando imagen…</Caption> : null}
           </View>
         )}
       </View>
-
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1 pr-3">
-          <Text
-            className="text-base font-extrabold text-fuchsia-950 dark:text-fuchsia-50"
-            numberOfLines={2}
-          >
-            {publication.title}
-          </Text>
-          {publication.description ? (
-            <Text
-              className="mt-1 text-xs font-semibold text-fuchsia-700 dark:text-fuchsia-300"
-              numberOfLines={2}
-            >
-              {publication.description}
+      <View className="p-4">
+        <View className="flex-row items-start gap-3">
+          <View className="min-w-0 flex-1">
+            <Text className="font-body-extrabold text-[16px] leading-[21px] text-ink" numberOfLines={2}>
+              {publication.title}
             </Text>
-          ) : null}
-          <Text className="mt-1 text-[11px] font-bold text-fuchsia-500">
-            {isOwned
-              ? "Tu receta en el catálogo público"
-              : publication.owner_name
-                ? `Compartida por ${publication.owner_name}`
-                : "Compartida por la comunidad"}
-          </Text>
-        </View>
-        <View className="items-center gap-2">
-          <Ionicons name="globe" size={18} color={tc("#c026d3")} />
+            <Caption className="mt-0.5">
+              {isOwned
+                ? "Tu receta en el catálogo público"
+                : publication.owner_name
+                  ? `Compartida por ${publication.owner_name}`
+                  : "Compartida por la comunidad"}
+            </Caption>
+          </View>
           {!isOwned ? (
-            <TouchableOpacity
+            <PressableScale
               accessibilityLabel="Reportar receta"
+              haptics="selection"
               hitSlop={10}
               onPress={() => askReport(publication.id)}
+              className="h-8 w-8 items-center justify-center rounded-full bg-surface-muted"
             >
-              <Ionicons name="flag-outline" size={16} color={tc("#a21caf")} />
-            </TouchableOpacity>
+              <Ionicons name="flag-outline" size={15} color={COLORS.inkMuted} />
+            </PressableScale>
           ) : null}
         </View>
-      </View>
-
-      <View className="mt-3 flex-row flex-wrap items-center gap-2">
-        {totalTime > 0 && (
-          <View className="flex-row items-center rounded-full bg-fuchsia-100 px-3 py-1 dark:bg-fuchsia-900">
-            <Ionicons name="time" size={12} color={tc("#a21caf")} />
-            <Text className="ml-1 text-xs font-bold text-fuchsia-800 dark:text-fuchsia-200">
-              {totalTime} min
-            </Text>
-          </View>
-        )}
-        <View className={`rounded-full px-3 py-1 ${diff.className}`}>
-          <Text className={`text-xs font-bold ${diff.textClass}`}>{diff.label}</Text>
-        </View>
-        {publication.servings > 0 && (
-          <View className="flex-row items-center rounded-full bg-fuchsia-100 px-3 py-1 dark:bg-fuchsia-900">
-            <Ionicons name="people" size={12} color={tc("#a21caf")} />
-            <Text className="ml-1 text-xs font-bold text-fuchsia-800 dark:text-fuchsia-200">
-              {publication.servings} porc.
-            </Text>
-          </View>
-        )}
-        {publication.generation_type !== "normal" ? (
-          <View className="rounded-full bg-fuchsia-100 px-3 py-1 dark:bg-fuchsia-900">
-            <Text className="text-xs font-bold text-fuchsia-800 dark:text-fuchsia-200">
-              {formatRecipeTag(publication.generation_type.replace(/_/g, " "))}
-            </Text>
-          </View>
+        {publication.description ? (
+          <Caption className="mt-1.5" numberOfLines={2}>
+            {publication.description}
+          </Caption>
         ) : null}
-      </View>
-
-      {publication.tags.length > 0 && (
-        <View className="mt-2 flex-row flex-wrap gap-1">
-          {publication.tags.slice(0, 3).map((tag, index) => (
-            <View
-              key={`${tag}-${index}`}
-              className="shrink-0 self-start rounded-full border border-fuchsia-200 px-2.5 py-1 dark:border-fuchsia-800"
-            >
-              <Text className="text-xs font-semibold leading-4 text-fuchsia-600 dark:text-fuchsia-400">
-                {formatRecipeTag(tag)}
-              </Text>
-            </View>
+        <View className="mt-3 flex-row flex-wrap items-center gap-2">
+          {totalTime > 0 ? <Pill icon="time" label={`${totalTime} min`} /> : null}
+          <Pill label={diff.label} />
+          {publication.servings > 0 ? <Pill icon="people" label={`${publication.servings} porc.`} /> : null}
+          {publication.tags.slice(0, 2).map((tag, index) => (
+            <Pill key={`${tag}-${index}`} label={formatRecipeTag(tag)} />
           ))}
         </View>
-      )}
-
-      <View className="mt-3 rounded-2xl bg-fuchsia-500 px-4 py-2.5">
-        <Text className="text-center text-sm font-extrabold text-white">
+        <Text className="mt-3 font-body-extrabold text-sm text-accent-strong">
           {isOwned ? "Abrir receta" : "Usar receta"}
         </Text>
       </View>
-    </TouchableOpacity>
+    </Surface>
+  );
+}
+
+function Pill({ icon, label }: { icon?: keyof typeof Ionicons.glyphMap; label: string }) {
+  return (
+    <View className="flex-row items-center gap-1 rounded-full bg-tint-duo px-2.5 py-1">
+      {icon ? <Ionicons name={icon} size={12} color={COLORS.ink} /> : null}
+      <Text className="font-body-bold text-xs text-ink">{label}</Text>
+    </View>
   );
 }

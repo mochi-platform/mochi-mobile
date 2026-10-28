@@ -1,9 +1,9 @@
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
+import { ScrollView, Text, TextInput, View } from "react-native";
 import type { RecipeGenerationType } from "@/src/shared/lib/ai";
+import { COLORS } from "@/src/shared/theme/tokens";
 import type { RecipeDifficulty } from "@/src/shared/types/database";
+import { Chip } from "@/src/shared/ui";
 import { listDifficultyOptions, listRecipeTypeOptions } from "@/src/features/cooking/helpers";
 
 type RecipeFiltersCardProps = {
@@ -17,6 +17,7 @@ type RecipeFiltersCardProps = {
   onToggleFavoritesOnly: () => void;
 };
 
+/** Buscador y filtros de recetas: mismo orden de siempre (buscar, dificultad, tipo, favoritas). */
 export function RecipeFiltersCard({
   searchQuery,
   onSearchQueryChange,
@@ -28,91 +29,62 @@ export function RecipeFiltersCard({
   onToggleFavoritesOnly,
 }: RecipeFiltersCardProps) {
   return (
-    <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-4 dark:border-orange-800 dark:bg-surface">
-      <View className="flex-row items-center rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 dark:border-orange-800 dark:bg-orange-950">
-        <Ionicons name="search" size={15} color={tc("#c2410c")} />
+    <View className="mt-5">
+      <View className="min-h-[50px] flex-row items-center rounded-control bg-surface-muted px-4">
+        <Ionicons name="search" size={17} color={COLORS.inkMuted} />
         <TextInput
-          className="ml-2 flex-1 text-sm font-semibold text-orange-900 dark:text-orange-100"
+          accessibilityLabel="Buscar recetas"
+          className="ml-2 flex-1 font-body text-[15px] text-ink"
           placeholder="Buscar por nombre, tipo o etiqueta"
-          placeholderTextColor={tc("#f97316")}
+          placeholderTextColor={COLORS.inkFaint}
           value={searchQuery}
           onChangeText={onSearchQueryChange}
         />
       </View>
 
-      <Text className="mt-3 text-xs font-bold text-orange-700 dark:text-orange-300">
+      <Text className="ml-1 mt-4 font-body-extrabold text-xs uppercase tracking-[0.9px] text-ink-muted">
         Dificultad
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2">
-        {listDifficultyOptions.map((option) => {
-          const active = difficultyFilter === option.value;
-
-          return (
-            <TouchableOpacity
-              key={option.value}
-              className={`mr-2 rounded-full border px-3 py-1.5 ${
-                active
-                  ? "border-orange-500 bg-orange-500"
-                  : "border-orange-200 bg-white dark:border-orange-800 dark:bg-surface"
-              }`}
-              onPress={() => onDifficultyFilterChange(option.value)}
-            >
-              <Text
-                className={`text-xs font-bold ${
-                  active ? "text-white" : "text-orange-700 dark:text-orange-300"
-                }`}
-              >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="-mx-5 mt-2"
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingVertical: 4 }}
+      >
+        {listDifficultyOptions.map((option) => (
+          <Chip
+            key={option.value}
+            label={option.label}
+            selected={difficultyFilter === option.value}
+            onPress={() => onDifficultyFilterChange(option.value)}
+          />
+        ))}
       </ScrollView>
 
-      <Text className="mt-3 text-xs font-bold text-orange-700 dark:text-orange-300">Tipo</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2">
-        {listRecipeTypeOptions.map((option) => {
-          const active = typeFilter === option.value;
-
-          return (
-            <TouchableOpacity
-              key={option.value}
-              className={`mr-2 rounded-full border px-3 py-1.5 ${
-                active
-                  ? "border-orange-500 bg-orange-500"
-                  : "border-orange-200 bg-white dark:border-orange-800 dark:bg-surface"
-              }`}
-              onPress={() => onTypeFilterChange(option.value)}
-            >
-              <Text
-                className={`text-xs font-bold ${
-                  active ? "text-white" : "text-orange-700 dark:text-orange-300"
-                }`}
-              >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      <Text className="ml-1 mt-3 font-body-extrabold text-xs uppercase tracking-[0.9px] text-ink-muted">
+        Tipo
+      </Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="-mx-5 mt-2"
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingVertical: 4 }}
+      >
+        {listRecipeTypeOptions.map((option) => (
+          <Chip
+            key={option.value}
+            label={option.label}
+            selected={typeFilter === option.value}
+            onPress={() => onTypeFilterChange(option.value)}
+          />
+        ))}
+        <Chip
+          label="Solo favoritas"
+          icon={favoritesOnly ? "heart" : "heart-outline"}
+          selected={favoritesOnly}
+          onPress={onToggleFavoritesOnly}
+        />
       </ScrollView>
-
-      <IconCtaButton
-        label="Solo favoritas"
-        onPress={onToggleFavoritesOnly}
-        iconName={favoritesOnly ? "heart" : "heart-outline"}
-        iconColor={favoritesOnly ? tc("#db2777") : tc("#c2410c")}
-        iconSize={14}
-        containerClassName={`mt-3 w-full rounded-2xl border px-4 py-2.5 ${
-          favoritesOnly
-            ? "border-pink-400 bg-pink-100 dark:bg-pink-900"
-            : "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950"
-        }`}
-        textClassName={
-          favoritesOnly
-            ? "text-pink-700 dark:text-pink-300"
-            : "text-orange-700 dark:text-orange-300"
-        }
-      />
     </View>
   );
 }

@@ -1,6 +1,6 @@
-import { tc } from "@/src/shared/theme/colors";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Keyboard, Platform, ScrollView, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Keyboard, Platform, Text, View } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
@@ -9,8 +9,9 @@ import { generateRecipe } from "@/src/shared/lib/ai";
 import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
 import { addPoints, checkCookingRecipeAchievements } from "@/src/shared/lib/gamification";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
-import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
-import { TabHeader } from "@/src/shared/components/TabHeader";
+import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { COLORS } from "@/src/shared/theme/tokens";
+import { ELEVATION, MochiQuote, PressableScale, Screen } from "@/src/shared/ui";
 import { getRecipeGenerationTypeFromPrompt } from "@/src/shared/lib/recipeCatalog";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
 import type {
@@ -318,63 +319,65 @@ export function CookingScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-orange-50 dark:bg-orange-950">
-        <ScrollView className="flex-1 px-5 pt-12" showsVerticalScrollIndicator={false}>
-          <TabHeader
-            iconName="restaurant"
-            title="Cocina"
-            subtitle="Recetas y preparación"
-            iconColor={tc("#c2410c")}
-            titleClassName="text-2xl font-extrabold text-orange-900 dark:text-orange-100"
-            subtitleClassName="text-sm font-semibold text-orange-700 dark:text-orange-300"
-          />
+      <Screen title="Cocina">
+        <View
+          className="mt-3 flex-row items-center gap-3 rounded-card bg-tint-kitchen px-4 py-4"
+          style={ELEVATION[2]}
+        >
+          <MochiCharacter expression="excited" size={84} animated={false} shadow={false} />
+          <View className="min-w-0 flex-1">
+            <MochiQuote className="text-[17px] leading-[23px]">
+              {cycleCookingTip ?? "¿Qué hay en tu refri? Te armo una receta con eso."}
+            </MochiQuote>
+            <View className="mt-2.5 self-start">
+              <PressableScale
+                onPress={() => setShowGenerateModal(true)}
+                accessibilityLabel="Crear receta con Mochi"
+                className="flex-row items-center gap-1.5 rounded-full bg-accent px-4 py-2.5"
+              >
+                <Ionicons name="sparkles" size={16} color={COLORS.accentInk} />
+                <Text className="font-body-extrabold text-sm text-accent-ink">Crear receta</Text>
+              </PressableScale>
+            </View>
+          </View>
+        </View>
 
-          <RecipeFiltersCard
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-            difficultyFilter={difficultyFilter}
-            onDifficultyFilterChange={setDifficultyFilter}
-            typeFilter={typeFilter}
-            onTypeFilterChange={setTypeFilter}
-            favoritesOnly={favoritesOnly}
-            onToggleFavoritesOnly={() => setFavoritesOnly((prev) => !prev)}
-          />
-
-          <OwnRecipesList
-            loading={loading}
-            error={error}
-            onRetry={loadRecipes}
-            recipes={recipes}
-            filteredRecipes={filteredRecipes}
-            cookingTip={cycleCookingTip}
-            mochiMood={personality?.mochiMood ?? "happy"}
-            imageMap={recipeImageMap}
-            loadingMap={recipeImageLoadingMap}
-            onLoadImage={loadRecipeImage}
-          />
-
-          <PublicRecipesCatalog
-            loading={publicLoading}
-            error={publicError}
-            onRetry={loadPublicRecipes}
-            publications={filteredPublicRecipes}
-            userId={userId}
-            imageMap={recipeImageMap}
-            loadingMap={recipeImageLoadingMap}
-            onLoadImage={loadRecipeImage}
-            onUseRecipe={handleUsePublicRecipe}
-          />
-
-          <View className="h-20" />
-        </ScrollView>
-        <FloatingActionButton
-          onPress={() => setShowGenerateModal(true)}
-          containerClassName="bg-orange-500"
-          borderClassName="border-orange-300 dark:border-orange-700"
-          accessibilityLabel="Generar receta con IA"
-          showSparkles
+        <RecipeFiltersCard
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          difficultyFilter={difficultyFilter}
+          onDifficultyFilterChange={setDifficultyFilter}
+          typeFilter={typeFilter}
+          onTypeFilterChange={setTypeFilter}
+          favoritesOnly={favoritesOnly}
+          onToggleFavoritesOnly={() => setFavoritesOnly((prev) => !prev)}
         />
-      </View>
+
+        <OwnRecipesList
+          loading={loading}
+          error={error}
+          onRetry={loadRecipes}
+          recipes={recipes}
+          filteredRecipes={filteredRecipes}
+          cookingTip={cycleCookingTip}
+          mochiMood={personality?.mochiMood ?? "happy"}
+          imageMap={recipeImageMap}
+          loadingMap={recipeImageLoadingMap}
+          onLoadImage={loadRecipeImage}
+        />
+
+        <PublicRecipesCatalog
+          loading={publicLoading}
+          error={publicError}
+          onRetry={loadPublicRecipes}
+          publications={filteredPublicRecipes}
+          userId={userId}
+          imageMap={recipeImageMap}
+          loadingMap={recipeImageLoadingMap}
+          onLoadImage={loadRecipeImage}
+          onUseRecipe={handleUsePublicRecipe}
+        />
+      </Screen>
 
       <RecipeGeneratorModal
         visible={showGenerateModal}
