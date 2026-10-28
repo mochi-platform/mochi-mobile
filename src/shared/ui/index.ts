@@ -19,3 +19,4 @@ export { Toggle } from "./Toggle";
 export { Body, Caption, Display, Eyebrow, MochiQuote, Strong, Title } from "./Typography";
 export { haptic, type HapticKind } from "./haptics";
 export { ELEVATION, ACCENT_GLOW, type Elevation } from "./elevation";
+export { TabBar } from "./TabBar";

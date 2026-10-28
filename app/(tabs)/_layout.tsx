@@ -63,6 +63,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="me" options={{ title: "Yo" }} />
       <Tabs.Screen
         name="goals"
         options={{

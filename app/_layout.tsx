@@ -16,12 +16,8 @@ import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { FONT_ASSETS } from "@/src/shared/theme/fonts";
-import {
-  bottomNavRoutes,
-  getBottomNavScreen,
-  getVisibleTabs,
-} from "@/src/features/home/navigation";
-import { WellnessSubNav } from "@/src/features/wellness/WellnessSubNav";
+import { activeTabFor, tabsFor } from "@/src/features/navigation/tabs";
+import { TabBar } from "@/src/shared/ui/TabBar";
 import { ThemeProvider } from "@/src/core/providers/ThemeContext";
 import { initSentry, wrapWithSentry } from "@/src/shared/lib/observability/sentry";
 import {
@@ -43,7 +39,6 @@ import { AchievementProvider } from "@/src/core/providers/AchievementContext";
 import { QueryProvider } from "@/src/core/providers/QueryProvider";
 import { OfflineBanner } from "@/src/shared/components/OfflineBanner";
 import { CycleProvider } from "@/src/core/providers/CycleContext";
-import { BottomNav } from "@/src/features/home/components/BottomNav";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 
 type NotificationModule = typeof import("expo-notifications");
@@ -127,6 +122,8 @@ function isRouteAllowed(
     pathname === "/settings" ||
     pathname === "/profile" ||
     pathname === "/wellness" ||
+    pathname === "/me" ||
+    pathname === "/mochi-gallery" ||
     pathname === "/premium" ||
     pathname === "/weekly-summary" ||
     pathname === "/flashcards" ||
@@ -394,15 +391,10 @@ function RootLayoutNavigator() {
     );
   }
 
-  const showBottomNav =
-    ((pathname.startsWith("/(tabs)") || pathname === "/" || segments[0] === "(tabs)") &&
-      Boolean(session) &&
-      !requiresOnboarding &&
-      !pathname.startsWith("/auth") &&
-      pathname !== "/login") ||
-    (Boolean(session) && (pathname.startsWith("/mochi-duo") || pathname === "/profile"));
-  const currentScreen = getBottomNavScreen(pathname);
-  const visibleTabs = getVisibleTabs(moduleVisibility);
+  const activeTab = activeTabFor(pathname);
+  const showTabBar =
+    activeTab !== null && Boolean(session) && !requiresOnboarding && !pathname.startsWith("/auth");
+  const tabs = tabsFor(moduleVisibility);
 
   return (
     <View className="flex-1">
@@ -417,19 +409,11 @@ function RootLayoutNavigator() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
       </View>
-      {showBottomNav && currentScreen === "wellness" ? (
-        <WellnessSubNav pathname={pathname} visibility={moduleVisibility} />
-      ) : null}
-      {showBottomNav ? (
-        <BottomNav
-          currentScreen={currentScreen}
-          onNavigate={(screen) => {
-            const targetRoute = bottomNavRoutes[screen];
-            const normalizedTarget = targetRoute.replace("/(tabs)", "") || "/";
-            if (pathname === normalizedTarget) return;
-            router.replace(targetRoute);
-          }}
-          visibleTabs={visibleTabs}
+      {showTabBar && activeTab ? (
+        <TabBar
+          tabs={tabs}
+          active={activeTab}
+          onSelect={(tab) => router.replace(tab.route as never)}
         />
       ) : null}
     </View>

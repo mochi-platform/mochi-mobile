@@ -10,6 +10,8 @@ const MIGRATED = [
   "src/features/today/**/*.{ts,tsx}",
   "src/features/navigation/**/*.{ts,tsx}",
   "app/mochi-gallery.tsx",
+  "app/(tabs)/me.tsx",
+  "app/(tabs)/wellness.tsx",
 ];
 
 module.exports = defineConfig([
