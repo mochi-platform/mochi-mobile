@@ -35,11 +35,28 @@ import {
 } from "@/src/shared/ui";
 
 const ADD_OPTIONS = [
-  { label: "Bloque de estudio", hint: "Un horario fijo en tu semana", icon: "time", route: "/study-create" },
+  {
+    label: "Bloque de estudio",
+    hint: "Un horario fijo en tu semana",
+    icon: "time",
+    route: "/study-create",
+  },
   { label: "Examen", hint: "Anota uno próximo o una nota", icon: "school", route: "/exam-log" },
-  { label: "Mazo de tarjetas", hint: "Repasa con tarjetas", icon: "layers", route: "/flashcard-decks" },
-  { label: "Planificar con IA", hint: "Mochi arma tu semana", icon: "sparkles", route: "/weekly-planner" },
+  {
+    label: "Mazo de tarjetas",
+    hint: "Repasa con tarjetas",
+    icon: "layers",
+    route: "/flashcard-decks",
+  },
+  {
+    label: "Planificar con IA",
+    hint: "Mochi arma tu semana",
+    icon: "sparkles",
+    route: "/weekly-planner",
+  },
 ] as const;
+
+const DAY_NAME = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 function nowHHMM(): string {
   const d = new Date();
@@ -84,7 +101,9 @@ export function StudyScreen() {
     .sort((a, b) => a.date.localeCompare(b.date));
   const examDays = new Set(upcomingExams.map((e) => e.date.slice(0, 10)));
   const weekStart = week[0].iso;
-  const weekSessions = (data?.sessions ?? []).filter((s) => toLocalISODate(new Date(s.completedAt)) >= weekStart);
+  const weekSessions = (data?.sessions ?? []).filter(
+    (s) => toLocalISODate(new Date(s.completedAt)) >= weekStart,
+  );
   const weekMinutes = Math.round(weekSessions.reduce((sum, s) => sum + s.seconds, 0) / 60);
 
   return (
@@ -106,7 +125,9 @@ export function StudyScreen() {
         </PressableScale>
       }
     >
-      {error && !data ? <ErrorState message="No pudimos cargar tu estudio." onRetry={() => void load()} /> : null}
+      {error && !data ? (
+        <ErrorState message="No pudimos cargar tu estudio." onRetry={() => void load()} />
+      ) : null}
 
       <View className="mt-3 flex-row justify-between" accessibilityLabel="Esta semana">
         {week.map((d) => (
@@ -115,11 +136,17 @@ export function StudyScreen() {
             className={`w-11 items-center rounded-2xl py-2 ${d.isToday ? "bg-ink" : ""}`}
             accessibilityLabel={`${d.letter} ${d.day}${examDays.has(d.iso) ? ", examen" : ""}`}
           >
-            <Text className={`font-body-extrabold text-[11px] ${d.isToday ? "text-canvas/70" : "text-ink-muted"}`}>
+            <Text
+              className={`font-body-extrabold text-[11px] ${d.isToday ? "text-canvas/70" : "text-ink-muted"}`}
+            >
               {d.letter}
             </Text>
-            <Text className={`font-display text-lg ${d.isToday ? "text-canvas" : "text-ink"}`}>{d.day}</Text>
-            <View className={`mt-0.5 h-[5px] w-[5px] rounded-full ${examDays.has(d.iso) ? "bg-tint-me-ink" : "bg-transparent"}`} />
+            <Text className={`font-display text-lg ${d.isToday ? "text-canvas" : "text-ink"}`}>
+              {d.day}
+            </Text>
+            <View
+              className={`mt-0.5 h-[5px] w-[5px] rounded-full ${examDays.has(d.iso) ? "bg-tint-me-ink" : "bg-transparent"}`}
+            />
           </View>
         ))}
       </View>
@@ -128,14 +155,19 @@ export function StudyScreen() {
         <View className="mt-4 rounded-[28px] bg-surface p-5" style={ELEVATION[2]}>
           <View className="flex-row items-center gap-3">
             <View className="min-w-0 flex-1">
-              <Eyebrow>{hhmm(focus.start) <= now ? "Ahora" : "Siguiente"} · {hhmm(focus.start)}</Eyebrow>
+              <Eyebrow>
+                {hhmm(focus.start) <= now ? "Ahora" : "Siguiente"} · {hhmm(focus.start)}
+              </Eyebrow>
               <Title className="mt-1.5 text-[25px] leading-[29px]">{focus.subject}</Title>
               <Caption className="mt-1">{minutesBetween(focus.start, focus.end)} min</Caption>
             </View>
             <MochiCharacter expression="focused" size={92} animated={false} shadow={false} />
           </View>
           <View className="mt-4 self-start">
-            <Button title="Empezar" onPress={() => router.push(`/study-timer?blockId=${focus.id}`)} />
+            <Button
+              title="Empezar"
+              onPress={() => router.push(`/study-timer?blockId=${focus.id}`)}
+            />
           </View>
         </View>
       ) : data ? (
@@ -149,11 +181,20 @@ export function StudyScreen() {
             </Caption>
             {todayBlocks.length === 0 ? (
               <View className="mt-3 self-start">
-                <Button title="Planificar mi semana" variant="soft" onPress={() => router.push("/weekly-planner")} />
+                <Button
+                  title="Planificar mi semana"
+                  variant="soft"
+                  onPress={() => router.push("/weekly-planner")}
+                />
               </View>
             ) : null}
           </View>
-          <MochiCharacter expression={todayBlocks.length > 0 ? "proud" : "thinking"} size={84} animated={false} shadow={false} />
+          <MochiCharacter
+            expression={todayBlocks.length > 0 ? "proud" : "thinking"}
+            size={84}
+            animated={false}
+            shadow={false}
+          />
         </Surface>
       ) : null}
 
@@ -176,7 +217,11 @@ export function StudyScreen() {
 
       {upcomingExams.length > 0 ? (
         <>
-          <SectionHeader title="Exámenes" actionLabel="Registrar" onAction={() => router.push("/exam-log")} />
+          <SectionHeader
+            title="Exámenes"
+            actionLabel="Registrar"
+            onAction={() => router.push("/exam-log")}
+          />
           <ListGroup>
             {upcomingExams.slice(0, 4).map((e) => {
               const days = daysUntil(e.date);
@@ -184,11 +229,17 @@ export function StudyScreen() {
                 <ListRow
                   key={e.id}
                   title={e.subject}
-                  subtitle={days === 0 ? "Es hoy. Tú puedes." : days === 1 ? "Mañana" : `En ${days} días`}
+                  subtitle={
+                    days === 0 ? "Es hoy. Tú puedes." : days === 1 ? "Mañana" : `En ${days} días`
+                  }
                   leading={
                     <View className="w-10 items-center">
-                      <Text className="font-display text-[22px] leading-6 text-tint-me-ink">{days}</Text>
-                      <Text className="font-body-extrabold text-[11px] text-ink-muted">{days === 1 ? "día" : "días"}</Text>
+                      <Text className="font-display text-[22px] leading-6 text-tint-me-ink">
+                        {days}
+                      </Text>
+                      <Text className="font-body-extrabold text-[11px] text-ink-muted">
+                        {days === 1 ? "día" : "días"}
+                      </Text>
                     </View>
                   }
                 />
@@ -198,7 +249,39 @@ export function StudyScreen() {
         </>
       ) : null}
 
-      <SectionHeader title="Tarjetas" actionLabel="Mazos" onAction={() => router.push("/flashcard-decks")} />
+      {data && data.blocks.length > 0 ? (
+        <>
+          <SectionHeader
+            title="Tu horario"
+            actionLabel="Agregar"
+            onAction={() => router.push("/study-create")}
+          />
+          <ListGroup>
+            {[...data.blocks]
+              .sort(
+                (a, b) =>
+                  ((a.dayOfWeek + 6) % 7) - ((b.dayOfWeek + 6) % 7) ||
+                  a.start.localeCompare(b.start),
+              )
+              .map((b) => (
+                <ListRow
+                  key={b.id}
+                  title={b.subject}
+                  subtitle={`${b.dayOfWeek === today ? "Hoy" : DAY_NAME[b.dayOfWeek]} · ${hhmm(b.start)} – ${hhmm(b.end)}`}
+                  leading={<IconTile icon="time" tint="study" />}
+                  onPress={() => router.push(`/study-edit?blockId=${b.id}`)}
+                  accessibilityLabel={`Editar ${b.subject}, ${DAY_NAME[b.dayOfWeek]} ${hhmm(b.start)}`}
+                />
+              ))}
+          </ListGroup>
+        </>
+      ) : null}
+
+      <SectionHeader
+        title="Tarjetas"
+        actionLabel="Mazos"
+        onAction={() => router.push("/flashcard-decks")}
+      />
       <ListGroup>
         <ListRow
           title="Repasar mis tarjetas"
@@ -210,14 +293,28 @@ export function StudyScreen() {
 
       {data ? (
         <>
-          <SectionHeader title="Esta semana" actionLabel="Historial" onAction={() => router.push("/study-history")} />
+          <SectionHeader
+            title="Esta semana"
+            actionLabel="Historial"
+            onAction={() => router.push("/study-history")}
+          />
           <Surface className="flex-row justify-between px-5 py-4">
-            <Stat value={String(weekSessions.length)} label={weekSessions.length === 1 ? "sesión" : "sesiones"} />
             <Stat
-              value={weekMinutes >= 60 ? `${Math.floor(weekMinutes / 60)} h ${weekMinutes % 60}` : `${weekMinutes} min`}
+              value={String(weekSessions.length)}
+              label={weekSessions.length === 1 ? "sesión" : "sesiones"}
+            />
+            <Stat
+              value={
+                weekMinutes >= 60
+                  ? `${Math.floor(weekMinutes / 60)} h ${weekMinutes % 60}`
+                  : `${weekMinutes} min`
+              }
               label="estudiando"
             />
-            <Stat value={String(upcomingExams.length)} label={upcomingExams.length === 1 ? "examen" : "exámenes"} />
+            <Stat
+              value={String(upcomingExams.length)}
+              label={upcomingExams.length === 1 ? "examen" : "exámenes"}
+            />
           </Surface>
         </>
       ) : null}

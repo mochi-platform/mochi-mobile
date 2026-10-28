@@ -124,7 +124,9 @@ export function MoodScreen() {
         <Text className="mb-2 ml-1 mt-4 font-body-bold text-sm text-ink">Tu energía</Text>
         <View className="mb-4 flex-row gap-2" accessibilityRole="radiogroup">
           {ENERGY.map((e) => {
-            const on = energy === e.value;
+            // Registros viejos usan 1 a 5: 2 cuenta como baja y 4 como alta.
+            const bucket = energy === null ? null : energy <= 2 ? 1 : energy >= 4 ? 5 : 3;
+            const on = bucket === e.value;
             return (
               <PressableScale
                 key={e.value}

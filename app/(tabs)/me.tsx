@@ -1,14 +1,12 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Text, View } from "react-native";
-import { useCycle } from "@/src/core/providers/CycleContext";
+import { Text, View } from "react-native";
 import { useModuleVisibility } from "@/src/core/providers/ModuleVisibilityContext";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { diaryDateLabel, fetchDiary, type DiaryDay } from "@/src/features/me/diary";
 import { CycleCard } from "@/src/features/today/CycleCard";
 import { MoodFace } from "@/src/features/today/MoodFace";
 import type { Mood } from "@/src/features/companion/lines";
-import { openHealthConnectSettingsScreen } from "@/src/shared/lib/healthConnect";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import {
   Caption,
@@ -26,7 +24,6 @@ export default function MeScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const { moduleVisibility: m } = useModuleVisibility();
-  const { requestPermission } = useCycle();
   const [diary, setDiary] = useState<DiaryDay[] | null>(null);
   const go = (route: string) => () => router.push(route as never);
   const showDiary = m.mood_enabled || m.gratitude_enabled;
@@ -46,21 +43,6 @@ export default function MeScreen() {
     }, [userId, showDiary]),
   );
 
-  const connectHealth = async () => {
-    const result = await requestPermission();
-    if (result === "granted") return;
-    Alert.alert(
-      "No se pudo conectar",
-      result === "unavailable"
-        ? "Health Connect no está disponible o no está activado en este teléfono."
-        : "No se concedió el permiso de menstruación. Puedes dárselo a Mochi desde Health Connect.",
-      [
-        { text: "Abrir Health Connect", onPress: () => void openHealthConnectSettingsScreen() },
-        { text: "Cerrar", style: "cancel" },
-      ],
-    );
-  };
-
   const name = session?.user.user_metadata?.full_name as string | undefined;
   return (
     <Screen
@@ -77,7 +59,7 @@ export default function MeScreen() {
         </PressableScale>
       }
     >
-      <CycleCard onConnectHealth={() => void connectHealth()} />
+      <CycleCard />
 
       {showDiary ? (
         <>
@@ -107,19 +89,28 @@ export default function MeScreen() {
           ) : (
             <Surface tone="sunken" className="p-4">
               <Caption>
-                Aquí se juntan cómo te sentiste y lo bonito de cada día. Empieza con el check-in de Hoy.
+                Aquí se juntan cómo te sentiste y lo bonito de cada día. Empieza con el check-in de
+                Hoy.
               </Caption>
             </Surface>
           )}
           <View className="mt-3 flex-row gap-3">
             {m.mood_enabled ? (
-              <Surface onPress={go("/(tabs)/mood")} accessibilityLabel="Mi ánimo" className="flex-1 flex-row items-center gap-3 p-3.5">
+              <Surface
+                onPress={go("/(tabs)/mood")}
+                accessibilityLabel="Mi ánimo"
+                className="flex-1 flex-row items-center gap-3 p-3.5"
+              >
                 <IconTile icon="happy" tint="me" size={36} />
                 <Text className="font-body-extrabold text-[15px] text-ink">Mi ánimo</Text>
               </Surface>
             ) : null}
             {m.gratitude_enabled ? (
-              <Surface onPress={go("/(tabs)/gratitude")} accessibilityLabel="Gratitud" className="flex-1 flex-row items-center gap-3 p-3.5">
+              <Surface
+                onPress={go("/(tabs)/gratitude")}
+                accessibilityLabel="Gratitud"
+                className="flex-1 flex-row items-center gap-3 p-3.5"
+              >
                 <IconTile icon="flower" tint="duo" size={36} />
                 <Text className="font-body-extrabold text-[15px] text-ink">Gratitud</Text>
               </Surface>

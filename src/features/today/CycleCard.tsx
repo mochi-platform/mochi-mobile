@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { useCycle } from "@/src/core/providers/CycleContext";
 import { energyProfileFromPhase } from "@/src/shared/lib/ai";
+import { openHealthConnectSettingsScreen } from "@/src/shared/lib/healthConnect";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { COLORS } from "@/src/shared/theme/tokens";
 import { Button, Caption, Eyebrow, ProgressRing, Surface, Title, haptic } from "@/src/shared/ui";
@@ -12,14 +13,27 @@ const ENERGY_COPY = {
   alta: { title: "Energía alta", hint: "Buen momento para lo difícil." },
 } as const;
 
-type CycleCardProps = { onConnectHealth?: () => void };
-
 /**
  * Ciclo en Hoy: siempre visible. Sin datos invita a registrar con «Me llegó hoy» (manual, sin
  * Health Connect); con datos muestra el día, la energía y cuándo llegaría el próximo periodo.
  */
-export function CycleCard({ onConnectHealth }: CycleCardProps) {
-  const { cycleData, isAvailable, hasPermission, logPeriodToday } = useCycle();
+export function CycleCard() {
+  const { cycleData, isAvailable, hasPermission, logPeriodToday, requestPermission } = useCycle();
+
+  const connectHealth = async () => {
+    const result = await requestPermission();
+    if (result === "granted") return;
+    Alert.alert(
+      "No se pudo conectar",
+      result === "unavailable"
+        ? "Health Connect no está disponible o no está activado en este teléfono."
+        : "No se concedió el permiso de menstruación. Puedes dárselo a Mochi desde Health Connect.",
+      [
+        { text: "Abrir Health Connect", onPress: () => void openHealthConnectSettingsScreen() },
+        { text: "Cerrar", style: "cancel" },
+      ],
+    );
+  };
   const [saving, setSaving] = useState(false);
   const [logged, setLogged] = useState(false);
 
@@ -57,8 +71,12 @@ export function CycleCard({ onConnectHealth }: CycleCardProps) {
         </Caption>
         <View className="mt-3.5 gap-2">
           {logButton}
-          {isAvailable && !hasPermission && onConnectHealth ? (
-            <Button title="Conectar Flo o mi app de ciclo" variant="ghost" onPress={onConnectHealth} />
+          {isAvailable && !hasPermission ? (
+            <Button
+              title="Conectar Flo o mi app de ciclo"
+              variant="ghost"
+              onPress={() => void connectHealth()}
+            />
           ) : null}
         </View>
       </Surface>

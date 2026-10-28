@@ -66,7 +66,11 @@ function daysUntil(isoDate: string): number {
 }
 
 /** Hoy: Mochi habla primero, check-in de ánimo y solo lo que de verdad toca hoy. */
-export function TodayScreen({ userName, moduleVisibility: m, onOpenQuickCapture }: TodayScreenProps) {
+export function TodayScreen({
+  userName,
+  moduleVisibility: m,
+  onOpenQuickCapture,
+}: TodayScreenProps) {
   const { session } = useSession();
   const userId = session?.user.id;
   const { cycleData } = useCycle();
@@ -77,8 +81,14 @@ export function TodayScreen({ userName, moduleVisibility: m, onOpenQuickCapture 
   const now = new Date();
   const dayKey = toLocalISODate(now);
   const period = timeOfDay(now);
-  const dateLabel = now.toLocaleDateString("es-EC", { weekday: "long", day: "numeric", month: "long" });
-  const greeting = { manana: "Buenos días", tarde: "Buenas tardes", noche: "Buenas noches" }[period];
+  const dateLabel = now.toLocaleDateString("es-EC", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const greeting = { manana: "Buenos días", tarde: "Buenas tardes", noche: "Buenas noches" }[
+    period
+  ];
 
   useEffect(() => {
     if (!userId) return;
@@ -133,8 +143,13 @@ export function TodayScreen({ userName, moduleVisibility: m, onOpenQuickCapture 
   const exam = m.study_enabled ? data.upcomingExams[0] : undefined;
   const habitsDone = data.habitCount > 0 ? data.habitLogsCount / data.habitCount : 0;
   const recipe = m.cooking_enabled ? data.latestRecipe : null;
+  const routine = m.exercise_enabled ? data.todayRoutines[0] : undefined;
   const hasDay =
-    Boolean(nextBlock) || (m.habits_enabled && data.habitCount > 0) || Boolean(exam) || Boolean(recipe);
+    Boolean(nextBlock) ||
+    (m.habits_enabled && data.habitCount > 0) ||
+    Boolean(exam) ||
+    Boolean(routine) ||
+    Boolean(recipe);
 
   return (
     <Screen refreshing={data.refreshing} onRefresh={data.refresh}>
@@ -198,7 +213,7 @@ export function TodayScreen({ userName, moduleVisibility: m, onOpenQuickCapture 
         </View>
       </MochiBubble>
 
-      <CycleCard onConnectHealth={() => router.push("/(tabs)/me")} />
+      <CycleCard />
 
       {hasDay ? (
         <>
@@ -233,6 +248,14 @@ export function TodayScreen({ userName, moduleVisibility: m, onOpenQuickCapture 
                 }
                 leading={<IconTile icon="school" tint="me" />}
                 onPress={() => router.push("/exam-log")}
+              />
+            ) : null}
+            {routine ? (
+              <ListRow
+                title={routine.name}
+                subtitle={`Tu rutina de hoy · ${routine.routine_exercises.length} ejercicios`}
+                leading={<IconTile icon="barbell" tint="study" />}
+                onPress={() => router.push(`/routine-player?routineId=${routine.id}`)}
               />
             ) : null}
             {recipe ? (

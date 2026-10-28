@@ -193,7 +193,11 @@ export function GoalsScreen() {
               <ListRow
                 key={g.id}
                 title={g.title}
-                subtitle={dueLabel(g.targetDate)}
+                subtitle={
+                  g.description
+                    ? `${dueLabel(g.targetDate)} · ${g.description}`
+                    : dueLabel(g.targetDate)
+                }
                 leading={
                   <ProgressRing
                     progress={g.progress / 100}
@@ -243,6 +247,14 @@ export function GoalsScreen() {
           onChangeText={(title) => setDraft((d) => ({ ...d, title }))}
           placeholder="Aprobar Biología con 9"
           maxLength={80}
+        />
+        <Input
+          label="¿Por qué es importante? (opcional)"
+          value={draft.description}
+          onChangeText={(description) => setDraft((d) => ({ ...d, description }))}
+          placeholder="Para entrar a Medicina"
+          maxLength={200}
+          multiline
         />
         <Input
           label="Fecha (opcional, año-mes-día)"

@@ -176,7 +176,8 @@ export function ExerciseScreen() {
               >
                 <ListRow
                   title={e.name}
-                  subtitle={`${e.sets} series · ${e.reps} repeticiones · ${e.minutes} min`}
+                  subtitle={`${e.sets} series · ${e.reps} repeticiones · ${e.minutes} min${e.notes ? `\n${e.notes}` : ""}`}
+                  multiline
                   leading={<IconTile icon="fitness" tint="ok" />}
                 />
               </PressableScale>
