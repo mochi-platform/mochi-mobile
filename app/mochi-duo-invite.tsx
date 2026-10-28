@@ -1,50 +1,45 @@
-import { track } from "@/src/shared/lib/observability/analytics";
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
 import * as Clipboard from "expo-clipboard";
-import QRCode from "react-native-qrcode-svg";
-import { QrScannerModal } from "@/src/features/duo/QrScannerModal";
 import { router, useFocusEffect } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useCallback, useState } from "react";
+import { Alert, Share, Text, View } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 import { useSession } from "@/src/core/providers/SessionContext";
-import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import { QrScannerModal } from "@/src/features/duo/QrScannerModal";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { track } from "@/src/shared/lib/observability/analytics";
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
+import { COLORS } from "@/src/shared/theme/tokens";
 import type { PartnerSpace } from "@/src/shared/types/database";
+import {
+  Button,
+  Caption,
+  ELEVATION,
+  Input,
+  MochiBubble,
+  PressableScale,
+  Screen,
+  Surface,
+  haptic,
+} from "@/src/shared/ui";
 
-type InviteMode = "create" | "join";
+type Mode = "create" | "join";
 
 export function MochiDuoInviteScreen() {
   const { session } = useSession();
-  const { showAlert, AlertComponent } = useCustomAlert();
-
-  const [mode, setMode] = useState<InviteMode>("create");
-  const [inviteCode, setInviteCode] = useState("");
-  const [activeSpace, setActiveSpace] = useState<PartnerSpace | null>(null);
-  const [loading, setLoading] = useState(true);
+  const userId = session?.user.id;
+  const [mode, setMode] = useState<Mode>("create");
+  const [code, setCode] = useState("");
+  const [space, setSpace] = useState<PartnerSpace | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [working, setWorking] = useState(false);
-  const [copiedToClipboard, setCopiedToClipboard] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
 
-  const userId = session?.user.id;
-
-  const loadSpace = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
+  const load = useCallback(async () => {
+    if (!userId) return;
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from("partner_spaces")
         .select("*")
@@ -52,273 +47,226 @@ export function MochiDuoInviteScreen() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-
       if (error) throw error;
-      setActiveSpace((data as PartnerSpace | null) ?? null);
-    } catch {
-      setActiveSpace(null);
+      setSpace((data as PartnerSpace | null) ?? null);
+    } catch (e) {
+      reportError(e, { scope: "duo-invite/load" });
+      setSpace(null);
     } finally {
-      setLoading(false);
+      setLoaded(true);
     }
   }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadSpace();
-    }, [loadSpace]),
+      void load();
+    }, [load]),
   );
 
-  const handleCreateInvite = async () => {
-    if (activeSpace?.invite_status === "pending") {
-      showAlert({
-        title: "Invitacion pendiente",
-        message: "Ya tienes un codigo activo. Compartelo con tu pareja.",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
-      return;
-    }
-
+  const createInvite = async () => {
+    setWorking(true);
     try {
-      setWorking(true);
       const { error } = await supabase.rpc("create_partner_invite");
       if (error) throw error;
-      setInviteCode("");
-      await loadSpace();
-    } catch (err) {
-      showAlert({
-        title: "No se pudo crear",
-        message: err instanceof Error ? err.message : "Intenta de nuevo en unos segundos.",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
+      haptic("success");
+      await load();
+    } catch (e) {
+      Alert.alert(
+        "No se pudo crear",
+        e instanceof Error ? e.message : "Intenta de nuevo en unos segundos.",
+      );
     } finally {
       setWorking(false);
     }
   };
 
-  const handleCopyCode = async () => {
-    if (activeSpace?.invite_code) {
-      await Clipboard.setStringAsync(activeSpace.invite_code);
-      setCopiedToClipboard(true);
-      setTimeout(() => setCopiedToClipboard(false), 2000);
+  const copy = async () => {
+    if (!space?.invite_code) return;
+    await Clipboard.setStringAsync(space.invite_code);
+    haptic("success");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareCode = async () => {
+    if (!space?.invite_code) return;
+    try {
+      await Share.share({
+        message: `Únete a mi Mochi Duo: descarga Mochi, elige «Me invitó mi pareja» y escribe el código ${space.invite_code}`,
+      });
+    } catch (e) {
+      reportError(e, { scope: "duo-invite/share" });
     }
   };
 
-  const handleJoin = async () => {
-    if (!inviteCode.trim()) {
-      showAlert({
-        title: "Codigo requerido",
-        message: "Escribe el codigo de invitacion para continuar.",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
+  const join = async () => {
+    const value = code.trim().toUpperCase();
+    if (!value) {
+      Alert.alert("Falta el código", "Escribe el código que te compartió tu pareja.");
       return;
     }
-
+    setWorking(true);
     try {
-      setWorking(true);
-      const { data, error } = await supabase.rpc("accept_partner_invite", {
-        p_invite_code: inviteCode.trim().toUpperCase(),
-      });
+      const { data, error } = await supabase.rpc("accept_partner_invite", { p_invite_code: value });
       if (error) throw error;
       if (data) {
         track("duo_linked");
-        showAlert({
-          title: "Mochi Duo™ activado",
-          message: "El vinculo se completo correctamente.",
-          buttons: [{ text: "Perfecto", style: "default" }],
-        });
-        await loadSpace();
+        haptic("success");
         router.replace("/(tabs)/duo");
       }
-    } catch (err) {
-      showAlert({
-        title: "No se pudo unir",
-        message: err instanceof Error ? err.message : "Verifica el codigo e intenta de nuevo.",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
+    } catch (e) {
+      Alert.alert(
+        "No se pudo unir",
+        e instanceof Error && /invitaci|codigo|código/i.test(e.message)
+          ? "Ese código no funciona: puede estar vencido o ya usado. Pídele uno nuevo."
+          : e instanceof Error
+            ? e.message
+            : "Verifica el código e intenta de nuevo.",
+      );
     } finally {
       setWorking(false);
     }
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-emerald-50 dark:bg-emerald-950">
-        <MochiCharacter mood="thinking" size={90} />
-        <Text className="mt-4 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-          Cargando invitaciones...
-        </Text>
-      </SafeAreaView>
-    );
-  }
+  const close = (
+    <PressableScale
+      onPress={() => router.back()}
+      accessibilityLabel="Volver"
+      className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+    >
+      <Ionicons name="close" size={20} color={COLORS.inkMuted} />
+    </PressableScale>
+  );
 
-  if (activeSpace?.invite_status === "accepted") {
+  if (loaded && space?.invite_status === "accepted") {
     return (
-      <SafeAreaView className="flex-1 bg-canvas px-6 dark:bg-emerald-950">
-        <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color={tc("#047857")} />
-          <Text className="ml-1 font-bold text-emerald-900 dark:text-emerald-100">Volver</Text>
-        </TouchableOpacity>
-
-        <View className="mt-8 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6 dark:border-emerald-800 dark:bg-surface">
-          <MochiCharacter mood="happy" size={90} />
-          <Text className="mt-4 text-center text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
-            Ya tienes un espacio activo
-          </Text>
-          <Text className="mt-2 text-center text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-            Gestiona Mochi Duo™ desde tu panel principal.
-          </Text>
-          <TouchableOpacity
-            className="mt-5 rounded-2xl bg-emerald-500 px-6 py-3"
-            onPress={() => router.push("/mochi-duo")}
-          >
-            <Text className="font-bold text-white">Abrir Mochi Duo™</Text>
-          </TouchableOpacity>
+      <Screen title="Duo" withTabBar={false} headerRight={close}>
+        <View className="mt-8 items-center">
+          <MochiCharacter expression="love" size={170} interactive />
         </View>
-      </SafeAreaView>
+        <MochiBubble
+          className="mt-2"
+          text="¡Ya están conectados! Todo lo de los dos vive en la pestaña Duo."
+        />
+        <View className="mt-6">
+          <Button title="Ir a Duo" onPress={() => router.replace("/(tabs)/duo")} />
+        </View>
+      </Screen>
     );
   }
+
+  const pendingCode = space?.invite_status === "pending" ? space.invite_code : null;
 
   return (
-    <>
-      <SafeAreaView className="flex-1 bg-canvas">
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
-          <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={22} color={tc("#047857")} />
-            <Text className="ml-1 font-bold text-emerald-900 dark:text-emerald-100">Volver</Text>
-          </TouchableOpacity>
-
-          <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-5 dark:border-emerald-800 dark:bg-surface">
-            <Text className="text-2xl font-extrabold text-emerald-900 dark:text-emerald-100">
-              Mochi Duo™
-            </Text>
-            <Text className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-              Crea una invitacion o ingresa un codigo existente.
-            </Text>
-          </View>
-
-          <View className="mt-6 flex-row">
-            <TouchableOpacity
-              className={`flex-1 rounded-l-2xl border-2 px-4 py-3 ${mode === "create" ? "border-emerald-400 bg-emerald-100 dark:bg-emerald-900" : "border-emerald-200 bg-white dark:border-emerald-800 dark:bg-surface"}`}
-              onPress={() => {
-                setMode("create");
-                setInviteCode("");
-              }}
+    <Screen title="Invitar a mi pareja" withTabBar={false} headerRight={close}>
+      <View
+        className="mt-3 flex-row rounded-control bg-surface-muted p-1"
+        accessibilityRole="tablist"
+      >
+        {(["create", "join"] as const).map((value) => {
+          const on = mode === value;
+          return (
+            <PressableScale
+              key={value}
+              haptics="selection"
+              onPress={() => setMode(value)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              className={`flex-1 items-center rounded-[14px] py-2.5 ${on ? "bg-surface" : ""}`}
+              style={on ? ELEVATION[1] : undefined}
             >
-              <Text className="text-center text-sm font-extrabold text-emerald-900 dark:text-emerald-100">
-                Crear invitacion
+              <Text className={`font-body-extrabold text-sm ${on ? "text-ink" : "text-ink-muted"}`}>
+                {value === "create" ? "Invitar" : "Tengo un código"}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`flex-1 rounded-r-2xl border-2 px-4 py-3 ${mode === "join" ? "border-emerald-400 bg-emerald-100 dark:bg-emerald-900" : "border-emerald-200 bg-white dark:border-emerald-800 dark:bg-surface"}`}
-              onPress={() => {
-                setMode("join");
-                setInviteCode("");
-              }}
-            >
-              <Text className="text-center text-sm font-extrabold text-emerald-900 dark:text-emerald-100">
-                Unirme
-              </Text>
-            </TouchableOpacity>
-          </View>
+            </PressableScale>
+          );
+        })}
+      </View>
 
-          {mode === "create" ? (
-            <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-5 dark:border-emerald-800 dark:bg-surface">
-              <Text className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                Genera un codigo para compartir con tu pareja.
-              </Text>
-
-              {activeSpace?.invite_status === "pending" && (
-                <View className="mt-4">
-                  <View className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
-                    <Text
-                      selectable
-                      className="text-center text-2xl font-extrabold text-emerald-900 dark:text-emerald-100"
-                    >
-                      {activeSpace.invite_code}
-                    </Text>
-                  </View>
-                  <View
-                    className="mt-4 items-center rounded-2xl bg-white p-4 dark:bg-surface"
-                    accessibilityLabel="Código QR de la invitación"
-                  >
-                    <QRCode value={activeSpace.invite_code} size={160} />
-                  </View>
-                  <TouchableOpacity
-                    className="mt-3 flex-row items-center justify-center gap-2 rounded-2xl border-2 border-emerald-300 bg-emerald-50 py-2.5 dark:border-emerald-700 dark:bg-emerald-950"
-                    onPress={handleCopyCode}
-                  >
-                    <Ionicons
-                      name={copiedToClipboard ? "checkmark" : "copy"}
-                      size={18}
-                      color={tc("#047857")}
-                    />
-                    <Text className="font-semibold text-emerald-700 dark:text-emerald-300">
-                      {copiedToClipboard ? "Copiado" : "Copiar codigo"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              <TouchableOpacity
-                className={`mt-5 rounded-2xl py-3 ${working ? "bg-emerald-300 dark:bg-emerald-700" : "bg-emerald-500"}`}
-                onPress={() => void handleCreateInvite()}
-                disabled={working || activeSpace?.invite_status === "pending"}
+      {mode === "create" ? (
+        pendingCode ? (
+          <>
+            <Surface elevation={2} className="mt-5 items-center p-6">
+              <View className="rounded-[20px] bg-white p-3">
+                <QRCode
+                  value={pendingCode}
+                  size={170}
+                  color={COLORS.ink}
+                  backgroundColor="#FFFFFF"
+                />
+              </View>
+              <Text
+                className="mt-4 font-display text-[34px] tracking-[6px] text-ink"
+                accessibilityLabel={`Código ${pendingCode.split("").join(" ")}`}
               >
-                {working ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text className="text-center font-extrabold text-white">
-                    {activeSpace?.invite_status === "pending" ? "Codigo listo" : "Crear codigo"}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-5 dark:border-emerald-800 dark:bg-surface">
-              <Text className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                Ingresa el codigo de 8 caracteres para unirte.
+                {pendingCode}
               </Text>
-              <TextInput
-                value={inviteCode}
-                onChangeText={setInviteCode}
-                placeholder="ABCD1234"
-                placeholderTextColor={tc("#6ee7b7")}
-                autoCapitalize="characters"
-                className="mt-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-lg font-extrabold text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
+              <Caption className="mt-1 text-center">
+                Vale por 7 días. Tu pareja lo escanea o lo escribe.
+              </Caption>
+            </Surface>
+            <View className="mt-4 gap-2">
+              <Button title="Compartir código" onPress={() => void shareCode()} />
+              <Button
+                title={copied ? "Copiado" : "Copiar código"}
+                variant="soft"
+                onPress={() => void copy()}
               />
-              <TouchableOpacity
-                accessibilityRole="button"
-                className="mt-3 min-h-[44px] items-center justify-center"
-                onPress={() => setScannerOpen(true)}
-              >
-                <Text className="font-extrabold text-emerald-700 dark:text-emerald-300">
-                  Escanear código QR
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className={`mt-2 rounded-2xl py-3 ${working ? "bg-emerald-300 dark:bg-emerald-700" : "bg-emerald-500"}`}
-                onPress={() => void handleJoin()}
-                disabled={working}
-              >
-                {working ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text className="text-center font-extrabold text-white">Confirmar codigo</Text>
-                )}
-              </TouchableOpacity>
             </View>
-          )}
+          </>
+        ) : (
+          <>
+            <View className="mt-5 flex-row items-end gap-2.5">
+              <MochiCharacter expression="love" size={96} interactive />
+              <MochiBubble
+                className="flex-1"
+                tail="left"
+                text="Crea un código y compártelo con tu pareja. Solo verá lo que tú decidas."
+              />
+            </View>
+            <View className="mt-6">
+              <Button
+                title="Crear código de invitación"
+                loading={working}
+                onPress={() => void createInvite()}
+              />
+            </View>
+          </>
+        )
+      ) : (
+        <>
+          <View className="mt-5 flex-row items-end gap-2.5">
+            <MochiCharacter expression="happy" size={96} interactive />
+            <MochiBubble
+              className="flex-1"
+              tail="left"
+              text="Escribe el código que te compartieron o escanea su QR."
+            />
+          </View>
+          <View className="mt-5">
+            <Input
+              label="Código de invitación"
+              value={code}
+              onChangeText={(t) => setCode(t.toUpperCase())}
+              placeholder="M7K2Q9"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={12}
+            />
+            <View className="gap-2">
+              <Button title="Unirme" loading={working} onPress={() => void join()} />
+              <Button title="Escanear su QR" variant="soft" onPress={() => setScannerOpen(true)} />
+            </View>
+          </View>
+        </>
+      )}
 
-          <View className="h-10" />
-        </ScrollView>
-      </SafeAreaView>
-      {AlertComponent}
       <QrScannerModal
         visible={scannerOpen}
         onClose={() => setScannerOpen(false)}
-        onCode={(code) => setInviteCode(code)}
+        onCode={(value) => setCode(value.toUpperCase())}
       />
-    </>
+    </Screen>
   );
 }
 
