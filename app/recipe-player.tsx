@@ -1,20 +1,9 @@
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
-import {
-  Keyboard,
-  Modal,
-  Platform,
-  ScrollView,
-  Image,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Image, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -31,7 +20,22 @@ import {
   checkCookingSessionAchievements,
   checkPerfectRecipeAchievement,
 } from "@/src/shared/lib/gamification";
-import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
+import { COLORS } from "@/src/shared/theme/tokens";
+import {
+  Button,
+  Caption,
+  Display,
+  ErrorState,
+  Eyebrow,
+  Input,
+  MochiBubble,
+  MochiQuote,
+  PressableScale,
+  Sheet,
+  Strong,
+  Surface,
+  Title,
+} from "@/src/shared/ui";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
@@ -54,6 +58,7 @@ export function RecipePlayerScreen() {
   const { session } = useSession();
   const { showAchievement } = useAchievement();
   const { showAlert, AlertComponent } = useCustomAlert();
+  const insets = useSafeAreaInsets();
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
@@ -74,7 +79,6 @@ export function RecipePlayerScreen() {
   const [question, setQuestion] = useState("");
   const [mochiAnswer, setMochiAnswer] = useState("");
   const [asking, setAsking] = useState(false);
-  const [keyboardInset, setKeyboardInset] = useState(0);
   const [stepImageUrl, setStepImageUrl] = useState<string | null>(null);
   const [stepImageLoading, setStepImageLoading] = useState(false);
 
@@ -205,22 +209,6 @@ export function RecipePlayerScreen() {
     };
   }, [timerRunning]);
 
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-
-    const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
-      setKeyboardInset(event.endCoordinates.height);
-    });
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardInset(0);
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
   const currentStep = steps[currentIndex];
 
   useEffect(() => {
@@ -338,359 +326,285 @@ export function RecipePlayerScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 dark:bg-orange-950">
-        <MochiCharacter mood="thinking" size={90} />
-        <Text className="mt-3 text-sm font-semibold text-orange-700 dark:text-orange-300">
-          Preparando tu cocina...
-        </Text>
-      </SafeAreaView>
+      <View className="flex-1 items-center justify-center bg-canvas">
+        <MochiCharacter expression="excited" size={120} />
+        <Caption className="mt-3">Preparando tu cocina…</Caption>
+      </View>
     );
   }
 
   if (error || !recipe) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 px-6 dark:bg-orange-950">
-        <MochiCharacter mood="sleepy" size={80} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
-          {error}
-        </Text>
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-orange-500 px-6 py-3"
-          onPress={() => router.back()}
-        >
-          <Text className="font-bold text-white">Volver</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      <View className="flex-1 justify-center bg-canvas px-6">
+        <ErrorState message={error ?? "No encontramos esta receta."} />
+        <Button title="Volver" variant="soft" onPress={() => router.back()} />
+      </View>
     );
   }
 
   // ─── Pantalla de finalización ─────────────────────────────────────────────────
 
   if (completed) {
+    const ratingLabel = [
+      "",
+      "Hay que practicar",
+      "Mejorable",
+      "¡Bien!",
+      "¡Muy rico!",
+      "¡Obra maestra!",
+    ][rating];
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 px-6 dark:bg-orange-950">
-        <MochiCharacter mood="excited" size={110} />
-        <Text className="mt-6 text-2xl font-extrabold text-orange-900 dark:text-orange-100">
-          ¡Buen provecho!
-        </Text>
-        <Text className="mt-2 text-center text-sm font-semibold text-orange-600 dark:text-orange-400">
-          Terminaste "{recipe.title}"
-        </Text>
-
-        <View className="mt-8 rounded-3xl border-2 border-orange-200 bg-white p-5 dark:border-orange-800 dark:bg-surface">
-          <Text className="text-center text-sm font-extrabold text-orange-900 dark:text-orange-100">
-            ¿Cómo quedó?
-          </Text>
-          <View className="mt-3 flex-row justify-center gap-2">
+      <View
+        className="flex-1 justify-center bg-canvas px-6"
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom + 16 }}
+      >
+        <View className="items-center">
+          <MochiCharacter expression="celebrating" size={180} interactive />
+          <Display className="mt-2 text-center">¡Buen provecho!</Display>
+          <Caption className="mt-1 text-center">Terminaste «{recipe.title}»</Caption>
+        </View>
+        <Surface elevation={2} className="mt-6 items-center p-5">
+          <Strong>¿Cómo quedó?</Strong>
+          <View className="mt-3 flex-row gap-2" accessibilityRole="radiogroup">
             {[1, 2, 3, 4, 5].map((star) => (
-              <TouchableOpacity key={star} onPress={() => void handleSaveRating(star)}>
-                <Ionicons name={rating >= star ? "star" : "star"} size={32} color={tc("#f97316")} />
-              </TouchableOpacity>
+              <PressableScale
+                key={star}
+                haptics="selection"
+                onPress={() => void handleSaveRating(star)}
+                accessibilityRole="radio"
+                accessibilityLabel={`${star} de 5`}
+                accessibilityState={{ selected: rating === star }}
+                hitSlop={4}
+              >
+                <Ionicons
+                  name={rating >= star ? "star" : "star-outline"}
+                  size={34}
+                  color={COLORS.warning}
+                />
+              </PressableScale>
             ))}
           </View>
-          {rating > 0 && (
-            <Text className="mt-2 text-center text-xs font-semibold text-orange-500">
-              {rating === 5
-                ? "¡Obra maestra!"
-                : rating === 4
-                  ? "¡Muy rico!"
-                  : rating === 3
-                    ? "¡Bien!"
-                    : rating === 2
-                      ? "Mejorable"
-                      : "Hay que practicar"}
-            </Text>
-          )}
+          {rating > 0 ? <Caption className="mt-2">{ratingLabel}</Caption> : null}
+        </Surface>
+        <View className="mt-6">
+          <Button title="Volver a la receta" onPress={() => router.back()} />
         </View>
-
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-orange-500 px-8 py-4"
-          onPress={() => router.back()}
-        >
-          <Text className="font-extrabold text-white">Volver a la receta</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // ─── Player principal ─────────────────────────────────────────────────────────
 
+  const confirmExit = () =>
+    showAlert({
+      title: "Salir de la receta",
+      message: "Tu progreso se guardará. Podrás continuar desde aquí cuando quieras.",
+      buttons: [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Salir", onPress: () => router.back() },
+      ],
+    });
+
   return (
     <>
-      <View className="flex-1 bg-canvas">
-        <SafeAreaView className="flex-1">
-          {/* Header */}
-          <View className="px-5 pt-4">
-            <View className="flex-row items-center justify-between">
-              <TouchableOpacity
-                className="flex-row items-center"
-                onPress={() => {
-                  showAlert({
-                    title: "Salir de la receta",
-                    message: "Tu progreso se guardará. Podrás continuar desde aquí cuando quieras.",
-                    buttons: [
-                      { text: "Cancelar", style: "cancel" },
-                      { text: "Salir", onPress: () => router.back() },
-                    ],
-                  });
-                }}
-              >
-                <Ionicons name="chevron-back" size={22} color={tc("#c2410c")} />
-                <Text className="ml-1 font-bold text-orange-900 dark:text-orange-100">Salir</Text>
-              </TouchableOpacity>
-              <Text className="text-sm font-extrabold text-orange-700 dark:text-orange-300">
-                {currentIndex + 1} / {steps.length}
-              </Text>
-              <TouchableOpacity
-                className="h-9 w-9 items-center justify-center rounded-full bg-orange-200 dark:bg-orange-800"
-                onPress={() => {
-                  setShowAsk(true);
-                  setMochiAnswer("");
-                }}
-              >
-                <Ionicons name="help" size={18} color={tc("#c2410c")} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Barra de progreso */}
-            <View className="mt-3 h-2 w-full overflow-hidden rounded-full bg-orange-100 dark:bg-orange-900">
-              <Animated.View style={progressStyle} className="h-2 rounded-full bg-orange-500" />
-            </View>
-
-            <Text className="mt-1.5 text-xs font-semibold text-orange-500" numberOfLines={1}>
-              {recipe.title}
+      <View className="flex-1 bg-canvas" style={{ paddingTop: insets.top }}>
+        <View className="px-5 pt-3">
+          <View className="flex-row items-center justify-between">
+            <PressableScale
+              haptics="selection"
+              onPress={confirmExit}
+              accessibilityLabel="Salir de la receta"
+              className="h-10 flex-row items-center gap-1 rounded-full bg-surface-muted pl-2 pr-3.5"
+            >
+              <Ionicons name="chevron-back" size={20} color={COLORS.ink} />
+              <Text className="font-body-extrabold text-sm text-ink">Salir</Text>
+            </PressableScale>
+            <Text
+              className="font-display text-lg text-ink"
+              accessibilityLabel={`Paso ${currentIndex + 1} de ${steps.length}`}
+            >
+              {currentIndex + 1} / {steps.length}
             </Text>
+            <PressableScale
+              onPress={() => {
+                setShowAsk(true);
+                setMochiAnswer("");
+              }}
+              accessibilityLabel="Preguntarle a Mochi"
+              className="h-10 w-10 items-center justify-center rounded-full bg-accent-soft"
+            >
+              <Ionicons name="help" size={20} color={COLORS.accentStrong} />
+            </PressableScale>
           </View>
+          <View className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-muted">
+            <Animated.View style={progressStyle} className="h-2 rounded-full bg-accent" />
+          </View>
+          <Caption className="mt-1.5" numberOfLines={1}>
+            {recipe.title}
+          </Caption>
+        </View>
 
-          <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
-            {currentStep && (
-              <>
-                {/* Número y título del paso */}
-                <View className="rounded-3xl border-2 border-orange-200 bg-white p-5 dark:border-orange-800 dark:bg-surface">
-                  <View className="flex-row items-center">
-                    <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-orange-500">
-                      <Text className="text-base font-extrabold text-white">
-                        {currentStep.step_number}
-                      </Text>
-                    </View>
-                    <Text className="flex-1 text-lg font-extrabold text-orange-950 dark:text-orange-50">
-                      {currentStep.title}
+        <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
+          {currentStep ? (
+            <>
+              <Surface elevation={2} className="p-5">
+                <View className="flex-row items-center gap-3">
+                  <View className="h-11 w-11 items-center justify-center rounded-full bg-accent">
+                    <Text className="font-display text-lg text-accent-ink">
+                      {currentStep.step_number}
                     </Text>
-                    <View className="ml-3 h-20 w-20 overflow-hidden rounded-2xl bg-orange-100 dark:bg-orange-900">
-                      {stepImageUrl ? (
-                        <Image
-                          source={{ uri: stepImageUrl }}
-                          className="h-full w-full"
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View className="h-full items-center justify-center">
-                          <MochiCharacter mood="thinking" size={30} />
-                          {stepImageLoading ? (
-                            <Text className="mt-1 text-[10px] font-semibold text-orange-700 dark:text-orange-300">
-                              Cargando...
-                            </Text>
-                          ) : null}
-                        </View>
-                      )}
-                    </View>
                   </View>
-
-                  {/* Meta del paso */}
-                  {(currentStep.duration_seconds || currentStep.temperature) && (
-                    <View className="mt-3 flex-row flex-wrap gap-2">
-                      {currentStep.duration_seconds ? (
-                        <View className="flex-row items-center rounded-full bg-orange-100 px-3 py-1 dark:bg-orange-900">
-                          <Ionicons name="timer" size={13} color={tc("#c2410c")} />
-                          <Text className="ml-1 text-xs font-bold text-orange-800 dark:text-orange-200">
-                            {formatTime(currentStep.duration_seconds)}
-                          </Text>
-                        </View>
-                      ) : null}
-                      {currentStep.temperature ? (
-                        <View className="flex-row items-center rounded-full bg-red-100 px-3 py-1 dark:bg-red-900">
-                          <Ionicons name="thermometer" size={13} color={tc("#b91c1c")} />
-                          <Text className="ml-1 text-xs font-bold text-red-700 dark:text-red-300">
-                            {currentStep.temperature}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  )}
-
-                  {/* Instrucciones */}
-                  <Text className="mt-4 text-base font-semibold leading-6 text-slate-700 dark:text-slate-300">
-                    {currentStep.instructions}
-                  </Text>
-
-                  {/* Tip */}
-                  {currentStep.tip ? (
-                    <View className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
-                      <View className="flex-row items-center">
-                        <Ionicons name="bulb" size={15} color={tc("#d97706")} />
-                        <Text className="ml-1.5 text-xs font-extrabold text-amber-800 dark:text-amber-200">
-                          Consejo de Mochi
-                        </Text>
+                  <Title className="flex-1">{currentStep.title}</Title>
+                  <View className="h-20 w-20 overflow-hidden rounded-[18px] bg-tint-kitchen">
+                    {stepImageUrl ? (
+                      <Image
+                        source={{ uri: stepImageUrl }}
+                        className="h-full w-full"
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View className="h-full items-center justify-center">
+                        <MochiCharacter
+                          expression="thinking"
+                          size={56}
+                          animated={false}
+                          shadow={false}
+                        />
+                        {stepImageLoading ? (
+                          <Caption className="text-[10px]">Cargando…</Caption>
+                        ) : null}
                       </View>
-                      <Text className="mt-1 text-sm font-semibold text-amber-700 dark:text-amber-300">
-                        {currentStep.tip}
-                      </Text>
-                    </View>
-                  ) : null}
+                    )}
+                  </View>
                 </View>
 
-                {/* Timer */}
-                {currentStep.duration_seconds ? (
-                  <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-5 dark:border-orange-800 dark:bg-surface">
-                    <Text className="text-center text-sm font-bold text-orange-700 dark:text-orange-300">
-                      Temporizador
-                    </Text>
-                    <Text className="mt-2 text-center text-5xl font-extrabold text-orange-900 dark:text-orange-100">
-                      {formatTime(timerSeconds)}
-                    </Text>
-                    {timerSeconds === 0 && (
-                      <Text className="mt-1 text-center text-sm font-extrabold text-green-600 dark:text-green-400">
-                        ¡Tiempo!
-                      </Text>
-                    )}
-                    <View className="mt-4 flex-row justify-center gap-3">
-                      <TouchableOpacity
-                        className="rounded-2xl border-2 border-orange-200 px-5 py-3 dark:border-orange-800"
-                        onPress={() => {
-                          setTimerRunning(false);
-                          setTimerSeconds(currentStep.duration_seconds!);
-                        }}
-                      >
-                        <Ionicons name="refresh" size={18} color={tc("#c2410c")} />
-                      </TouchableOpacity>
-                      <IconCtaButton
-                        label={
+                {currentStep.duration_seconds || currentStep.temperature ? (
+                  <View className="mt-3 flex-row flex-wrap gap-2">
+                    {currentStep.duration_seconds ? (
+                      <View className="flex-row items-center gap-1 rounded-full bg-tint-kitchen px-3 py-1.5">
+                        <Ionicons name="timer" size={13} color={COLORS.ink} />
+                        <Text className="font-body-bold text-xs text-ink">
+                          {formatTime(currentStep.duration_seconds)}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {currentStep.temperature ? (
+                      <View className="flex-row items-center gap-1 rounded-full bg-tint-me px-3 py-1.5">
+                        <Ionicons name="thermometer" size={13} color={COLORS.ink} />
+                        <Text className="font-body-bold text-xs text-ink">
+                          {currentStep.temperature}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+
+                <Text className="mt-4 font-body text-[17px] leading-[25px] text-ink">
+                  {currentStep.instructions}
+                </Text>
+
+                {currentStep.tip ? (
+                  <View className="mt-4 rounded-[16px] bg-accent-soft px-4 py-3">
+                    <Eyebrow className="text-accent-strong">Consejo de Mochi</Eyebrow>
+                    <MochiQuote className="mt-1 text-[16px] leading-[21px]">
+                      {currentStep.tip}
+                    </MochiQuote>
+                  </View>
+                ) : null}
+              </Surface>
+
+              {currentStep.duration_seconds ? (
+                <Surface className="mt-4 items-center p-5">
+                  <Eyebrow>Temporizador</Eyebrow>
+                  <Text className="mt-1 font-display text-[52px] leading-[58px] text-ink">
+                    {formatTime(timerSeconds)}
+                  </Text>
+                  {timerSeconds === 0 ? <Strong className="text-positive">¡Tiempo!</Strong> : null}
+                  <View className="mt-4 flex-row gap-3 self-stretch">
+                    <PressableScale
+                      haptics="selection"
+                      onPress={() => {
+                        setTimerRunning(false);
+                        setTimerSeconds(currentStep.duration_seconds ?? 0);
+                      }}
+                      accessibilityLabel="Reiniciar temporizador"
+                      className="h-[54px] w-[54px] items-center justify-center rounded-control bg-surface-muted"
+                    >
+                      <Ionicons name="refresh" size={20} color={COLORS.ink} />
+                    </PressableScale>
+                    <View className="flex-1">
+                      <Button
+                        title={
                           timerRunning ? "Pausar" : timerSeconds === 0 ? "Reiniciar" : "Iniciar"
                         }
+                        variant={timerRunning ? "soft" : "primary"}
                         onPress={() => setTimerRunning((r) => !r)}
-                        iconName={timerRunning ? "pause" : "play"}
-                        iconColor={timerRunning ? tc("#c2410c") : tc("#ffffff")}
-                        iconSize={18}
-                        containerClassName={`flex-1 rounded-2xl py-3 ${timerRunning ? "bg-orange-200 dark:bg-orange-800" : "bg-orange-500"}`}
-                        textClassName={
-                          timerRunning ? "text-orange-800 dark:text-orange-200" : "text-white"
-                        }
                       />
                     </View>
                   </View>
-                ) : null}
+                </Surface>
+              ) : null}
 
-                {/* Respuesta de Mochi si la hay */}
-                {mochiAnswer ? (
-                  <View className="mt-4 rounded-3xl border-2 border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-950">
-                    <View className="flex-row items-center">
-                      <MochiCharacter mood="happy" size={40} />
-                      <Text className="ml-3 flex-1 text-sm font-semibold leading-5 text-yellow-900 dark:text-yellow-100">
-                        {mochiAnswer}
-                      </Text>
-                    </View>
-                    <TouchableOpacity className="mt-3 self-end" onPress={() => setMochiAnswer("")}>
-                      <Text className="text-xs font-bold text-yellow-600 dark:text-yellow-400">
-                        Cerrar
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
-              </>
-            )}
-
-            <View className="h-32" />
-          </ScrollView>
-
-          {/* Navegación entre pasos */}
-          <View className="border-t border-orange-200 bg-orange-50 px-5 pb-8 pt-3 dark:border-orange-800 dark:bg-orange-950">
-            <View className="flex-row gap-3">
-              <TouchableOpacity
-                className={`h-14 w-14 items-center justify-center rounded-2xl border-2 border-orange-200 dark:border-orange-800 ${currentIndex === 0 ? "opacity-40" : ""}`}
-                onPress={() => void handlePrev()}
-                disabled={currentIndex === 0}
-              >
-                <Ionicons name="chevron-back" size={22} color={tc("#c2410c")} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="flex-1 items-center justify-center rounded-2xl bg-orange-500 py-3"
-                onPress={() => void handleNext()}
-                activeOpacity={0.85}
-              >
-                <Text className="text-base font-extrabold text-white">
-                  {currentIndex + 1 >= steps.length ? "¡Listo, a comer!" : "Siguiente paso"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
-
-      {/* Modal preguntarle a Mochi */}
-      <Modal
-        transparent
-        visible={showAsk}
-        animationType="slide"
-        onRequestClose={() => setShowAsk(false)}
-      >
-        <View className="flex-1 justify-end" style={{ paddingBottom: keyboardInset }}>
-          <View className="flex-1 justify-end bg-black/40">
-            <View className="max-h-[90%] rounded-t-3xl bg-white px-5 pb-10 pt-5 dark:bg-surface">
-              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                <View className="mb-4 h-1.5 w-16 self-center rounded-full bg-slate-200 dark:bg-slate-800" />
-
-                <View className="flex-row items-center">
-                  <MochiCharacter mood="thinking" size={50} />
-                  <View className="ml-3 flex-1">
-                    <Text className="text-base font-extrabold text-orange-900 dark:text-orange-100">
-                      Pregúntale a Mochi
-                    </Text>
-                    <Text className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                      Paso actual: {currentStep?.title}
-                    </Text>
-                  </View>
-                  <TouchableOpacity onPress={() => setShowAsk(false)}>
-                    <Ionicons name="close" size={22} color={tc("#64748b")} />
-                  </TouchableOpacity>
+              {mochiAnswer && !showAsk ? (
+                <View className="mt-4 flex-row items-end gap-2.5">
+                  <MochiCharacter expression="happy" size={72} animated={false} />
+                  <MochiBubble className="flex-1" tail="left" text={mochiAnswer}>
+                    <PressableScale
+                      haptics="selection"
+                      onPress={() => setMochiAnswer("")}
+                      accessibilityLabel="Cerrar respuesta"
+                      className="mt-2 self-end"
+                    >
+                      <Text className="font-body-extrabold text-xs text-accent-strong">Cerrar</Text>
+                    </PressableScale>
+                  </MochiBubble>
                 </View>
+              ) : null}
+            </>
+          ) : null}
+          <View className="h-10" />
+        </ScrollView>
 
-                {mochiAnswer ? (
-                  <View className="mt-4 rounded-2xl border-2 border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-950">
-                    <Text className="text-sm font-semibold leading-5 text-yellow-900 dark:text-yellow-100">
-                      {mochiAnswer}
-                    </Text>
-                  </View>
-                ) : null}
-
-                <TextInput
-                  className="mt-4 rounded-2xl border-2 border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-orange-800 dark:bg-orange-950 dark:text-slate-200"
-                  placeholder="¿Puedo usar aceite de oliva? ¿A qué temperatura...?"
-                  placeholderTextColor={tc("#fdba74")}
-                  value={question}
-                  onChangeText={setQuestion}
-                  multiline
-                  textAlignVertical="top"
-                />
-
-                <IconCtaButton
-                  label="Preguntar"
-                  onPress={() => {
-                    void handleAskMochi();
-                  }}
-                  iconName="sparkles"
-                  iconColor={tc("#ffffff")}
-                  iconSize={16}
-                  loading={asking}
-                  loadingColor={tc("#ffffff")}
-                  disabled={!question.trim()}
-                  containerClassName={`mt-4 w-full rounded-2xl py-4 ${question.trim() && !asking ? "bg-orange-500" : "bg-orange-200 dark:bg-orange-800"}`}
-                  textClassName="text-white"
-                />
-              </ScrollView>
-            </View>
+        <View
+          className="flex-row gap-3 bg-canvas px-5 pt-3"
+          style={{ paddingBottom: insets.bottom + 14 }}
+        >
+          <PressableScale
+            haptics="selection"
+            onPress={() => void handlePrev()}
+            disabled={currentIndex === 0}
+            accessibilityLabel="Paso anterior"
+            className={`h-[54px] w-[54px] items-center justify-center rounded-control bg-surface-muted ${currentIndex === 0 ? "opacity-40" : ""}`}
+          >
+            <Ionicons name="chevron-back" size={22} color={COLORS.ink} />
+          </PressableScale>
+          <View className="flex-1">
+            <Button
+              title={currentIndex + 1 >= steps.length ? "¡Listo, a comer!" : "Siguiente paso"}
+              onPress={() => void handleNext()}
+            />
           </View>
         </View>
-      </Modal>
+      </View>
+
+      <Sheet visible={showAsk} onClose={() => setShowAsk(false)} title="Pregúntale a Mochi">
+        <Caption className="-mt-2 mb-3">Paso actual: {currentStep?.title}</Caption>
+        {mochiAnswer ? <MochiBubble className="mb-4" tail="none" text={mochiAnswer} /> : null}
+        <Input
+          label="Tu pregunta"
+          placeholder="¿Puedo usar aceite de oliva? ¿A qué temperatura…?"
+          value={question}
+          onChangeText={setQuestion}
+          multiline
+          textAlignVertical="top"
+        />
+        <Button
+          title="Preguntar"
+          loading={asking}
+          disabled={!question.trim()}
+          onPress={() => void handleAskMochi()}
+        />
+      </Sheet>
 
       {AlertComponent}
     </>

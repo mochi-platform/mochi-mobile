@@ -31,6 +31,7 @@ const MIGRATED = [
   "app/mochi-duo-invite.tsx",
   "app/study-timer.tsx",
   "app/recipe-detail.tsx",
+  "app/recipe-player.tsx",
   "src/features/study/timer/components/StudySetupView.tsx",
   "src/features/study/timer/components/StudyTimerView.tsx",
   "src/features/study/timer/components/StudyCompleteView.tsx",
