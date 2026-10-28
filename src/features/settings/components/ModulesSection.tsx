@@ -13,7 +13,9 @@ export function ModulesSection({ moduleSettings, onToggleModule }: ModulesSectio
   return (
     <Surface className="mt-6 p-4">
       <Title>Módulos</Title>
-      <Caption className="mb-2 mt-1">Activa solo lo que uses; el resto se oculta de tus pestañas y de Hoy.</Caption>
+      <Caption className="mb-2 mt-1">
+        Activa solo lo que uses; el resto se oculta de tus pestañas y de Hoy.
+      </Caption>
       <View>
         {moduleItems.map((module) => (
           <Toggle

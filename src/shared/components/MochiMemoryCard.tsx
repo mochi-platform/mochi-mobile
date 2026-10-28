@@ -58,8 +58,8 @@ export function MochiMemoryCard() {
 
   return (
     <Card className="mt-6">
-      <Text className="text-lg font-extrabold text-ink">Lo que Mochi recuerda</Text>
-      <Text className="mt-2 text-sm font-semibold text-ink-muted">
+      <Text className="font-display text-xl text-ink">Lo que Mochi recuerda</Text>
+      <Text className="mt-1 font-body text-[13px] leading-[18px] text-ink-muted">
         Si lo activas, Mochi guarda un resumen corto de tus metas activas, tus próximos exámenes, tu
         racha y el tono que prefieres, y lo envía a la IA (OpenRouter y sus modelos de terceros, que
         pueden registrar el texto) en cada consulta para personalizar sus respuestas. Los títulos de
@@ -76,7 +76,12 @@ export function MochiMemoryCard() {
         <>
           <View className="mt-3 flex-row flex-wrap gap-2">
             {TONES.map((tone) => (
-              <Chip key={tone} label={`Tono ${tone}`} onPress={() => void chooseTone(tone)} />
+              <Chip
+                key={tone}
+                onSurface
+                label={`Tono ${tone}`}
+                onPress={() => void chooseTone(tone)}
+              />
             ))}
           </View>
 
@@ -99,7 +104,7 @@ export function MochiMemoryCard() {
             className="mt-3 min-h-[44px] items-center justify-center"
             onPress={() => void forget()}
           >
-            <Text className="font-extrabold text-danger">Olvidar todo</Text>
+            <Text className="font-body-extrabold text-danger">Olvidar todo</Text>
           </TouchableOpacity>
         </>
       ) : null}
@@ -129,8 +134,8 @@ export function AnalyticsConsentCard() {
 
   return (
     <Card className="mt-6">
-      <Text className="text-lg font-extrabold text-ink">Ayudar a mejorar Mochi</Text>
-      <Text className="mt-2 text-sm font-semibold text-ink-muted">
+      <Text className="font-display text-xl text-ink">Ayudar a mejorar Mochi</Text>
+      <Text className="mt-1 font-body text-[13px] leading-[18px] text-ink-muted">
         Si lo activas, medimos qué módulos usas y si algo falla, con un identificador anónimo. Nunca
         incluye datos de salud, tu ciclo, tu ánimo ni lo que escribes. Puedes desactivarlo cuando
         quieras.

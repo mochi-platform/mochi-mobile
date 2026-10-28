@@ -1,7 +1,7 @@
 import { router } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useTheme } from "@/src/core/providers/ThemeContext";
-import { Card, Chip } from "@/src/shared/ui";
+import { Caption, Card, Chip, Title } from "@/src/shared/ui";
 import { THEMES } from "@/src/shared/theme/themes";
 
 /** Temas de color. Solo el tema Lavanda es gratuito; el resto es Premium. */
@@ -10,16 +10,17 @@ export function AppearanceSection() {
 
   return (
     <Card className="mt-6">
-      <Text className="text-lg font-extrabold text-ink">Apariencia</Text>
-      <Text className="mb-3 mt-1 text-sm font-semibold text-ink-muted">
+      <Title>Apariencia</Title>
+      <Caption className="mb-3 mt-1">
         {themesAllowed
           ? "Elige los colores de Mochi."
           : "Los temas de color son parte de Premium. El tema Lavanda es gratuito."}
-      </Text>
+      </Caption>
       <View className="flex-row flex-wrap gap-2">
         {THEMES.map((item) => (
           <Chip
             key={item.id}
+            onSurface
             label={item.premium && !themesAllowed ? `${item.label} (Premium)` : item.label}
             selected={theme.id === item.id}
             onPress={() => {

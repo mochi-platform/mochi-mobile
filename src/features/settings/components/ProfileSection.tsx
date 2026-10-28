@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
-import { tc } from "@/src/shared/theme/colors";
+import { Text } from "react-native";
+import { Button, Input, PressableScale, Surface, Title } from "@/src/shared/ui";
 import type { ProfileSettings } from "../types";
 
 type ProfileSectionProps = {
@@ -19,56 +19,30 @@ export function ProfileSection({
   onOpenTimePicker,
 }: ProfileSectionProps) {
   return (
-    <View className="mt-6 rounded-3xl border-2 border-blue-200 bg-white p-4 dark:border-blue-800 dark:bg-surface">
-      <Text className="text-lg font-extrabold text-blue-900 dark:text-blue-100">Perfil</Text>
-
-      <View className="mt-4">
-        <Text className="mb-2 text-sm font-bold text-blue-900 dark:text-blue-100">Nombre</Text>
-        <TextInput
-          className="rounded-2xl border-2 border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-blue-800 dark:bg-blue-950 dark:text-slate-200"
-          placeholder="Tu nombre"
-          placeholderTextColor={tc("#3b82f6")}
-          value={profile.full_name ?? ""}
-          onChangeText={(value) => setProfile((prev) => ({ ...prev, full_name: value }))}
-        />
-      </View>
-
-      <View className="mt-4">
-        <Text className="mb-2 text-sm font-bold text-blue-900 dark:text-blue-100">
-          Nombre de tu Mochi
-        </Text>
-        <TextInput
-          className="rounded-2xl border-2 border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-blue-800 dark:bg-blue-950 dark:text-slate-200"
-          placeholder="Mochi"
-          placeholderTextColor={tc("#3b82f6")}
-          value={profile.mochi_name ?? ""}
-          onChangeText={(value) => setProfile((prev) => ({ ...prev, mochi_name: value }))}
-        />
-      </View>
-
-      <View className="mt-4">
-        <Text className="mb-2 text-sm font-bold text-blue-900 dark:text-blue-100">
-          Hora de despertar
-        </Text>
-        <TouchableOpacity
-          className="rounded-2xl border-2 border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950"
-          onPress={onOpenTimePicker}
-        >
-          <Text className="text-center text-lg font-extrabold text-blue-900 dark:text-blue-100">
-            {profile.wake_up_time || "06:00"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        className="mt-5 items-center rounded-2xl bg-blue-600 py-3"
-        onPress={() => void onSaveProfile()}
-        disabled={savingProfile}
+    <Surface className="mt-6 p-4">
+      <Title className="mb-3">Perfil</Title>
+      <Input
+        label="Tu nombre"
+        placeholder="Tu nombre"
+        value={profile.full_name ?? ""}
+        onChangeText={(value) => setProfile((prev) => ({ ...prev, full_name: value }))}
+      />
+      <Input
+        label="Nombre de tu Mochi"
+        placeholder="Mochi"
+        value={profile.mochi_name ?? ""}
+        onChangeText={(value) => setProfile((prev) => ({ ...prev, mochi_name: value }))}
+      />
+      <Text className="mb-1.5 ml-1 font-body-bold text-sm text-ink">Hora de despertar</Text>
+      <PressableScale
+        haptics="selection"
+        onPress={onOpenTimePicker}
+        accessibilityLabel={`Hora de despertar: ${profile.wake_up_time || "06:00"}`}
+        className="mb-4 min-h-[52px] items-center justify-center rounded-control bg-surface-muted"
       >
-        <Text className="font-extrabold text-white">
-          {savingProfile ? "Guardando..." : "Guardar perfil"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <Text className="font-display text-xl text-ink">{profile.wake_up_time || "06:00"}</Text>
+      </PressableScale>
+      <Button title="Guardar perfil" loading={savingProfile} onPress={() => void onSaveProfile()} />
+    </Surface>
   );
 }

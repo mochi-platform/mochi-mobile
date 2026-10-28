@@ -1,20 +1,13 @@
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
-import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { TimePickerModal } from "@/src/shared/components/TimePickerModal";
 import { AppearanceSection } from "@/src/features/settings/components/AppearanceSection";
 import { AnalyticsConsentCard, MochiMemoryCard } from "@/src/shared/components/MochiMemoryCard";
 import { reportError } from "@/src/shared/lib/observability/reportError";
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
+import { Caption, Display, ErrorState, PressableScale, Skeleton } from "@/src/shared/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import type {} from "react-native-purchases";
 import { router, useFocusEffect } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -493,40 +486,27 @@ export function SettingsScreen() {
             keyboardDismissMode="on-drag"
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           >
-            <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
-              <Ionicons name="chevron-back" size={22} color={tc("#1d4ed8")} />
-              <Text className="ml-1 font-bold text-blue-900 dark:text-blue-100">Volver</Text>
-            </TouchableOpacity>
-
-            <View className="mt-6 rounded-3xl border-2 border-blue-200 bg-white p-4 dark:border-blue-800 dark:bg-surface">
-              <Text className="text-2xl font-extrabold text-blue-900 dark:text-blue-100">
-                Ajustes
-              </Text>
-              <Text className="mt-2 text-sm font-semibold text-blue-700 dark:text-blue-300">
-                Personaliza tu perfil y los módulos que quieres ver
-              </Text>
+            <View className="mt-4 flex-row items-start justify-between">
+              <View className="flex-1">
+                <Display>Ajustes</Display>
+                <Caption className="mt-1">Tu perfil, tus módulos y tu privacidad.</Caption>
+              </View>
+              <PressableScale
+                onPress={() => router.back()}
+                accessibilityLabel="Volver"
+                className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+              >
+                <Ionicons name="close" size={20} color={COLORS.inkMuted} />
+              </PressableScale>
             </View>
 
             {loading ? (
-              <View className="mt-6 items-center rounded-3xl border-2 border-blue-200 bg-white p-6 dark:border-blue-800 dark:bg-surface">
-                <MochiCharacter mood="thinking" size={88} />
-                <Text className="mt-3 text-sm font-semibold text-blue-800 dark:text-blue-200">
-                  Cargando ajustes...
-                </Text>
+              <View className="mt-6 gap-3">
+                <Skeleton height={140} className="rounded-card" />
+                <Skeleton height={260} className="rounded-card" />
               </View>
             ) : error ? (
-              <View className="mt-6 items-center rounded-3xl border-2 border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-950">
-                <MochiCharacter mood="sleepy" size={80} />
-                <Text className="mt-3 text-center text-sm font-semibold text-red-700 dark:text-red-300">
-                  {error}
-                </Text>
-                <TouchableOpacity
-                  className="mt-4 rounded-2xl bg-red-500 px-5 py-2"
-                  onPress={() => void loadSettings()}
-                >
-                  <Text className="font-extrabold text-white">Reintentar</Text>
-                </TouchableOpacity>
-              </View>
+              <ErrorState message={error} onRetry={() => void loadSettings()} />
             ) : (
               <>
                 <ProfileSection
