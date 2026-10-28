@@ -5,4 +5,5 @@ appId: com.siramong.mochi
     visible: "Me llegó hoy"
     timeout: 15000
 - tapOn: "Me llegó hoy"
-- assertVisible: "Día 1 de tu ciclo"
+# Tarjeta de ciclo de Hoy (src/features/today/CycleCard.tsx)
+- assertVisible: "Registrado hoy"

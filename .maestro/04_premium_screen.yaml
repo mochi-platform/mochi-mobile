@@ -1,7 +1,7 @@
 appId: com.siramong.mochi
 ---
 - launchApp
-- tapOn: "Perfil"
+- tapOn: "Yo"
 - tapOn: "Ajustes"
 - scrollUntilVisible:
     element: "Premium IA"

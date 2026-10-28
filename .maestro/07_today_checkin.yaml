@@ -1,0 +1,9 @@
+# Hoy: check-in de ánimo con Mochi.
+appId: com.siramong.mochi
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Bien"
+    timeout: 15000
+- tapOn: "Bien"
+- assertVisible: "Tu ciclo"

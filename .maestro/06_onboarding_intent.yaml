@@ -1,0 +1,11 @@
+# Cuenta nueva sin onboarding: Mochi pregunta por qué viene y lleva a la verificación de edad.
+appId: com.siramong.mochi
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Vengo por mí"
+    timeout: 15000
+- assertVisible: "Me invitó mi pareja"
+- tapOn: "Me invitó mi pareja"
+- tapOn: "Continuar"
+- assertVisible: "Año de nacimiento"
