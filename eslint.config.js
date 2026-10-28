@@ -26,6 +26,7 @@ const MIGRATED = [
   "app/profile.tsx",
   "app/(tabs)/goals.tsx",
   "app/(tabs)/exercise.tsx",
+  "app/login.tsx",
   "src/features/exercise/api.ts",
   "src/features/goals/**/*.{ts,tsx}",
   "app/(tabs)/gratitude.tsx",

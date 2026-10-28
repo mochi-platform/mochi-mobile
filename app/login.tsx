@@ -1,15 +1,10 @@
-import { tc } from "@/src/shared/theme/colors";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  ImageBackground,
-  type ImageSourcePropType,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { Ionicons, AntDesign } from "@expo/vector-icons";
@@ -17,7 +12,17 @@ import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { supabase } from "@/src/shared/lib/supabase";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
+import { COLORS } from "@/src/shared/theme/tokens";
+import {
+  Button,
+  Caption,
+  Display,
+  ELEVATION,
+  Input,
+  MochiBubble,
+  MochiQuote,
+  PressableScale,
+} from "@/src/shared/ui";
 
 // Ensure WebBrowser auth session complettion on app startup
 WebBrowser.maybeCompleteAuthSession();
@@ -33,30 +38,17 @@ type EmailSentScreenProps = {
 
 function EmailSentScreen({ email, onBack }: EmailSentScreenProps) {
   return (
-    <View className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
-      {/* Decorative circles */}
-      <View className="absolute -left-16 -top-16 h-52 w-52 rounded-full bg-pink-200 opacity-60 dark:bg-pink-800" />
-      <View className="absolute -bottom-20 -right-20 h-52 w-52 rounded-full bg-purple-200 opacity-60 dark:bg-purple-800" />
-
-      <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8 shadow-sm dark:border-purple-900 dark:bg-surface">
-        <MochiCharacter mood="happy" size={100} />
-
-        <Text className="mt-4 text-center text-2xl font-extrabold text-purple-900 dark:text-purple-100">
-          ¡Revisa tu correo!
-        </Text>
-
-        <Text className="mt-2 text-center text-sm text-purple-500">
-          {"Te enviamos un enlace de verificación a\n"}
-          <Text className="font-semibold text-purple-700 dark:text-purple-300">{email}</Text>
-          {"\n\nHaz clic en el enlace para activar tu cuenta."}
-        </Text>
-
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-purple-100 px-6 py-3 dark:bg-purple-900"
-          onPress={onBack}
-        >
-          <Text className="font-semibold text-purple-700 dark:text-purple-300">Volver</Text>
-        </TouchableOpacity>
+    <View className="flex-1 justify-center bg-canvas px-6">
+      <View className="items-center">
+        <MochiCharacter expression="love" size={170} interactive />
+      </View>
+      <MochiBubble
+        className="mt-3"
+        size="lg"
+        text={`¡Revisa tu correo! Te envié un enlace a ${email} para activar tu cuenta.`}
+      />
+      <View className="mt-6">
+        <Button title="Volver" variant="soft" onPress={onBack} />
       </View>
     </View>
   );
@@ -65,7 +57,6 @@ function EmailSentScreen({ email, onBack }: EmailSentScreenProps) {
 // ─── Login screen ─────────────────────────────────────────────────────────────
 
 export function LoginScreen() {
-  const backgroundImageSource: ImageSourcePropType = require("@/assets/auth-blk.png");
   const [tab, setTab] = useState<Tab>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -243,16 +234,16 @@ export function LoginScreen() {
     return <EmailSentScreen email={email} onBack={resetForm} />;
   }
 
-  const content = (
+  const busy = loading || googleLoading;
+  return (
     <KeyboardAvoidingView
-      className="flex-1"
+      className="flex-1 bg-canvas"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
         className="flex-1"
         contentContainerStyle={{
           flexGrow: 1,
-          alignItems: "center",
           justifyContent: "center",
           paddingHorizontal: 24,
           paddingVertical: 48,
@@ -260,167 +251,144 @@ export function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="w-full max-w-sm">
-          {/* Branding */}
+        <View className="w-full max-w-sm self-center">
           <View className="items-center">
-            <MochiCharacter mood="excited" size={100} />
-            <Text className="mt-3 text-4xl font-extrabold text-purple-900 dark:text-purple-100">
-              Mochi
-            </Text>
-            <Text className="mt-1 text-base font-medium text-purple-500">
-              Tu asistente de estudio
-            </Text>
+            <MochiCharacter expression="excited" size={150} interactive />
+            <Display className="mt-2 text-[38px] leading-[42px]">Mochi</Display>
+            <MochiQuote className="mt-1 text-center text-[17px] leading-[23px] text-ink-muted">
+              Tu compañera para estudiar, cuidarte y crecer.
+            </MochiQuote>
           </View>
 
-          {/* Tab toggle */}
-          <View className="mt-8 flex-row rounded-2xl bg-purple-100 p-1 dark:bg-purple-900">
-            <TouchableOpacity
-              className={`flex-1 items-center rounded-xl py-2.5 ${tab === "login" ? "bg-purple-600" : "bg-transparent"}`}
-              onPress={() => switchTab("login")}
-              activeOpacity={0.8}
-            >
-              <Text
-                className={`text-sm font-semibold ${tab === "login" ? "text-white" : "text-purple-400"}`}
-              >
-                Iniciar sesión
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className={`flex-1 items-center rounded-xl py-2.5 ${tab === "signup" ? "bg-purple-600" : "bg-transparent"}`}
-              onPress={() => switchTab("signup")}
-              activeOpacity={0.8}
-            >
-              <Text
-                className={`text-sm font-semibold ${tab === "signup" ? "text-white" : "text-purple-400"}`}
-              >
-                Crear cuenta
-              </Text>
-            </TouchableOpacity>
+          <View
+            className="mt-8 flex-row rounded-control bg-surface-muted p-1"
+            accessibilityRole="tablist"
+          >
+            {(["login", "signup"] as const).map((value) => {
+              const on = tab === value;
+              return (
+                <PressableScale
+                  key={value}
+                  haptics="selection"
+                  onPress={() => switchTab(value)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: on }}
+                  className={`flex-1 items-center rounded-[14px] py-2.5 ${on ? "bg-surface" : ""}`}
+                  style={on ? ELEVATION[1] : undefined}
+                >
+                  <Text
+                    className={`font-body-extrabold text-sm ${on ? "text-ink" : "text-ink-muted"}`}
+                  >
+                    {value === "login" ? "Iniciar sesión" : "Crear cuenta"}
+                  </Text>
+                </PressableScale>
+              );
+            })}
           </View>
 
-          {/* Inputs */}
           <View className="mt-6">
-            <TextInput
-              className="rounded-3xl border-2 border-purple-200 bg-white px-5 py-4 text-base text-purple-900 dark:border-purple-800 dark:bg-surface dark:text-purple-100"
-              placeholder="Correo electrónico"
-              placeholderTextColor={tc("#c4b5fd")}
+            <Input
+              label="Correo electrónico"
+              placeholder="tu@correo.com"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
-              editable={!loading && !googleLoading}
+              editable={!busy}
             />
-
-            <View className="mt-4 flex-row items-center rounded-3xl border-2 border-purple-200 bg-white px-5 dark:border-purple-800 dark:bg-surface">
-              <TextInput
-                className="flex-1 py-4 text-base text-purple-900 dark:text-purple-100"
-                placeholder="Contraseña"
-                placeholderTextColor={tc("#c4b5fd")}
+            <View>
+              <Input
+                label="Contraseña"
+                placeholder="Tu contraseña"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoComplete={tab === "signup" ? "new-password" : "current-password"}
-                editable={!loading && !googleLoading}
+                editable={!busy}
+                error={error}
+                style={{ paddingRight: 52 }}
               />
-              <TouchableOpacity
-                className="ml-2 rounded-full p-1"
+              <PressableScale
+                haptics="selection"
                 onPress={() => setShowPassword((prev) => !prev)}
-                disabled={loading || googleLoading}
-                accessibilityRole="button"
+                disabled={busy}
                 accessibilityLabel={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                className="absolute right-2 top-[30px] h-11 w-11 items-center justify-center"
               >
-                <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color={tc("#7e22ce")} />
-              </TouchableOpacity>
+                <Ionicons
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={20}
+                  color={COLORS.inkMuted}
+                />
+              </PressableScale>
             </View>
-
-            {error ? <Text className="mt-2 text-sm text-red-500">{error}</Text> : null}
           </View>
 
-          {/* Submit button */}
-          <TouchableOpacity
-            className="mt-6 items-center rounded-3xl bg-purple-600 py-4 disabled:opacity-60"
-            onPress={() => {
-              void (tab === "login" ? signIn() : signUp());
-            }}
-            disabled={loading || googleLoading}
-            activeOpacity={0.85}
-          >
-            {loading ? (
-              <ActivityIndicator color={tc("#ffffff")} />
-            ) : (
-              <Text className="text-lg font-extrabold text-white">
-                {tab === "login" ? "Iniciar sesión" : "Crear cuenta"}
-              </Text>
-            )}
-          </TouchableOpacity>
+          <View className="mt-2">
+            <Button
+              title={tab === "login" ? "Iniciar sesión" : "Crear cuenta"}
+              loading={loading}
+              disabled={googleLoading}
+              onPress={() => void (tab === "login" ? signIn() : signUp())}
+            />
+          </View>
 
           {tab === "login" ? (
-            <View className="mt-3 flex-row justify-between">
-              <TouchableOpacity
-                accessibilityRole="button"
-                className="min-h-[44px] justify-center"
-                onPress={() => void sendPasswordReset()}
-                disabled={loading || googleLoading}
-              >
-                <Text className="text-sm font-semibold text-purple-600 dark:text-purple-400">
-                  Olvidé mi contraseña
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                accessibilityRole="button"
-                className="min-h-[44px] justify-center"
-                onPress={() => void sendMagicLink()}
-                disabled={loading || googleLoading}
-              >
-                <Text className="text-sm font-semibold text-purple-600 dark:text-purple-400">
-                  Enviarme un enlace
-                </Text>
-              </TouchableOpacity>
+            <View className="mt-1 flex-row flex-wrap justify-between gap-x-3">
+              {[
+                { label: "Olvidé mi contraseña", run: sendPasswordReset },
+                { label: "Enviarme un enlace", run: sendMagicLink },
+              ].map((link) => (
+                <PressableScale
+                  key={link.label}
+                  haptics="selection"
+                  disabled={busy}
+                  onPress={() => void link.run()}
+                  accessibilityLabel={link.label}
+                  className="min-h-[44px] justify-center"
+                >
+                  <Text className="font-body-extrabold text-sm text-accent-strong">
+                    {link.label}
+                  </Text>
+                </PressableScale>
+              ))}
             </View>
           ) : null}
 
-          {/* Divider */}
-          <View className="mt-6 flex-row items-center gap-2">
-            <View className="flex-1 border-t border-purple-200 dark:border-purple-800" />
-            <Text className="text-xs font-semibold text-purple-500">o continúa con</Text>
-            <View className="flex-1 border-t border-purple-200 dark:border-purple-800" />
+          <View className="my-5 flex-row items-center gap-3">
+            <View className="h-px flex-1 bg-line" />
+            <Caption>o continúa con</Caption>
+            <View className="h-px flex-1 bg-line" />
           </View>
 
-          {/* Google button */}
-          <IconCtaButton
-            label="Continuar con Google"
-            onPress={() => {
-              void signInWithGoogle();
-            }}
-            icon={<AntDesign name="google" size={24} color="black" />}
-            loading={googleLoading}
-            loadingColor={tc("#1f2937")}
-            disabled={loading}
-            containerClassName="mt-4 w-full rounded-3xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-surface py-4"
-            textClassName="text-gray-800 dark:text-gray-200"
-          />
+          <PressableScale
+            onPress={() => void signInWithGoogle()}
+            disabled={busy}
+            accessibilityLabel="Continuar con Google"
+            className="min-h-[54px] flex-row items-center justify-center gap-3 rounded-control bg-surface"
+            style={ELEVATION[1]}
+          >
+            {googleLoading ? (
+              <ActivityIndicator color={COLORS.ink} />
+            ) : (
+              <>
+                <AntDesign name="google" size={20} color={COLORS.ink} />
+                <Text className="font-body-extrabold text-[16px] text-ink">
+                  Continuar con Google
+                </Text>
+              </>
+            )}
+          </PressableScale>
 
-          {/* Soft hint */}
-          <Text className="mt-4 text-center text-xs text-purple-300">
+          <Caption className="mt-5 text-center">
             {tab === "login"
-              ? "¿No tienes cuenta? Cambia a Crear cuenta arriba."
-              : "Al registrarte aceptas nuestros términos de uso."}
-          </Text>
+              ? "¿No tienes cuenta? Toca «Crear cuenta» arriba."
+              : "Al registrarte aceptas nuestros términos de uso y la política de privacidad."}
+          </Caption>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-
-  if (!backgroundImageSource) {
-    return content;
-  }
-
-  return (
-    <ImageBackground source={backgroundImageSource} className="flex-1">
-      {content}
-    </ImageBackground>
   );
 }
 
