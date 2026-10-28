@@ -18,3 +18,19 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
   NotificationFeedbackType: { Success: "success", Warning: "warning", Error: "error" },
 }));
+
+// Skia necesita su módulo nativo: en Jest cada primitiva es una View que conserva sus props.
+jest.mock("@shopify/react-native-skia", () => {
+  const mockReact = require("react");
+  const { View } = require("react-native");
+  const component = (name) => {
+    const C = ({ children, ...props }) =>
+      mockReact.createElement(View, { testID: `skia-${name}`, ...props }, children);
+    C.displayName = name;
+    return C;
+  };
+  return new Proxy(
+    { vec: (x, y) => ({ x, y }), __esModule: true },
+    { get: (target, key) => (key in target ? target[key] : component(String(key))) },
+  );
+});

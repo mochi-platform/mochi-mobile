@@ -49,7 +49,14 @@ Elevación (`src/shared/ui/elevation.ts`): `ELEVATION[0..3]` con `boxShadow` mar
 - Los archivos listados en `MIGRATED` (`eslint.config.js`) no pueden usar esos patrones. Añade cada pantalla al terminarla.
 
 ## Mochi
-`MochiCharacter` recibe `expression` (10) y `outfit`. El manifiesto está en `src/shared/mochi/manifest.ts`; guía de arte en `assets/mochi/README.md`.
+Mochi se dibuja en código con Skia (`src/shared/mochi/`), fiel al PNG original:
+- `geometry.ts`: siluetas, colores y anclajes (lienzo 170 × 160).
+- `expressions.ts`: 11 expresiones como combinación de ojos, cejas, boca, rubor y extra. Añadir una = una entrada.
+- `useMochiRig.ts`: respira, parpadea, mira y reacciona (`tap`, `pop`, `jump`, `celebrate`, `nod`, `shy`). Con "reducir movimiento" solo parpadea.
+- `MochiCanvas.tsx`: el lienzo; `ref.react()` y `ref.lookAt()`. Sobresale de su caja para animarse sin recortarse, sin cambiar el layout.
+- `MochiCharacter` sigue siendo la fachada (usa la vectorial salvo `EXPO_PUBLIC_VECTOR_MOCHI=false`). Anima sola a partir de 100 pt.
+- Regla: una sola Mochi animada por pantalla; las pequeñas con `animated={false}`.
+- Galería para revisar el arte: `mochi://mochi-gallery`.
 
 ## Estado de la migración
 - **Modo oscuro activo** (`userInterfaceStyle: automatic`). Se logró con una migración mecánica de todas las pantallas: cada clase de color claro (`bg-purple-50`, `text-slate-900`, `border-pink-200`, `bg-white`) tiene su variante `dark:`, y los colores hex de iconos/props pasan por `tc()` (`src/shared/theme/colors.ts`), que invierte la luminosidad en oscuro.

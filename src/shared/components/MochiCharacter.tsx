@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Image } from "react-native";
+import { Image, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -9,6 +9,9 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { VECTOR_MOCHI_ENABLED } from "@/src/shared/config/flags";
+import { MochiCanvas, type MochiHandle } from "@/src/shared/mochi/MochiCanvas";
+import type { Ref } from "react";
 import {
   EXPRESSION_BASE_MOOD,
   resolveMochiSource,
@@ -23,7 +26,44 @@ type MochiCharacterProps = {
   expression?: MochiExpression;
   outfit?: MochiOutfit;
   size?: number;
+  /** Solo Mochi vectorial: respira y parpadea (por defecto, a partir de 100 pt). */
+  animated?: boolean;
+  /** Solo Mochi vectorial: reacciona al toque. */
+  onPress?: () => void;
+  interactive?: boolean;
+  shadow?: boolean;
+  ref?: Ref<MochiHandle>;
 };
+
+/** El PNG trae aire alrededor; la versión vectorial ocupa el 80 % de la caja para verse igual de grande. */
+const VECTOR_FILL = 0.8;
+
+export function MochiCharacter(props: MochiCharacterProps) {
+  if (!VECTOR_MOCHI_ENABLED) return <MochiPng {...props} />;
+  const {
+    mood: legacyMood,
+    expression = legacyMood ?? "happy",
+    size = 80,
+    animated = size >= 100,
+    onPress,
+    interactive,
+    shadow,
+    ref,
+  } = props;
+  return (
+    <View style={{ width: size, height: size }} className="items-center justify-center">
+      <MochiCanvas
+        expression={expression}
+        size={Math.round(size * VECTOR_FILL)}
+        animated={animated}
+        onPress={onPress}
+        interactive={interactive}
+        shadow={shadow}
+        ref={ref}
+      />
+    </View>
+  );
+}
 
 const moodScale: Record<MochiMood, number> = {
   happy: 1,
@@ -34,7 +74,8 @@ const moodScale: Record<MochiMood, number> = {
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
-export function MochiCharacter({
+/** Versión PNG (respaldo con EXPO_PUBLIC_VECTOR_MOCHI=false). */
+function MochiPng({
   mood: legacyMood,
   expression = legacyMood ?? "happy",
   outfit = "none",

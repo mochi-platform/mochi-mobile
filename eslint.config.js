@@ -9,6 +9,7 @@ const MIGRATED = [
   "src/features/companion/**/*.{ts,tsx}",
   "src/features/today/**/*.{ts,tsx}",
   "src/features/navigation/**/*.{ts,tsx}",
+  "app/mochi-gallery.tsx",
 ];
 
 module.exports = defineConfig([
@@ -38,6 +39,10 @@ module.exports = defineConfig([
   {
     files: ["**/*.ts", "**/*.tsx"],
     rules: { "@typescript-eslint/no-explicit-any": "error" },
+  },
+  {
+    files: ["jest.setup.js"],
+    languageOptions: { globals: { jest: "readonly" } },
   },
   {
     // Archivos ya migrados al Remaster: solo tokens y componentes de src/shared/ui.

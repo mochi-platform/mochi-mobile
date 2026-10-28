@@ -13,7 +13,8 @@ export type MochiExpression =
   | "celebrating"
   | "tired"
   | "focused"
-  | "soft_sad";
+  | "soft_sad"
+  | "love";
 
 export type MochiOutfit = "none";
 
@@ -31,6 +32,7 @@ export const EXPRESSION_BASE_MOOD: Record<MochiExpression, MochiBaseMood> = {
   tired: "sleepy",
   focused: "thinking",
   soft_sad: "sleepy",
+  love: "happy",
 };
 
 type Source = number;
