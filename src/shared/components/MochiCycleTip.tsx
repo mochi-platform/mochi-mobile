@@ -1,5 +1,5 @@
+import { COLORS } from "@/src/shared/theme/tokens";
 import { reportError } from "@/src/shared/lib/observability/reportError";
-import { tc } from "@/src/shared/theme/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
@@ -89,7 +89,7 @@ export function MochiCycleTip({
           onPress={() => void handleDismiss()}
           className="ml-2 rounded-full bg-white/80 p-1.5"
         >
-          <Ionicons name="close" size={14} color={tc("#334155")} />
+          <Ionicons name="close" size={14} color={COLORS.ink} />
         </TouchableOpacity>
       )}
     </Animated.View>

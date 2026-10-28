@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -79,7 +79,7 @@ export function UpcomingExamItemCard({
                 <Ionicons
                   name={checked ? "checkmark-circle" : "ellipse"}
                   size={18}
-                  color={checked ? tc("#0f766e") : tc("#475569")}
+                  color={checked ? COLORS.positive : COLORS.inkMuted}
                 />
                 <Text className="ml-2 text-xs font-semibold text-ink">{item.label}</Text>
               </TouchableOpacity>
@@ -112,7 +112,7 @@ export function UpcomingExamItemCard({
               <Ionicons
                 name={completed ? "checkmark-circle" : "ellipse"}
                 size={18}
-                color={completed ? tc("#4338ca") : tc("#475569")}
+                color={completed ? COLORS.accent : COLORS.inkMuted}
               />
               <Text className="ml-2 text-xs font-semibold text-ink">{step.label}</Text>
             </TouchableOpacity>

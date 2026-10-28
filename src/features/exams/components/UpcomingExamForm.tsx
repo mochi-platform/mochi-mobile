@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { EXAM_REMINDER_OPTIONS } from "@/src/features/exams/helpers";
@@ -39,7 +39,7 @@ export function UpcomingExamForm({
         <TextInput
           className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="Ej. Biología"
-          placeholderTextColor={tc("#f9a8d4")}
+          placeholderTextColor={COLORS.inkFaint}
           value={subject}
           onChangeText={onSubjectChange}
         />
@@ -50,7 +50,7 @@ export function UpcomingExamForm({
         <TextInput
           className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="2026-04-10"
-          placeholderTextColor={tc("#f9a8d4")}
+          placeholderTextColor={COLORS.inkFaint}
           value={date}
           onChangeText={onDateChange}
         />
@@ -61,7 +61,7 @@ export function UpcomingExamForm({
         <TextInput
           className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="Temas a repasar, fórmulas, prioridades..."
-          placeholderTextColor={tc("#f9a8d4")}
+          placeholderTextColor={COLORS.inkFaint}
           value={notes}
           onChangeText={onNotesChange}
           multiline
@@ -108,7 +108,7 @@ export function UpcomingExamForm({
           <Ionicons
             name={addToCalendar ? "checkmark-circle" : "ellipse-outline"}
             size={18}
-            color={addToCalendar ? tc("#4f46e5") : tc("#94a3b8")}
+            color={addToCalendar ? COLORS.accent : COLORS.inkMuted}
           />
         </TouchableOpacity>
       </View>

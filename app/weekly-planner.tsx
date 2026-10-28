@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { toLocalISODate } from "@/src/shared/lib/dates";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useState } from "react";
@@ -478,7 +478,7 @@ export function WeeklyPlannerScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted">
-        <ActivityIndicator size="small" color={tc("#4f46e5")} />
+        <ActivityIndicator size="small" color={COLORS.accent} />
         <Text className="mt-3 text-sm font-semibold text-ink">
           Preparando tu planner semanal...
         </Text>
@@ -494,7 +494,7 @@ export function WeeklyPlannerScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="chevron-back" size={22} color={tc("#3730a3")} />
+          <Ionicons name="chevron-back" size={22} color={COLORS.accent} />
           <Text className="ml-1 text-sm font-bold text-ink">Volver</Text>
         </TouchableOpacity>
 
@@ -507,7 +507,7 @@ export function WeeklyPlannerScreen() {
               </Text>
             </View>
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-tint-study">
-              <Ionicons name="sparkles" size={20} color={tc("#4338ca")} />
+              <Ionicons name="sparkles" size={20} color={COLORS.accent} />
             </View>
           </View>
 
@@ -518,10 +518,10 @@ export function WeeklyPlannerScreen() {
                 void generatePlanner();
               }}
               iconName="refresh"
-              iconColor={tc("#ffffff")}
+              iconColor={COLORS.accentInk}
               iconSize={14}
               loading={generating}
-              loadingColor={tc("#ffffff")}
+              loadingColor={COLORS.accentInk}
               containerClassName="flex-1 rounded-2xl bg-accent px-3 py-3"
               textClassName="text-xs text-white"
             />
@@ -532,10 +532,10 @@ export function WeeklyPlannerScreen() {
                 void handleSaveSuggestions();
               }}
               iconName="save"
-              iconColor={tc("#ffffff")}
+              iconColor={COLORS.accentInk}
               iconSize={14}
               loading={saving}
-              loadingColor={tc("#ffffff")}
+              loadingColor={COLORS.accentInk}
               disabled={suggestions.length === 0}
               containerClassName={`flex-1 rounded-2xl px-3 py-3 ${saving ? "bg-tint-ok" : "bg-positive"}`}
               textClassName="text-xs text-white"

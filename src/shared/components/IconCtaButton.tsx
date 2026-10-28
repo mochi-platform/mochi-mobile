@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { ReactNode } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
@@ -28,11 +28,11 @@ export function IconCtaButton({
   label,
   onPress,
   iconName,
-  iconColor = tc("#0f172a"),
+  iconColor = COLORS.ink,
   iconSize = 14,
   icon,
   trailingIconName,
-  trailingIconColor = tc("#0f172a"),
+  trailingIconColor = COLORS.ink,
   trailingIconSize = 14,
   trailingIcon,
   containerClassName = "",
@@ -41,7 +41,7 @@ export function IconCtaButton({
   iconContainerClassName = "",
   disabled = false,
   loading = false,
-  loadingColor = tc("#0f172a"),
+  loadingColor = COLORS.ink,
   activeOpacity = 0.85,
 }: IconCtaButtonProps) {
   const leftIconNode =

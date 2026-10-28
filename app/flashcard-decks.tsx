@@ -1,3 +1,4 @@
+import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -68,7 +69,7 @@ export function FlashcardDecksScreen() {
           className="h-11 w-11 items-center justify-center"
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={24} color="#8b6fd6" />
+          <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
         </TouchableOpacity>
         <Text className="ml-1 text-xl font-extrabold text-ink">Mis mazos</Text>
       </View>

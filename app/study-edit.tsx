@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -173,7 +173,7 @@ export function EditStudyBlockScreen() {
                 onPress={() => router.back()}
                 className="mb-4 flex-row items-center"
               >
-                <Ionicons name="chevron-back" size={24} color={tc("#7c3aed")} />
+                <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
                 <Text className="ml-2 text-lg font-bold text-ink">Volver</Text>
               </TouchableOpacity>
 
@@ -184,7 +184,7 @@ export function EditStudyBlockScreen() {
 
               {loading ? (
                 <View className="mt-10 items-center">
-                  <ActivityIndicator size="small" color={tc("#7c3aed")} />
+                  <ActivityIndicator size="small" color={COLORS.accent} />
                   <Text className="mt-3 text-sm font-semibold text-ink">Cargando bloque...</Text>
                 </View>
               ) : error ? (
@@ -204,7 +204,7 @@ export function EditStudyBlockScreen() {
                     <TextInput
                       className="mt-2 rounded-2xl bg-surface-muted px-4 py-3 text-base text-ink"
                       placeholder="Ejemplo: Matemáticas"
-                      placeholderTextColor={tc("#c4b5fd")}
+                      placeholderTextColor={COLORS.inkFaint}
                       value={subject}
                       onChangeText={setSubject}
                       editable={!saving}
@@ -252,7 +252,7 @@ export function EditStudyBlockScreen() {
                       </View>
 
                       <View className="items-center justify-center">
-                        <Ionicons name="arrow-forward" size={20} color={tc("#a855f7")} />
+                        <Ionicons name="arrow-forward" size={20} color={COLORS.accent} />
                       </View>
 
                       <View className="flex-1">

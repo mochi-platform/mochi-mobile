@@ -1,3 +1,4 @@
+import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
@@ -150,7 +151,7 @@ export function FlashcardDeckEditScreen() {
           className="h-11 w-11 items-center justify-center"
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={24} color="#8b6fd6" />
+          <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
         </TouchableOpacity>
         <Text className="ml-1 text-xl font-extrabold text-ink">
           {deckId ? "Editar mazo" : "Nuevo mazo"}
@@ -181,7 +182,7 @@ export function FlashcardDeckEditScreen() {
                   className="h-11 w-11 items-center justify-center"
                   onPress={() => void removeExisting(c.id)}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#dc4660" />
+                  <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
                 </TouchableOpacity>
               </Card>
             ))}

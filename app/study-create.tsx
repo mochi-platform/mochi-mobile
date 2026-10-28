@@ -1,5 +1,5 @@
+import { COLORS } from "@/src/shared/theme/tokens";
 import { reportError } from "@/src/shared/lib/observability/reportError";
-import { tc } from "@/src/shared/theme/colors";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -328,7 +328,7 @@ export function CreateStudyBlockScreen() {
                 onPress={() => router.back()}
                 className="mb-4 flex-row items-center"
               >
-                <Ionicons name="chevron-back" size={24} color={tc("#7c3aed")} />
+                <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
                 <Text className="ml-2 text-lg font-bold text-ink">Volver</Text>
               </TouchableOpacity>
 
@@ -394,7 +394,7 @@ export function CreateStudyBlockScreen() {
                   </View>
 
                   <View className="items-center justify-center">
-                    <Ionicons name="arrow-forward" size={20} color={tc("#a855f7")} />
+                    <Ionicons name="arrow-forward" size={20} color={COLORS.accent} />
                   </View>
 
                   <View className="flex-1">
@@ -413,10 +413,10 @@ export function CreateStudyBlockScreen() {
                   label="Sugerir duración con IA"
                   onPress={handleAISuggestDuration}
                   iconName="sparkles"
-                  iconColor={tc("#a855f7")}
+                  iconColor={COLORS.accent}
                   iconSize={16}
                   loading={aiLoading}
-                  loadingColor={tc("#a855f7")}
+                  loadingColor={COLORS.accent}
                   disabled={!subject.trim()}
                   containerClassName="mt-4 w-full rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 py-3"
                   textClassName="text-ink"
@@ -428,7 +428,7 @@ export function CreateStudyBlockScreen() {
                 <View className="flex-row items-center justify-between">
                   <Text className="text-sm font-bold text-ink">Laboratorio de energía</Text>
                   {energyLoading || cycleLoading ? (
-                    <ActivityIndicator size="small" color={tc("#7c3aed")} />
+                    <ActivityIndicator size="small" color={COLORS.accent} />
                   ) : null}
                 </View>
 
@@ -478,7 +478,7 @@ export function CreateStudyBlockScreen() {
                     <Ionicons
                       name={addToCalendar ? "checkmark" : "remove"}
                       size={16}
-                      color={addToCalendar ? "white" : tc("#4338ca")}
+                      color={addToCalendar ? "white" : COLORS.accent}
                     />
                   </View>
                 </TouchableOpacity>

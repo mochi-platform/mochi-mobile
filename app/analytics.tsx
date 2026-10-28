@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { EnergyStudyCorrelationCard } from "@/src/features/analytics/components/EnergyStudyCorrelationCard";
 import { usePlan } from "@/src/shared/hooks/usePlan";
 import { toLocalISODate } from "@/src/shared/lib/dates";
@@ -360,7 +360,7 @@ export function AnalyticsScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted">
-        <ActivityIndicator size="small" color={tc("#0369a1")} />
+        <ActivityIndicator size="small" color={COLORS.accent} />
         <Text className="mt-3 text-sm font-semibold text-ink">Cargando analiticas...</Text>
       </SafeAreaView>
     );
@@ -387,7 +387,7 @@ export function AnalyticsScreen() {
     <SafeAreaView className="flex-1 bg-canvas">
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
         <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color={tc("#0369a1")} />
+          <Ionicons name="chevron-back" size={22} color={COLORS.accent} />
           <Text className="ml-1 font-bold text-ink">Volver</Text>
         </TouchableOpacity>
 
@@ -447,7 +447,7 @@ export function AnalyticsScreen() {
                       <Bar
                         points={points.hours}
                         chartBounds={chartBounds}
-                        color={tc("#0284c7")}
+                        color={COLORS.accent}
                         roundedCorners={{ topLeft: 6, topRight: 6 }}
                       />
                     )}
@@ -488,7 +488,7 @@ export function AnalyticsScreen() {
                       <Bar
                         points={points.completed}
                         chartBounds={chartBounds}
-                        color={tc("#10b981")}
+                        color={COLORS.positive}
                         roundedCorners={{ topLeft: 6, topRight: 6 }}
                       />
                     )}
@@ -529,7 +529,7 @@ export function AnalyticsScreen() {
                     {({ points }) => (
                       <Line
                         points={points.streak}
-                        color={tc("#8b5cf6")}
+                        color={COLORS.accent}
                         strokeWidth={2.6}
                         curveType="monotoneX"
                       />

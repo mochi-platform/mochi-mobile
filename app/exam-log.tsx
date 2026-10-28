@@ -1,5 +1,5 @@
+import { COLORS } from "@/src/shared/theme/tokens";
 import { reportError } from "@/src/shared/lib/observability/reportError";
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
@@ -372,7 +372,7 @@ export function ExamLogScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         >
           <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={22} color={tc("#9d174d")} />
+            <Ionicons name="chevron-back" size={22} color={COLORS.accent} />
             <Text className="ml-1 font-bold text-ink">Volver</Text>
           </TouchableOpacity>
 

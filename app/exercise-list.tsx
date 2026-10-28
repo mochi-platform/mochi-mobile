@@ -1,3 +1,4 @@
+import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -63,7 +64,7 @@ export function ExerciseListScreen() {
           className="h-11 w-11 items-center justify-center"
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={24} color="#8b6fd6" />
+          <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
         </TouchableOpacity>
         <Text className="ml-1 text-xl font-extrabold text-ink">Mis ejercicios</Text>
       </View>
@@ -117,7 +118,7 @@ export function ExerciseListScreen() {
                   className="h-11 w-11 items-center justify-center"
                   onPress={() => void remove(item.id)}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#dc4660" />
+                  <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
                 </TouchableOpacity>
               </Card>
             ))}

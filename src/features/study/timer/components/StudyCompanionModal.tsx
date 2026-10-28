@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
@@ -59,7 +59,7 @@ export function StudyCompanionModal({
               </Text>
             </View>
             <TouchableOpacity onPress={() => onClose()}>
-              <Ionicons name="close" size={22} color={tc("#64748b")} />
+              <Ionicons name="close" size={22} color={COLORS.inkMuted} />
             </TouchableOpacity>
           </View>
 
@@ -83,7 +83,7 @@ export function StudyCompanionModal({
             )}
             {asking ? (
               <View className="mb-2 flex-row items-center rounded-2xl bg-tint-study p-3">
-                <ActivityIndicator color={tc("#7c3aed")} />
+                <ActivityIndicator color={COLORS.accent} />
                 <Text className="ml-2 text-xs font-semibold text-ink">Mochi está pensando...</Text>
               </View>
             ) : null}
@@ -129,7 +129,7 @@ export function StudyCompanionModal({
           <TextInput
             className="mt-3 rounded-2xl bg-surface-muted px-4 py-3 text-sm font-semibold text-ink"
             placeholder="Escribe tu duda o pide un resumen..."
-            placeholderTextColor={tc("#a78bfa")}
+            placeholderTextColor={COLORS.accent}
             value={question}
             onChangeText={onQuestionChange}
             multiline

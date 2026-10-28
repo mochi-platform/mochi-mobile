@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -96,7 +96,7 @@ export function ExamSprintProgressScreen() {
               activeOpacity={0.85}
               className="mb-4 flex-row items-center gap-1"
             >
-              <Ionicons name="chevron-back" size={18} color={tc("#15803d")} />
+              <Ionicons name="chevron-back" size={18} color={COLORS.positive} />
               <Text className="text-base font-semibold text-positive">Volver</Text>
             </TouchableOpacity>
 
@@ -109,7 +109,7 @@ export function ExamSprintProgressScreen() {
           {/* Active Sprint or Empty State */}
           {sprintsLoading ? (
             <View className="items-center py-12">
-              <ActivityIndicator size="large" color={tc("#059669")} />
+              <ActivityIndicator size="large" color={COLORS.positive} />
               <Text className="mt-4 font-semibold text-ink">Cargando sprints...</Text>
             </View>
           ) : activeSprint ? (
@@ -175,7 +175,7 @@ export function ExamSprintProgressScreen() {
                 activeOpacity={0.85}
                 className="rounded-full p-2"
               >
-                <Ionicons name="close" size={24} color={tc("#4b5563")} />
+                <Ionicons name="close" size={24} color={COLORS.inkMuted} />
               </TouchableOpacity>
             </View>
 

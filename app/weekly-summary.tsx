@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { useCallback, useMemo, useRef, useState, type ComponentRef } from "react";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -409,7 +409,7 @@ export function WeeklySummaryScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted">
-        <ActivityIndicator size="large" color={tc("#6366f1")} />
+        <ActivityIndicator size="large" color={COLORS.accent} />
         <Text className="mt-3 text-sm font-semibold text-ink">
           Preparando tu resumen semanal...
         </Text>
@@ -497,7 +497,7 @@ export function WeeklySummaryScreen() {
 
           {atlasLoading ? (
             <View className="items-center py-4">
-              <ActivityIndicator size="small" color={tc("#7c3aed")} />
+              <ActivityIndicator size="small" color={COLORS.accent} />
               <Text className="mt-2 text-xs font-semibold text-ink">Cargando atlas...</Text>
             </View>
           ) : null}

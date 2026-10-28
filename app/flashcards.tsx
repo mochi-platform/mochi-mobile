@@ -1,3 +1,4 @@
+import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -105,7 +106,7 @@ export function FlashcardsScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-canvas">
-        <ActivityIndicator size="large" color="#8b6fd6" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
       </SafeAreaView>
     );
   }
@@ -161,7 +162,7 @@ export function FlashcardsScreen() {
           onPress={() => router.back()}
           className="min-h-[44px] flex-row items-center"
         >
-          <Ionicons name="chevron-back" size={22} color="#8b6fd6" />
+          <Ionicons name="chevron-back" size={22} color={COLORS.accent} />
           <Text className="text-sm font-bold text-ink-muted">Volver</Text>
         </TouchableOpacity>
         <Text className="text-xs font-bold text-ink-muted">

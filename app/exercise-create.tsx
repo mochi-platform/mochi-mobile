@@ -1,5 +1,5 @@
+import { COLORS } from "@/src/shared/theme/tokens";
 import { reportError } from "@/src/shared/lib/observability/reportError";
-import { tc } from "@/src/shared/theme/colors";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -136,7 +136,7 @@ export function CreateExerciseScreen() {
           <View className="px-5 py-6">
             {/* Header */}
             <TouchableOpacity onPress={handleGoBack} className="mb-4 flex-row items-center">
-              <Ionicons name="chevron-back" size={24} color={tc("#0d9488")} />
+              <Ionicons name="chevron-back" size={24} color={COLORS.positive} />
               <Text className="ml-2 text-lg font-bold text-positive">Volver</Text>
             </TouchableOpacity>
 
@@ -163,7 +163,7 @@ export function CreateExerciseScreen() {
                 <Text className="text-sm font-bold text-positive">Sugerencias con IA</Text>
                 {aiDescription && (
                   <View className="flex-row items-center gap-1 rounded-full bg-tint-ok px-3 py-1">
-                    <Ionicons name="checkmark-circle" size={14} color={tc("#059669")} />
+                    <Ionicons name="checkmark-circle" size={14} color={COLORS.positive} />
                     <Text className="text-xs font-bold text-positive">Aplicable</Text>
                   </View>
                 )}
@@ -173,10 +173,10 @@ export function CreateExerciseScreen() {
                 label="Obtener sugerencias"
                 onPress={handleAISuggest}
                 iconName="sparkles"
-                iconColor={tc("#0d9488")}
+                iconColor={COLORS.positive}
                 iconSize={16}
                 loading={aiLoading}
-                loadingColor={tc("#0d9488")}
+                loadingColor={COLORS.positive}
                 disabled={!name.trim()}
                 containerClassName="mt-3 w-full rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 py-3"
                 textClassName="text-positive"

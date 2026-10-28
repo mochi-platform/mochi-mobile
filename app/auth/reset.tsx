@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -45,7 +45,7 @@ export function ResetPasswordScreen() {
   return (
     <SafeAreaView className="flex-1 bg-canvas">
       <View className="flex-1 justify-center px-6">
-        {phase === "verifying" ? <ActivityIndicator color={tc("#8b6fd6")} /> : null}
+        {phase === "verifying" ? <ActivityIndicator color={COLORS.accent} /> : null}
 
         {phase === "invalid" ? (
           <>

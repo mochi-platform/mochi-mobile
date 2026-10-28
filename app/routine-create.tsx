@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -189,7 +189,7 @@ export function RoutineCreateScreen() {
         >
           <View className="px-5 py-6">
             <TouchableOpacity onPress={() => router.back()} className="mb-4 flex-row items-center">
-              <Ionicons name="chevron-back" size={24} color={tc("#0d9488")} />
+              <Ionicons name="chevron-back" size={24} color={COLORS.positive} />
               <Text className="ml-2 text-lg font-bold text-positive">Volver</Text>
             </TouchableOpacity>
 
@@ -252,7 +252,7 @@ export function RoutineCreateScreen() {
 
               {loadingExercises ? (
                 <View className="items-center py-8">
-                  <ActivityIndicator size="small" color={tc("#14b8a6")} />
+                  <ActivityIndicator size="small" color={COLORS.positive} />
                   <Text className="mt-3 text-sm font-semibold text-positive">
                     Cargando ejercicios...
                   </Text>
@@ -282,7 +282,7 @@ export function RoutineCreateScreen() {
                         <Ionicons
                           name={isSelected ? "checkbox" : "square"}
                           size={22}
-                          color={isSelected ? tc("#0d9488") : tc("#94a3b8")}
+                          color={isSelected ? COLORS.positive : COLORS.inkMuted}
                         />
                         <View className="ml-3 flex-1">
                           <Text className="text-sm font-bold text-ink">{exercise.name}</Text>

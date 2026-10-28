@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { toLocalISODate } from "@/src/shared/lib/dates";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, View, ScrollView, TouchableOpacity } from "react-native";
@@ -78,7 +78,7 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
               }`}
             >
               <Text className="text-center text-xs font-semibold">{day.dayNumber}</Text>
-              {day.completed && <Ionicons name="checkmark" size={16} color={tc("#16a34a")} />}
+              {day.completed && <Ionicons name="checkmark" size={16} color={COLORS.positive} />}
             </TouchableOpacity>
           ))}
         </View>

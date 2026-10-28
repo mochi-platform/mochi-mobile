@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { formatExamDate, getResultBadge } from "@/src/features/exams/helpers";
@@ -47,7 +47,7 @@ export function ExamResultsTab({
 
         {loading ? (
           <View className="items-center py-6">
-            <ActivityIndicator size="small" color={tc("#ec4899")} />
+            <ActivityIndicator size="small" color={COLORS.accent} />
             <Text className="mt-3 text-sm font-semibold text-ink">Cargando historial...</Text>
           </View>
         ) : examHistory.length === 0 ? (
@@ -92,7 +92,7 @@ export function ExamResultsTab({
         <TextInput
           className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="Ej. Cálculo, Historia, Inglés..."
-          placeholderTextColor={tc("#f9a8d4")}
+          placeholderTextColor={COLORS.inkFaint}
           value={subject}
           onChangeText={onSubjectChange}
         />
@@ -104,7 +104,7 @@ export function ExamResultsTab({
           <TextInput
             className="flex-1 rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
             placeholder="0 - 10"
-            placeholderTextColor={tc("#f9a8d4")}
+            placeholderTextColor={COLORS.inkFaint}
             value={grade}
             onChangeText={onGradeChange}
             keyboardType="decimal-pad"
@@ -120,7 +120,7 @@ export function ExamResultsTab({
         <TextInput
           className="rounded-2xl bg-surface px-4 py-3 text-sm font-semibold text-ink"
           placeholder="¿Qué temas entraron? ¿Cómo te fue?"
-          placeholderTextColor={tc("#f9a8d4")}
+          placeholderTextColor={COLORS.inkFaint}
           value={notes}
           onChangeText={onNotesChange}
           multiline

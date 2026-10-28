@@ -1,4 +1,4 @@
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
 import { ActivityIndicator, Text, View } from "react-native";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import type {
@@ -38,7 +38,7 @@ export function UpcomingExamsList({
 
       {loading ? (
         <View className="items-center py-6">
-          <ActivityIndicator size="small" color={tc("#ec4899")} />
+          <ActivityIndicator size="small" color={COLORS.accent} />
         </View>
       ) : upcomingExams.length === 0 ? (
         <View className="items-center py-6">
@@ -51,7 +51,7 @@ export function UpcomingExamsList({
         <View className="mt-4">
           {prepLoading ? (
             <View className="items-center py-4">
-              <ActivityIndicator size="small" color={tc("#ec4899")} />
+              <ActivityIndicator size="small" color={COLORS.accent} />
               <Text className="mt-2 text-xs font-semibold text-ink">
                 Cargando progreso de misión...
               </Text>
