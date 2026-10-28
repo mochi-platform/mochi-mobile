@@ -11,6 +11,7 @@ const MIGRATED = [
   "src/features/navigation/**/*.{ts,tsx}",
   "app/mochi-gallery.tsx",
   "app/(tabs)/me.tsx",
+  "src/features/companion/**/*.{ts,tsx}",
   "app/(tabs)/wellness.tsx",
 ];
 

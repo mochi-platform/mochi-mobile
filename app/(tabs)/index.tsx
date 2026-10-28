@@ -1,9 +1,8 @@
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
-import { useRouter } from "expo-router";
 
-import { HomeDashboard } from "@/src/features/home/components/HomeDashboard";
+import { TodayScreen } from "@/src/features/today/TodayScreen";
 import { QuickCaptureModal } from "@/src/shared/components/QuickCaptureModal";
 import { RecoveryPlanModal } from "@/src/shared/components/RecoveryPlanModal";
 import { useStreakRecovery } from "@/src/shared/hooks/useStreakRecovery";
@@ -21,7 +20,6 @@ function pickDisplayName(raw: string | null | undefined): string | null {
 }
 
 export default function Home() {
-  const router = useRouter();
   const { session } = useSession();
   const { moduleVisibility } = useModuleVisibility();
   const { showAchievement } = useAchievement();
@@ -51,22 +49,6 @@ export default function Home() {
 
   // Show recovery modal if streak recovery is active and not dismissed yet
   const showRecoveryModal = activeRecoveryPlan !== null && !recoveryDismissed;
-
-  const navigateToStudy = () => {
-    router.replace("/(tabs)/study");
-  };
-
-  const navigateToExercise = () => {
-    router.replace("/(tabs)/exercise");
-  };
-
-  const navigateToHabits = () => {
-    router.replace("/(tabs)/habits");
-  };
-
-  const navigateToCooking = () => {
-    router.replace("/(tabs)/cooking");
-  };
 
   const handleActionCreated = useCallback(
     async (action: ActionConversionResult, originalNote: string) => {
@@ -238,14 +220,10 @@ export default function Home() {
   return (
     <View className="flex-1">
       <View className="flex-1">
-        <HomeDashboard
+        <TodayScreen
           userName={displayName}
-          onNavigateToStudy={navigateToStudy}
-          onNavigateToExercise={navigateToExercise}
-          onNavigateToHabits={navigateToHabits}
-          onNavigateToCooking={navigateToCooking}
-          onOpenQuickCapture={() => setQuickCaptureOpen(true)}
           moduleVisibility={moduleVisibility}
+          onOpenQuickCapture={() => setQuickCaptureOpen(true)}
         />
       </View>
 
