@@ -18,6 +18,8 @@ const MIGRATED = [
   "src/features/onboarding/OnboardingScreen.tsx",
   "app/onboarding.tsx",
   "src/features/me/**/*.{ts,tsx}",
+  "src/features/study/api.ts",
+  "app/(tabs)/study.tsx",
   "src/features/today/**/*.{ts,tsx}",
   "src/features/companion/**/*.{ts,tsx}",
   "app/(tabs)/wellness.tsx",
