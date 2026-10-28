@@ -1,7 +1,7 @@
-const { createRunOncePlugin, withMainActivity } = require('expo/config-plugins')
+const { createRunOncePlugin, withMainActivity, withAndroidManifest } = require('expo/config-plugins')
 
 const PLUGIN_NAME = 'mochi-health-connect-permission-delegate'
-const PLUGIN_VERSION = '1.0.0'
+const PLUGIN_VERSION = '1.1.0'
 
 function appendImport(contents, importLine) {
   if (contents.includes(importLine)) return contents
@@ -54,7 +54,40 @@ function injectDelegateCallIntoOnCreate(contents) {
   )
 }
 
+/**
+ * Android 14+: Health Connect solo muestra la pantalla de permisos si la app declara un
+ * activity-alias con VIEW_PERMISSION_USAGE + categoría HEALTH_PERMISSIONS. Sin él, la solicitud
+ * se cierra al instante y el botón "no hace nada".
+ */
+function withViewPermissionUsageAlias(config) {
+  return withAndroidManifest(config, (modConfig) => {
+    const application = modConfig.modResults.manifest.application?.[0]
+    if (!application) return modConfig
+
+    const aliasName = 'ViewPermissionUsageActivity'
+    application['activity-alias'] = application['activity-alias'] ?? []
+    if (application['activity-alias'].some((a) => a.$['android:name'] === aliasName)) return modConfig
+
+    application['activity-alias'].push({
+      $: {
+        'android:name': aliasName,
+        'android:exported': 'true',
+        'android:targetActivity': '.MainActivity',
+        'android:permission': 'android.permission.START_VIEW_PERMISSION_USAGE',
+      },
+      'intent-filter': [
+        {
+          action: [{ $: { 'android:name': 'android.intent.action.VIEW_PERMISSION_USAGE' } }],
+          category: [{ $: { 'android:name': 'android.intent.category.HEALTH_PERMISSIONS' } }],
+        },
+      ],
+    })
+    return modConfig
+  })
+}
+
 function withHealthConnectPermissionDelegate(config) {
+  config = withViewPermissionUsageAlias(config)
   return withMainActivity(config, (modConfig) => {
     const { modResults } = modConfig
 

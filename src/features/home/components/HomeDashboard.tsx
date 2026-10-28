@@ -1,7 +1,7 @@
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
-import { View, ScrollView, RefreshControl } from "react-native";
+import { Alert, View, ScrollView, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -19,6 +19,7 @@ import {
   quickAccessItems,
   quickAccessRouteMap,
 } from "@/src/features/home/dashboard/helpers";
+import { openHealthConnectSettingsScreen } from "@/src/shared/lib/healthConnect";
 import { useDashboardData } from "@/src/features/home/dashboard/useDashboardData";
 import { useLoadingPulseStyle } from "@/src/features/home/dashboard/useLoadingPulse";
 import { DashboardHeader } from "@/src/features/home/dashboard/components/DashboardHeader";
@@ -69,6 +70,21 @@ export function HomeDashboard({
     month: "long",
   });
   const today = todayRaw.charAt(0).toUpperCase() + todayRaw.slice(1);
+
+  const handleConnectHealth = async () => {
+    const result = await requestPermission();
+    if (result === "granted") return;
+    Alert.alert(
+      "No se pudo conectar",
+      result === "unavailable"
+        ? "Health Connect no está disponible o no está activado en este teléfono."
+        : "No se concedió el permiso de menstruación. Puedes dárselo a Mochi desde Health Connect.",
+      [
+        { text: "Abrir Health Connect", onPress: () => void openHealthConnectSettingsScreen() },
+        { text: "Cerrar", style: "cancel" },
+      ],
+    );
+  };
   const timeOfDay = getTimeOfDay();
   const greetingText = getGreeting(userName);
   const greetingIcon = getTimeIcon() as keyof typeof Ionicons.glyphMap;
@@ -168,7 +184,7 @@ export function HomeDashboard({
             cycleData={cycleData}
             isAvailable={isAvailable}
             hasPermission={hasPermission}
-            onRequestPermission={requestPermission}
+            onRequestPermission={handleConnectHealth}
             onLogPeriod={logPeriodToday}
             onDismissPrompt={() => {
               const userId = session?.user.id;

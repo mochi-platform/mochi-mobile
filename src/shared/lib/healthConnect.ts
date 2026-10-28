@@ -203,6 +203,17 @@ export async function requestCyclePermissions(): Promise<boolean> {
   }
 }
 
+/** Abre la pantalla de Health Connect para que la usuaria dé el permiso a mano. */
+export async function openHealthConnectSettingsScreen(): Promise<void> {
+  const healthConnect = await getHealthConnectModule();
+  if (!healthConnect) return;
+  try {
+    healthConnect.openHealthConnectSettings();
+  } catch (error) {
+    logHealthConnectError("openHealthConnectSettings", error);
+  }
+}
+
 export async function hasCyclePermissions(): Promise<boolean> {
   const isReady = await ensureHealthConnectInitialized();
   if (!isReady) return false;

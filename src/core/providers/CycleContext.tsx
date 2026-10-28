@@ -19,12 +19,14 @@ import {
   type CyclePhaseData,
 } from "@/src/shared/lib/healthConnect";
 
+export type PermissionResult = "granted" | "denied" | "unavailable";
+
 type CycleContextValue = {
   cycleData: CyclePhaseData | null;
   loading: boolean;
   isAvailable: boolean;
   hasPermission: boolean;
-  requestPermission: () => Promise<void>;
+  requestPermission: () => Promise<PermissionResult>;
   refresh: () => Promise<void>;
   logPeriodToday: () => Promise<void>;
 };
@@ -34,7 +36,7 @@ const CycleContext = createContext<CycleContextValue>({
   loading: true,
   isAvailable: false,
   hasPermission: false,
-  requestPermission: async () => {},
+  requestPermission: async () => "unavailable" as PermissionResult,
   refresh: async () => {},
   logPeriodToday: async () => {},
 });
@@ -77,7 +79,7 @@ export function CycleProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
-  const requestPermission = useCallback(async () => {
+  const requestPermission = useCallback(async (): Promise<PermissionResult> => {
     try {
       const available = await isHealthConnectAvailable();
       setIsAvailable(available);
@@ -85,7 +87,7 @@ export function CycleProvider({ children }: { children: ReactNode }) {
       if (!available) {
         setHasPermission(false);
         setCycleData(null);
-        return;
+        return "unavailable";
       }
 
       const granted = await requestCyclePermissions();
@@ -94,13 +96,15 @@ export function CycleProvider({ children }: { children: ReactNode }) {
       if (granted) {
         const phase = await getCurrentCyclePhase();
         setCycleData(phase);
-      } else {
-        setCycleData(null);
+        return "granted";
       }
+      setCycleData(null);
+      return "denied";
     } catch {
       setIsAvailable(false);
       setHasPermission(false);
       setCycleData(null);
+      return "unavailable";
     }
   }, []);
 
