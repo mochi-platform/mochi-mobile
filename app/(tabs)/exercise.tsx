@@ -1,454 +1,220 @@
-import { TabBarSpacer } from "@/src/shared/ui/TabBarSpacer";
-import { reportError } from "@/src/shared/lib/observability/reportError";
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
-import { supabase } from "@/src/shared/lib/supabase";
+import { useCallback, useState } from "react";
+import { Alert, View } from "react-native";
 import { useSession } from "@/src/core/providers/SessionContext";
-import { useCustomAlert } from "@/src/shared/components/CustomAlert";
-import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
+import {
+  deleteExercise,
+  fetchExercise,
+  type ExerciseItem,
+  type RoutineItem,
+} from "@/src/features/exercise/api";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCycleRecommendation } from "@/src/shared/hooks/useCycleRecommendation";
-import type { Exercise, RoutineWithExercises } from "@/src/shared/types/database";
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { COLORS } from "@/src/shared/theme/tokens";
+import {
+  ACCENT_GLOW,
+  Button,
+  Caption,
+  ELEVATION,
+  ErrorState,
+  Eyebrow,
+  IconTile,
+  ListGroup,
+  ListRow,
+  MochiBubble,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Sheet,
+  Title,
+  haptic,
+} from "@/src/shared/ui";
 
-type ExerciseCardProps = {
-  exercise: Exercise;
-  onDelete: (exerciseId: string) => void;
-};
+const DAY = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
-type RoutineCardProps = {
-  routine: RoutineWithExercises;
-  index: number;
-  animationSeed: number;
-};
-
-const dayMap = ["D", "L", "M", "X", "J", "V", "S"];
-
-function formatRoutineTime(routine: RoutineWithExercises): string {
-  const totalSeconds = routine.routine_exercises.reduce((sum, item) => {
-    return sum + (item.exercise?.duration_seconds ?? 0);
-  }, 0);
-  const minutes = Math.max(1, Math.ceil(totalSeconds / 60));
-  return `${minutes} min`;
-}
-
-function RoutineCard({ routine, index, animationSeed }: RoutineCardProps) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(16);
-
-  useEffect(() => {
-    opacity.value = 0;
-    translateY.value = 16;
-
-    opacity.value = withRepeat(
-      withSequence(
-        withTiming(1, {
-          duration: 320,
-          easing: Easing.out(Easing.cubic),
-        }),
-        withTiming(1, { duration: 0 }),
-      ),
-      1,
-      false,
-    );
-    translateY.value = withTiming(0, {
-      duration: 360,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [animationSeed, index, opacity, translateY]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  return (
-    <Animated.View
-      style={animatedStyle}
-      className="mb-3 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface"
-    >
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1">
-          <Text className="text-lg font-extrabold text-slate-800 dark:text-slate-200">
-            {routine.name}
-          </Text>
-          <View className="mt-2 flex-row flex-wrap gap-2">
-            {routine.days.map((dayNum) => (
-              <View
-                key={`${routine.id}-${dayNum}`}
-                className="rounded-full bg-teal-100 px-2.5 py-1 dark:bg-teal-900"
-              >
-                <Text className="text-xs font-bold text-teal-800 dark:text-teal-200">
-                  {dayMap[dayNum] ?? "?"}
-                </Text>
-              </View>
-            ))}
-          </View>
-          <Text className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-400">
-            {routine.routine_exercises.length} ejercicios • {formatRoutineTime(routine)}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          className="h-11 w-11 items-center justify-center rounded-2xl bg-teal-200 dark:bg-teal-800"
-          onPress={() => router.push(`/routine-player?routineId=${routine.id}`)}
-          accessibilityRole="button"
-          accessibilityLabel={`Iniciar rutina ${routine.name}`}
-        >
-          <Ionicons name="play" size={18} color={tc("#0d9488")} />
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
-  );
-}
-
-function ExerciseCard({ exercise, onDelete }: ExerciseCardProps) {
-  return (
-    <TouchableOpacity activeOpacity={0.9} onLongPress={() => onDelete(exercise.id)}>
-      <View className="mb-3 rounded-3xl border border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
-        <Text className="text-base font-extrabold text-slate-800 dark:text-slate-200">
-          {exercise.name}
-        </Text>
-        <Text className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
-          {exercise.sets} series • {exercise.reps} repeticiones •{" "}
-          {Math.ceil(exercise.duration_seconds / 60)} min
-        </Text>
-        {exercise.notes ? (
-          <Text className="mt-2 text-xs font-semibold text-teal-700 dark:text-teal-300">
-            {exercise.notes}
-          </Text>
-        ) : null}
-      </View>
-    </TouchableOpacity>
-  );
+function daysLabel(days: number[]): string {
+  if (days.length === 7) return "Todos los días";
+  if (days.length === 0) return "Sin días fijos";
+  return [...days]
+    .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+    .map((d) => DAY[d])
+    .join(" · ");
 }
 
 export function ExerciseScreen() {
   const { session } = useSession();
-  const { tip, personality } = useCycleRecommendation("exercise");
-  const { showAlert, AlertComponent } = useCustomAlert();
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [routines, setRoutines] = useState<RoutineWithExercises[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [exerciseError, setExerciseError] = useState<string | null>(null);
-  const [routineError, setRoutineError] = useState<string | null>(null);
-  const [animationSeed, setAnimationSeed] = useState(0);
+  const userId = session?.user.id;
+  const { tip } = useCycleRecommendation("exercise");
+  const [data, setData] = useState<{ routines: RoutineItem[]; exercises: ExerciseItem[] } | null>(
+    null,
+  );
+  const [error, setError] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
-  const loadingScale = useSharedValue(1);
-
-  const loadingAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: loadingScale.value }],
-  }));
-
-  const loadData = useCallback(async () => {
-    const userId = session?.user.id;
-    if (!userId) {
-      setExercises([]);
-      setRoutines([]);
-      setLoading(false);
-      return;
-    }
-
+  const load = useCallback(async () => {
+    if (!userId) return;
     try {
-      setLoading(true);
-      setExerciseError(null);
-      setRoutineError(null);
-
-      loadingScale.value = withRepeat(
-        withSequence(
-          withTiming(1.06, {
-            duration: 650,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          withTiming(1, { duration: 650, easing: Easing.inOut(Easing.quad) }),
-        ),
-        -1,
-        false,
-      );
-
-      const [exercisesRes, routinesRes] = await Promise.all([
-        supabase
-          .from("exercises")
-          .select("*")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("routines")
-          .select(
-            `*,
-           routine_exercises (
-             id,
-             routine_id,
-             exercise_id,
-             order_index,
-             exercise:exercises (id, name, sets, reps, duration_seconds, notes)
-           )`,
-          )
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false }),
-      ]);
-
-      if (exercisesRes.error) {
-        setExerciseError(exercisesRes.error.message ?? "No se pudieron cargar los ejercicios");
-        setExercises([]);
-      } else {
-        setExercises((exercisesRes.data ?? []) as Exercise[]);
-      }
-
-      if (routinesRes.error) {
-        setRoutineError(routinesRes.error.message ?? "No se pudieron cargar las rutinas");
-        setRoutines([]);
-      } else {
-        setRoutines((routinesRes.data ?? []) as RoutineWithExercises[]);
-      }
-
-      setAnimationSeed((prev) => prev + 1);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo cargar el módulo";
-      setExerciseError((prev) => prev ?? message);
-      setRoutineError((prev) => prev ?? message);
-    } finally {
-      loadingScale.value = withTiming(1, { duration: 180 });
-      setLoading(false);
+      setData(await fetchExercise(userId));
+      setError(false);
+    } catch (e) {
+      reportError(e, { scope: "exercise/load" });
+      setError(true);
     }
-  }, [loadingScale, session?.user.id]);
+  }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadData();
-    }, [loadData]),
+      void load();
+    }, [load]),
   );
 
-  const totalExercises = exercises.length;
-  const totalRoutines = routines.length;
-  const totalRoutineExercises = routines.reduce(
-    (sum, routine) => sum + routine.routine_exercises.length,
-    0,
-  );
-  const hasContent = totalExercises > 0 || totalRoutines > 0;
+  const today = new Date().getDay();
+  const todayRoutine = data?.routines.find((r) => r.days.includes(today)) ?? null;
+  const others = data?.routines.filter((r) => r.id !== todayRoutine?.id) ?? [];
 
-  const handleDeleteExercise = async (exerciseId: string) => {
-    const userId = session?.user.id;
-    if (!userId) return;
-
-    try {
-      const { error: deleteError } = await supabase
-        .from("exercises")
-        .delete()
-        .eq("id", exerciseId)
-        .eq("user_id", userId);
-
-      if (deleteError) throw deleteError;
-      await loadData();
-    } catch (err) {
-      reportError(err, { scope: "ExerciseList" });
-      setExerciseError(err instanceof Error ? err.message : "No se pudo eliminar el ejercicio");
-    }
-  };
-
-  const handleCreateExercise = () => {
-    router.push("/exercise-create?returnTo=/exercise-list");
+  const askDelete = (exercise: ExerciseItem) => {
+    haptic("warning");
+    Alert.alert("Eliminar ejercicio", `¿Eliminar «${exercise.name}»?`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: () => {
+          if (!userId) return;
+          void deleteExercise(userId, exercise.id)
+            .then(load)
+            .catch((e) => reportError(e, { scope: "exercise/delete" }));
+        },
+      },
+    ]);
   };
 
   return (
-    <>
-      <View className="flex-1 bg-canvas">
-        <ScrollView className="flex-1 px-5 pt-12" showsVerticalScrollIndicator={false}>
-          <View className="mb-5 flex-row items-center">
-            <Ionicons name="barbell" size={20} color={tc("#0f766e")} />
-            <View className="ml-2 flex-1">
-              <Text className="text-2xl font-extrabold text-teal-900 dark:text-teal-100">
-                Ejercicio
-              </Text>
-              <Text className="text-sm font-semibold text-teal-600 dark:text-teal-400">
-                Ejercicios guardados y rutinas listas para iniciar
-              </Text>
+    <Screen
+      title="Moverme"
+      headerRight={
+        <PressableScale
+          onPress={() => setAddOpen(true)}
+          accessibilityLabel="Agregar"
+          className="h-11 w-11 items-center justify-center rounded-2xl bg-accent"
+          style={ACCENT_GLOW}
+        >
+          <Ionicons name="add" size={26} color={COLORS.accentInk} />
+        </PressableScale>
+      }
+    >
+      {error && !data ? (
+        <ErrorState message="No pudimos cargar tus rutinas." onRetry={() => void load()} />
+      ) : null}
+
+      {todayRoutine ? (
+        <View className="mt-4 rounded-[28px] bg-surface p-5" style={ELEVATION[2]}>
+          <View className="flex-row items-center gap-3">
+            <View className="min-w-0 flex-1">
+              <Eyebrow>Rutina de hoy</Eyebrow>
+              <Title className="mt-1.5 text-[25px] leading-[29px]">{todayRoutine.name}</Title>
+              <Caption className="mt-1">
+                {todayRoutine.exerciseCount} ejercicios · {todayRoutine.minutes} min
+              </Caption>
             </View>
+            <MochiCharacter expression="excited" size={88} animated={false} shadow={false} />
           </View>
+          <View className="mt-4 self-start">
+            <Button
+              title="Empezar"
+              onPress={() => router.push(`/routine-player?routineId=${todayRoutine.id}`)}
+            />
+          </View>
+        </View>
+      ) : data ? (
+        <View className="mt-2 flex-row items-end gap-2.5">
+          <MochiCharacter expression="happy" size={96} interactive />
+          <MochiBubble
+            className="flex-1"
+            tail="left"
+            text={
+              tip ??
+              (data.routines.length > 0
+                ? "Hoy no te toca rutina. Una caminata corta también suma."
+                : "Arma una rutina corta y te acompaño a hacerla.")
+            }
+          />
+        </View>
+      ) : null}
 
-          {tip && (
-            <View
-              className={`mb-4 rounded-2xl border p-3 ${personality?.phaseBadgeClass ?? "border-teal-200 bg-white dark:border-teal-800 dark:bg-surface"}`}
-            >
-              <Text className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
-                Consejo para hoy
-              </Text>
-              <Text className="mt-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {tip}
-              </Text>
-            </View>
-          )}
+      {others.length > 0 ? (
+        <>
+          <SectionHeader title={todayRoutine ? "Otras rutinas" : "Tus rutinas"} />
+          <ListGroup>
+            {others.map((r) => (
+              <ListRow
+                key={r.id}
+                title={r.name}
+                subtitle={`${daysLabel(r.days)} · ${r.minutes} min`}
+                leading={<IconTile icon="barbell" tint="study" />}
+                trailing={<Ionicons name="play-circle" size={28} color={COLORS.accent} />}
+                onPress={() => router.push(`/routine-player?routineId=${r.id}`)}
+                accessibilityLabel={`Empezar ${r.name}`}
+              />
+            ))}
+          </ListGroup>
+        </>
+      ) : null}
 
-          {!loading && hasContent && (
-            <View className="mb-4 flex-row gap-3">
-              <View className="flex-1 rounded-2xl border border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
-                <Text className="text-3xl font-extrabold text-teal-900 dark:text-teal-100">
-                  {totalExercises}
-                </Text>
-                <Text className="mt-1 text-xs font-bold text-teal-600 dark:text-teal-400">
-                  {totalExercises === 1 ? "ejercicio" : "ejercicios"}
-                </Text>
-              </View>
-              <View className="flex-1 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-800 dark:bg-violet-950">
-                <Text className="text-3xl font-extrabold text-violet-900 dark:text-violet-100">
-                  {totalRoutines}
-                </Text>
-                <Text className="mt-1 text-xs font-bold text-violet-600 dark:text-violet-400">
-                  {totalRoutines === 1 ? "rutina" : "rutinas"}
-                </Text>
-              </View>
-              <View className="flex-1 rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950">
-                <Text className="text-3xl font-extrabold text-rose-900 dark:text-rose-100">
-                  {totalRoutineExercises}
-                </Text>
-                <Text className="mt-1 text-xs font-bold text-rose-600 dark:text-rose-400">
-                  ejercicios en rutinas
-                </Text>
-              </View>
-            </View>
-          )}
-
-          <View className="mb-5 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
-            <View className="mb-3 flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <Ionicons name="repeat-outline" size={18} color={tc("#0f766e")} />
-                <Text className="ml-2 text-base font-extrabold text-teal-900 dark:text-teal-100">
-                  Rutinas
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => router.push("/routine-create")}
-                className="rounded-full bg-teal-50 px-3 py-2 dark:bg-teal-950"
+      {data && data.exercises.length > 0 ? (
+        <>
+          <SectionHeader title="Ejercicios" />
+          <ListGroup>
+            {data.exercises.map((e) => (
+              <PressableScale
+                key={e.id}
+                haptics={false}
+                onLongPress={() => askDelete(e)}
+                accessibilityLabel={`${e.name}. Mantén presionado para eliminar`}
               >
-                <Text className="text-xs font-extrabold text-teal-700 dark:text-teal-300">
-                  Nueva rutina
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {routineError ? (
-              <View className="rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
-                <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
-                  {routineError}
-                </Text>
-              </View>
-            ) : routines.length === 0 ? (
-              <View className="rounded-2xl border border-teal-100 bg-teal-50 p-4 dark:border-teal-900 dark:bg-teal-950">
-                <Text className="text-sm font-semibold text-teal-700 dark:text-teal-300">
-                  Aún no tienes rutinas. Crea una usando tus ejercicios guardados.
-                </Text>
-              </View>
-            ) : (
-              routines.map((routine, index) => (
-                <RoutineCard
-                  key={routine.id}
-                  routine={routine}
-                  index={index}
-                  animationSeed={animationSeed}
+                <ListRow
+                  title={e.name}
+                  subtitle={`${e.sets} series · ${e.reps} repeticiones · ${e.minutes} min`}
+                  leading={<IconTile icon="fitness" tint="ok" />}
                 />
-              ))
-            )}
-          </View>
+              </PressableScale>
+            ))}
+          </ListGroup>
+          <Caption className="ml-1 mt-3">Mantén presionado un ejercicio para eliminarlo.</Caption>
+        </>
+      ) : null}
 
-          <View className="mb-5 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
-            <View className="mb-3 flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <Ionicons name="barbell-outline" size={18} color={tc("#0f766e")} />
-                <Text className="ml-2 text-base font-extrabold text-teal-900 dark:text-teal-100">
-                  Ejercicios
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={handleCreateExercise}
-                className="rounded-full bg-teal-50 px-3 py-2 dark:bg-teal-950"
-              >
-                <Text className="text-xs font-extrabold text-teal-700 dark:text-teal-300">
-                  Nuevo ejercicio
-                </Text>
-              </TouchableOpacity>
-            </View>
+      {data && data.routines.length === 0 && data.exercises.length === 0 ? (
+        <View className="mt-5">
+          <Button title="Crear mi primera rutina" onPress={() => router.push("/routine-create")} />
+        </View>
+      ) : null}
 
-            {exerciseError ? (
-              <View className="rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
-                <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
-                  {exerciseError}
-                </Text>
-              </View>
-            ) : exercises.length === 0 ? (
-              <View className="rounded-2xl border border-teal-100 bg-teal-50 p-4 dark:border-teal-900 dark:bg-teal-950">
-                <Text className="text-sm font-semibold text-teal-700 dark:text-teal-300">
-                  Aún no tienes ejercicios. Crea uno para usarlo en tus rutinas.
-                </Text>
-              </View>
-            ) : (
-              <View>
-                {exercises.map((exercise) => (
-                  <ExerciseCard
-                    key={exercise.id}
-                    exercise={exercise}
-                    onDelete={(exerciseId) => {
-                      showAlert({
-                        title: "Eliminar ejercicio",
-                        message:
-                          "¿Quieres eliminar este ejercicio? Se quitará de todas las rutinas que lo usen.",
-                        buttons: [
-                          { text: "Cancelar", style: "cancel" },
-                          {
-                            text: "Eliminar",
-                            style: "destructive",
-                            onPress: () => {
-                              void handleDeleteExercise(exerciseId);
-                            },
-                          },
-                        ],
-                      });
-                    }}
-                  />
-                ))}
-              </View>
-            )}
-          </View>
-
-          <TabBarSpacer />
-        </ScrollView>
-        {loading && (
-          <View className="absolute inset-x-0 top-0 h-full items-center justify-center bg-teal-50/30 dark:bg-teal-950/30">
-            <Animated.View style={loadingAnimatedStyle}>
-              <MochiCharacter mood="thinking" size={90} />
-            </Animated.View>
-            <Text className="mt-4 text-sm font-semibold text-teal-700 dark:text-teal-300">
-              Cargando ejercicios y rutinas...
-            </Text>
-          </View>
-        )}
-      </View>
-      <FloatingActionButton
-        onPress={() => router.push("/routine-create")}
-        containerClassName="bg-violet-500"
-        borderClassName="border-purple-300 dark:border-purple-700"
-        iconName="repeat-outline"
-        accessibilityLabel="Crear rutina"
-        bottomOffset={72}
-      />
-      <FloatingActionButton
-        onPress={handleCreateExercise}
-        containerClassName="bg-teal-500"
-        borderClassName="border-teal-300 dark:border-teal-700"
-        iconName="barbell-outline"
-        accessibilityLabel="Crear ejercicio"
-      />
-      {AlertComponent}
-    </>
+      <Sheet visible={addOpen} onClose={() => setAddOpen(false)} title="¿Qué quieres agregar?">
+        <ListGroup>
+          <ListRow
+            title="Rutina"
+            subtitle="Varios ejercicios para ciertos días"
+            leading={<IconTile icon="list" tint="study" />}
+            onPress={() => {
+              setAddOpen(false);
+              router.push("/routine-create");
+            }}
+          />
+          <ListRow
+            title="Ejercicio"
+            subtitle="Uno suelto, con series y repeticiones"
+            leading={<IconTile icon="fitness" tint="ok" />}
+            onPress={() => {
+              setAddOpen(false);
+              router.push("/exercise-create?returnTo=/exercise-list");
+            }}
+          />
+        </ListGroup>
+      </Sheet>
+    </Screen>
   );
 }
 
