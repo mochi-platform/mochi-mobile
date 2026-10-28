@@ -1,101 +1,65 @@
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Share,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
+import { useCallback, useMemo, useRef, useState, type ComponentRef } from "react";
+import { Share, Text, View } from "react-native";
+import { captureRef } from "react-native-view-shot";
+import { useSession } from "@/src/core/providers/SessionContext";
+import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
 import { getLevelProgress, getMochiLevel, MOCHI_LEVELS } from "@/src/shared/lib/supabase/levels";
-import { useSession } from "@/src/core/providers/SessionContext";
-import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
-import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import type { Achievement, UserAchievement, Streak } from "@/src/shared/types/database";
+import { COLORS } from "@/src/shared/theme/tokens";
+import type { Achievement, Streak, UserAchievement } from "@/src/shared/types/database";
+import {
+  Button,
+  Caption,
+  ErrorState,
+  Eyebrow,
+  IconTile,
+  Input,
+  ListGroup,
+  ListRow,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Sheet,
+  Skeleton,
+  Stat,
+  Strong,
+  Surface,
+  Title,
+} from "@/src/shared/ui";
 
-interface Profile {
+type Profile = {
   full_name: string;
   mochi_name: string | null;
   total_points: number;
-  wake_up_time: string | null;
-}
+};
 
 export function ProfileScreen() {
   const { session } = useSession();
+  const userId = session?.user.id;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [streak, setStreak] = useState<Streak | null>(null);
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isNameModalVisible, setIsNameModalVisible] = useState(false);
-  const [draftMochiName, setDraftMochiName] = useState("");
+  const [error, setError] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [draftName, setDraftName] = useState("");
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
   const [shareAchievement, setShareAchievement] = useState<Achievement | null>(null);
-  const [sharingAchievement, setSharingAchievement] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const shareCardRef = useRef<ComponentRef<typeof View>>(null);
 
-  const loadingScale = useSharedValue(1);
-
-  useEffect(() => {
-    if (loading) {
-      loadingScale.value = withRepeat(
-        withSequence(
-          withTiming(1.06, {
-            duration: 650,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          withTiming(1, { duration: 650, easing: Easing.inOut(Easing.quad) }),
-        ),
-        -1,
-        false,
-      );
-    } else {
-      loadingScale.value = withTiming(1, { duration: 180 });
-    }
-  }, [loading, loadingScale]);
-
-  const loadingAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: loadingScale.value }],
-  }));
-
-  const loadProfile = useCallback(async () => {
-    const userId = session?.user.id;
-    if (!userId) {
-      setProfile(null);
-      setStreak(null);
-      setUserAchievements([]);
-      setAllAchievements([]);
-      setLoading(false);
-      return;
-    }
-
+  const load = useCallback(async () => {
+    if (!userId) return;
     try {
-      setLoading(true);
-      setError(null);
-
       const [profileRes, streakRes, userAchRes, allAchRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("full_name, mochi_name, total_points, wake_up_time")
+          .select("full_name, mochi_name, total_points")
           .eq("id", userId)
           .single(),
         supabase.from("streaks").select("*").eq("user_id", userId).single(),
@@ -105,88 +69,63 @@ export function ProfileScreen() {
           .eq("user_id", userId),
         supabase.from("achievements").select("*"),
       ]);
-
       if (profileRes.error && profileRes.error.code !== "PGRST116") throw profileRes.error;
       if (streakRes.error && streakRes.error.code !== "PGRST116") throw streakRes.error;
       if (userAchRes.error) throw userAchRes.error;
       if (allAchRes.error) throw allAchRes.error;
-
-      setProfile(profileRes.data ?? null);
+      setProfile((profileRes.data as Profile | null) ?? null);
       setStreak(streakRes.data ?? null);
       setUserAchievements(userAchRes.data ?? []);
       setAllAchievements(allAchRes.data ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error cargando perfil");
-      setProfile(null);
-      setStreak(null);
-      setUserAchievements([]);
-      setAllAchievements([]);
-    } finally {
-      setLoading(false);
+      setError(false);
+    } catch (e) {
+      reportError(e, { scope: "profile/load" });
+      setError(true);
     }
-  }, [session?.user.id]);
+  }, [userId]);
 
-  const openEditNameModal = useCallback(() => {
-    setDraftMochiName((profile?.mochi_name ?? "").trim());
-    setNameError(null);
-    setIsNameModalVisible(true);
-  }, [profile?.mochi_name]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
 
-  const closeEditNameModal = useCallback(() => {
-    if (savingName) return;
-    setIsNameModalVisible(false);
-    setNameError(null);
-  }, [savingName]);
-
-  const saveMochiName = useCallback(async () => {
-    const userId = session?.user.id;
+  const saveName = async () => {
     if (!userId) return;
-
-    const trimmedName = draftMochiName.trim();
-    if (trimmedName.length > 24) {
+    const name = draftName.trim();
+    if (name.length > 24) {
       setNameError("El nombre no puede superar 24 caracteres.");
       return;
     }
-
+    setSavingName(true);
+    setNameError(null);
     try {
-      setSavingName(true);
-      setNameError(null);
-
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ mochi_name: trimmedName.length > 0 ? trimmedName : null })
+        .update({ mochi_name: name || null })
         .eq("id", userId);
-
       if (updateError) throw updateError;
-
-      setProfile((prev) =>
-        prev ? { ...prev, mochi_name: trimmedName.length > 0 ? trimmedName : null } : prev,
-      );
-      setIsNameModalVisible(false);
-    } catch (err) {
+      setProfile((prev) => (prev ? { ...prev, mochi_name: name || null } : prev));
+      setRenameOpen(false);
+    } catch (e) {
       setNameError(
-        err instanceof Error ? err.message : "No pudimos actualizar el nombre. Intenta de nuevo.",
+        e instanceof Error ? e.message : "No pudimos cambiar el nombre. Intenta de nuevo.",
       );
     } finally {
       setSavingName(false);
     }
-  }, [draftMochiName, session?.user.id]);
+  };
 
-  const handleShareAchievement = useCallback(async () => {
+  const share = async () => {
     if (!shareAchievement) return;
-
+    setSharing(true);
     try {
-      setSharingAchievement(true);
-
-      const canShare = await Sharing.isAvailableAsync();
-
-      if (canShare && shareCardRef.current) {
+      if ((await Sharing.isAvailableAsync()) && shareCardRef.current) {
         const uri = await captureRef(shareCardRef, {
           format: "png",
           quality: 1,
           result: "tmpfile",
         });
-
         await Sharing.shareAsync(uri, {
           mimeType: "image/png",
           dialogTitle: shareAchievement.title,
@@ -197,359 +136,196 @@ export function ProfileScreen() {
           message: `${shareAchievement.title}\n${shareAchievement.description}\n\n+${shareAchievement.points} puntos en Mochi`,
         });
       }
+    } catch (e) {
+      reportError(e, { scope: "profile/share" });
     } finally {
-      setSharingAchievement(false);
+      setSharing(false);
     }
-  }, [shareAchievement]);
+  };
 
-  useFocusEffect(
-    useCallback(() => {
-      void loadProfile();
-    }, [loadProfile]),
-  );
-
-  const unlockedIds = useMemo(
+  const unlocked = useMemo(
     () => new Set(userAchievements.map((ua) => ua.achievement_id)),
     [userAchievements],
   );
-  const totalPoints = profile?.total_points ?? 0;
-  const level = getMochiLevel(totalPoints);
-  const levelProgress = getLevelProgress(totalPoints);
+  const points = profile?.total_points ?? 0;
+  const level = getMochiLevel(points);
+  const progress = getLevelProgress(points);
   const nextLevel = MOCHI_LEVELS.find((item) => item.level === level.level + 1) ?? null;
-  const pointsToNext = nextLevel ? Math.max(0, nextLevel.minPoints - totalPoints) : 0;
-
-  if (loading && !profile) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-purple-50 dark:bg-purple-950">
-        <Animated.View style={loadingAnimatedStyle}>
-          <MochiCharacter mood="thinking" size={96} />
-        </Animated.View>
-        <Text className="mt-4 text-sm font-semibold text-purple-700 dark:text-purple-300">
-          Cargando perfil...
-        </Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
-        <MochiCharacter mood="sleepy" size={80} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
-          {error}
-        </Text>
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-purple-500 px-6 py-3"
-          onPress={() => void loadProfile()}
-        >
-          <Text className="font-bold text-white">Reintentar</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
+  const toNext = nextLevel ? Math.max(0, nextLevel.minPoints - points) : 0;
+  const mochiName = profile?.mochi_name?.trim() || "Mochi";
+  const sortedAchievements = [...allAchievements].sort(
+    (a, b) => Number(unlocked.has(b.id)) - Number(unlocked.has(a.id)),
+  );
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
-        <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color={tc("#7c3aed")} />
-          <Text className="ml-1 font-bold text-purple-700 dark:text-purple-300">Volver</Text>
-        </TouchableOpacity>
+    <Screen
+      title="Perfil"
+      withTabBar={false}
+      headerRight={
+        <PressableScale
+          onPress={() => router.back()}
+          accessibilityLabel="Volver"
+          className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+        >
+          <Ionicons name="close" size={20} color={COLORS.inkMuted} />
+        </PressableScale>
+      }
+    >
+      {error && !profile ? (
+        <ErrorState message="No pudimos cargar tu perfil." onRetry={() => void load()} />
+      ) : null}
+      {!profile && !error ? <Skeleton height={260} className="mt-4 rounded-card" /> : null}
 
-        <View className="mt-6 items-center">
-          <MochiCharacter mood="happy" size={80} />
-          <Text className="mt-4 text-2xl font-extrabold text-purple-900 dark:text-purple-100">
-            {(profile?.mochi_name ?? "").trim() || "Mochi"}
-          </Text>
-
-          <IconCtaButton
-            label="Renombrar"
-            onPress={openEditNameModal}
-            iconName="create"
-            iconColor={tc("#7c3aed")}
-            containerClassName="mt-2 w-full border border-purple-200 dark:border-purple-800 bg-white dark:bg-surface"
-            textClassName="text-purple-800 dark:text-purple-200"
-          />
-
-          <View className="mt-3 flex-row items-center">
-            <View className="mr-3 flex-row items-center rounded-full bg-yellow-200 px-4 py-2 dark:bg-yellow-800">
-              {loading ? (
-                <ActivityIndicator size="small" color={tc("#92400e")} />
-              ) : (
-                <Ionicons name="star" size={14} color={tc("#92400e")} />
-              )}
-              <Text className="ml-1 font-extrabold text-yellow-900 dark:text-yellow-100">
-                {profile?.total_points ?? 0} puntos
-              </Text>
-            </View>
-            <View className="flex-row items-center rounded-full bg-orange-100 px-4 py-2 dark:bg-orange-900">
-              <Ionicons name="flame" size={14} color={tc("#ea580c")} />
-              <Text className="ml-1 font-extrabold text-orange-800 dark:text-orange-200">
-                {streak?.current_streak ?? 0} días
-              </Text>
-            </View>
+      {profile ? (
+        <>
+          <View className="mt-4 items-center">
+            <MochiCharacter expression="proud" size={150} interactive />
+            <PressableScale
+              haptics="selection"
+              onPress={() => {
+                setDraftName(profile.mochi_name ?? "");
+                setNameError(null);
+                setRenameOpen(true);
+              }}
+              accessibilityLabel={`Cambiar el nombre de ${mochiName}`}
+              className="mt-1 flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
+            >
+              <Title className="text-2xl leading-7">{mochiName}</Title>
+              <Ionicons name="pencil" size={15} color={COLORS.accentStrong} />
+            </PressableScale>
+            <Caption>Compañera de {profile.full_name.split(" ")[0]}</Caption>
           </View>
 
-          <View className="mt-3 w-full rounded-2xl border border-purple-200 bg-purple-100 px-3 py-3 dark:border-purple-800 dark:bg-purple-900">
-            <Text className="text-xs font-bold text-purple-700 dark:text-purple-300">
-              Nivel {level.level} · {level.name}
-            </Text>
-            <View className="mt-2 h-2 w-full rounded-full bg-purple-200 dark:bg-purple-800">
-              <View
-                className="h-2 rounded-full bg-purple-500"
-                style={{ width: `${levelProgress}%` }}
+          <Surface elevation={2} className="mt-5 p-[18px]">
+            <View className="flex-row justify-between">
+              <Stat value={String(points)} label="puntos" />
+              <Stat value={String(streak?.current_streak ?? 0)} label="días de racha" />
+              <Stat
+                value={String(unlocked.size)}
+                label={unlocked.size === 1 ? "logro" : "logros"}
               />
             </View>
-            <Text className="mt-1 text-xs font-semibold text-purple-700 dark:text-purple-300">
-              {nextLevel
-                ? `${pointsToNext} puntos para ${nextLevel.name}`
-                : "Nivel máximo alcanzado"}
-            </Text>
+            <View className="mt-4">
+              <View className="flex-row items-baseline justify-between">
+                <Strong>
+                  Nivel {level.level} · {level.name}
+                </Strong>
+                {nextLevel ? (
+                  <Caption>
+                    {toNext} para {nextLevel.name}
+                  </Caption>
+                ) : (
+                  <Caption>Nivel máximo</Caption>
+                )}
+              </View>
+              <View className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface-muted">
+                <View
+                  className="h-full rounded-full bg-accent"
+                  style={{ width: `${Math.min(100, Math.round(progress))}%` }}
+                />
+              </View>
+            </View>
+            {streak && streak.longest_streak > 0 ? (
+              <Caption className="mt-3">Tu racha más larga: {streak.longest_streak} días.</Caption>
+            ) : null}
+          </Surface>
+
+          <SectionHeader title="Logros" />
+          <View className="flex-row flex-wrap justify-between gap-y-3">
+            {sortedAchievements.map((a) => {
+              const on = unlocked.has(a.id);
+              return (
+                <Surface
+                  key={a.id}
+                  onPress={on ? () => setShareAchievement(a) : undefined}
+                  accessibilityLabel={on ? `${a.title}. Compartir` : `${a.title}, bloqueado`}
+                  className={`w-[48%] p-3.5 ${on ? "" : "opacity-60"}`}
+                  elevation={on ? 1 : 0}
+                  tone={on ? "surface" : "sunken"}
+                >
+                  <IconTile
+                    icon={
+                      on ? ((a.icon as keyof typeof Ionicons.glyphMap) ?? "trophy") : "lock-closed"
+                    }
+                    tint={on ? "kitchen" : "study"}
+                    size={36}
+                  />
+                  <Strong className="mt-2.5" numberOfLines={2}>
+                    {a.title}
+                  </Strong>
+                  <Caption numberOfLines={2}>
+                    {on ? a.description : "Sigue avanzando para desbloquearlo"}
+                  </Caption>
+                  {on ? (
+                    <Eyebrow className="mt-1.5 text-accent-strong">+{a.points} · Compartir</Eyebrow>
+                  ) : null}
+                </Surface>
+              );
+            })}
           </View>
 
-          {streak && streak.longest_streak > 0 && (
-            <Text className="mt-2 text-xs font-semibold text-purple-500">
-              Racha más larga: {streak.longest_streak} días
-            </Text>
-          )}
-        </View>
-
-        <IconCtaButton
-          label="Configuración"
-          onPress={() => router.push("/settings")}
-          iconName="settings"
-          iconColor={tc("#7c3aed")}
-          containerClassName="mt-3 w-full border border-purple-200 dark:border-purple-800 bg-white dark:bg-surface"
-          textClassName="text-purple-800 dark:text-purple-200"
-        />
-
-        <IconCtaButton
-          label="Ver analíticas"
-          onPress={() => router.push("/analytics")}
-          iconName="stats-chart"
-          iconColor={tc("#0369a1")}
-          containerClassName="mt-3 w-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950"
-          textClassName="text-sky-800 dark:text-sky-200"
-        />
-
-        <View className="mt-8">
-          <Text className="mb-4 text-lg font-extrabold text-purple-900 dark:text-purple-100">
-            Logros
-          </Text>
-
-          {allAchievements.length === 0 ? (
-            <View className="items-center rounded-3xl border-2 border-purple-200 bg-white p-6 dark:border-purple-800 dark:bg-surface">
-              <MochiCharacter mood="happy" size={64} />
-              <Text className="mt-3 text-center text-sm font-semibold text-purple-600 dark:text-purple-400">
-                Completa actividades para desbloquear logros
-              </Text>
-            </View>
-          ) : (
-            <View className="flex-row flex-wrap">
-              {allAchievements.map((achievement) => {
-                const isUnlocked = unlockedIds.has(achievement.id);
-                return (
-                  <View key={achievement.id} className="mb-3 w-1/2 pr-3">
-                    <View
-                      className={`h-40 rounded-2xl border-2 p-3 ${
-                        isUnlocked
-                          ? "border-purple-200 bg-purple-100 dark:border-purple-800 dark:bg-purple-900"
-                          : "border-gray-200 bg-gray-100 opacity-60 dark:border-gray-800 dark:bg-gray-900"
-                      }`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="h-9 w-9 items-center justify-center rounded-xl bg-white dark:bg-surface">
-                          <Ionicons
-                            name={
-                              isUnlocked
-                                ? ((achievement.icon as keyof typeof Ionicons.glyphMap) ?? "trophy")
-                                : "lock-closed"
-                            }
-                            size={18}
-                            color={isUnlocked ? tc("#7c3aed") : tc("#9ca3af")}
-                          />
-                        </View>
-                        {isUnlocked ? (
-                          <View className="flex-row items-center">
-                            <View className="rounded-full bg-purple-200 px-2 py-0.5 dark:bg-purple-800">
-                              <Text className="text-xs font-bold text-purple-800 dark:text-purple-200">
-                                +{achievement.points}
-                              </Text>
-                            </View>
-                            <TouchableOpacity
-                              className="ml-2 h-7 w-7 items-center justify-center rounded-full bg-purple-200 dark:bg-purple-800"
-                              onPress={() => setShareAchievement(achievement)}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <Ionicons name="share-social" size={13} color={tc("#5b21b6")} />
-                            </TouchableOpacity>
-                          </View>
-                        ) : null}
-                      </View>
-                      <Text
-                        className={`mt-2 text-xs font-bold ${isUnlocked ? "text-purple-900 dark:text-purple-100" : "text-gray-500"}`}
-                        numberOfLines={2}
-                      >
-                        {achievement.title}
-                      </Text>
-
-                      <View className="mt-1 flex-1 justify-end">
-                        <Text
-                          className={`text-xs ${isUnlocked ? "text-purple-500" : "text-gray-500"}`}
-                          numberOfLines={2}
-                        >
-                          {isUnlocked
-                            ? achievement.description
-                            : "Desbloquéalo completando actividades"}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        <View className="h-16" />
-      </ScrollView>
-
-      <Modal
-        visible={isNameModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeEditNameModal}
-      >
-        <View className="flex-1 items-center justify-center bg-black/30 px-6">
-          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-surface">
-            <Text className="text-center text-2xl font-extrabold text-purple-700 dark:text-purple-300">
-              Cambiar nombre
-            </Text>
-            <Text className="mt-2 text-center text-sm font-semibold text-slate-600 dark:text-slate-400">
-              Elige cómo quieres llamar a Mochi.
-            </Text>
-
-            <TextInput
-              value={draftMochiName}
-              onChangeText={setDraftMochiName}
-              placeholder="Ej: Mochi Estrella"
-              placeholderTextColor={tc("#94a3b8")}
-              autoCapitalize="words"
-              maxLength={24}
-              editable={!savingName}
-              className="mt-5 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-base font-semibold text-purple-900 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-100"
+          <SectionHeader title="Más" />
+          <ListGroup>
+            <ListRow
+              title="Mis estadísticas"
+              subtitle="Estudio, hábitos y ánimo en el tiempo"
+              leading={<IconTile icon="stats-chart" tint="study" />}
+              onPress={() => router.push("/analytics")}
             />
+            <ListRow
+              title="Ajustes"
+              subtitle="Módulos, recordatorios y privacidad"
+              leading={<IconTile icon="settings" tint="me" />}
+              onPress={() => router.push("/settings")}
+            />
+          </ListGroup>
+        </>
+      ) : null}
 
-            {nameError ? (
-              <Text className="mt-2 text-center text-xs font-semibold text-red-600 dark:text-red-400">
-                {nameError}
-              </Text>
-            ) : (
-              <Text className="mt-2 text-center text-xs font-semibold text-purple-500">
-                Deja el campo vacío para volver al nombre por defecto.
-              </Text>
-            )}
-
-            <View className="mt-6 flex-row">
-              <TouchableOpacity
-                className="mr-2 flex-1 rounded-2xl border-2 border-purple-200 bg-white px-4 py-3 dark:border-purple-800 dark:bg-surface"
-                onPress={closeEditNameModal}
-                activeOpacity={0.85}
-                disabled={savingName}
-              >
-                <Text className="text-center text-base font-extrabold text-purple-700 dark:text-purple-300">
-                  Cancelar
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="ml-2 flex-1 rounded-2xl bg-purple-500 px-4 py-3"
-                onPress={() => void saveMochiName()}
-                activeOpacity={0.85}
-                disabled={savingName}
-              >
-                {savingName ? (
-                  <ActivityIndicator size="small" color={tc("#ffffff")} />
-                ) : (
-                  <Text className="text-center text-base font-extrabold text-white">Guardar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={Boolean(shareAchievement)}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          if (!sharingAchievement) {
-            setShareAchievement(null);
-          }
-        }}
+      <Sheet
+        visible={renameOpen}
+        onClose={() => !savingName && setRenameOpen(false)}
+        title="¿Cómo quieres llamarla?"
       >
-        <View className="flex-1 items-center justify-center bg-black/30 px-6">
-          <View className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl dark:bg-surface">
-            <View
-              ref={shareCardRef}
-              collapsable={false}
-              className="rounded-3xl border-2 border-purple-200 bg-purple-50 p-5 dark:border-purple-800 dark:bg-purple-950"
-            >
-              <View className="items-center">
-                <MochiCharacter mood="excited" size={76} />
-                <Text className="mt-3 text-xs font-bold uppercase text-purple-600 dark:text-purple-400">
-                  Logro desbloqueado
-                </Text>
-                <Text className="mt-1 text-center text-lg font-extrabold text-purple-900 dark:text-purple-100">
-                  {shareAchievement?.title}
-                </Text>
-              </View>
+        <Input
+          label="Nombre de tu compañera"
+          value={draftName}
+          onChangeText={setDraftName}
+          placeholder="Mochi"
+          maxLength={24}
+          error={nameError}
+          autoFocus
+        />
+        <Button title="Guardar" loading={savingName} onPress={() => void saveName()} />
+      </Sheet>
 
-              <Text className="mt-3 text-center text-sm font-semibold text-purple-700 dark:text-purple-300">
-                {shareAchievement?.description}
-              </Text>
-
-              <View className="mt-4 self-center rounded-full bg-yellow-200 px-4 py-1.5 dark:bg-yellow-800">
-                <Text className="text-xs font-extrabold text-yellow-900 dark:text-yellow-100">
-                  +{shareAchievement?.points ?? 0} puntos
-                </Text>
-              </View>
-
-              <Text className="mt-4 text-center text-xs font-semibold text-purple-600 dark:text-purple-400">
-                {(profile?.full_name ?? "Mi progreso") + " en Mochi"}
-              </Text>
-            </View>
-
-            <View className="mt-4 flex-row">
-              <TouchableOpacity
-                className="mr-2 flex-1 rounded-2xl border-2 border-purple-200 bg-white px-4 py-3 dark:border-purple-800 dark:bg-surface"
-                onPress={() => setShareAchievement(null)}
-                disabled={sharingAchievement}
-              >
-                <Text className="text-center text-base font-extrabold text-purple-700 dark:text-purple-300">
-                  Cerrar
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="ml-2 flex-1 rounded-2xl bg-purple-500 px-4 py-3"
-                onPress={() => {
-                  void handleShareAchievement();
-                }}
-                disabled={sharingAchievement}
-              >
-                {sharingAchievement ? (
-                  <ActivityIndicator size="small" color={tc("#ffffff")} />
-                ) : (
-                  <Text className="text-center text-base font-extrabold text-white">Compartir</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+      <Sheet
+        visible={Boolean(shareAchievement)}
+        onClose={() => !sharing && setShareAchievement(null)}
+      >
+        <View
+          ref={shareCardRef}
+          collapsable={false}
+          className="items-center rounded-card bg-tint-duo px-5 py-6"
+        >
+          <MochiCharacter expression="celebrating" size={110} animated={false} />
+          <Eyebrow className="mt-2 text-tint-duo-ink">Logro desbloqueado</Eyebrow>
+          <Title className="mt-1 text-center">{shareAchievement?.title ?? ""}</Title>
+          <Caption className="mt-1.5 text-center text-ink">
+            {shareAchievement?.description ?? ""}
+          </Caption>
+          <View className="mt-3 rounded-full bg-surface px-4 py-1.5">
+            <Text className="font-body-extrabold text-xs text-ink">
+              +{shareAchievement?.points ?? 0} puntos
+            </Text>
           </View>
+          <Caption className="mt-3">{(profile?.full_name ?? "Mi progreso") + " en Mochi"}</Caption>
         </View>
-      </Modal>
-    </SafeAreaView>
+        <View className="mt-4">
+          <Button title="Compartir" loading={sharing} onPress={() => void share()} />
+        </View>
+      </Sheet>
+    </Screen>
   );
 }
 
