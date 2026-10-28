@@ -1,6 +1,8 @@
-import { tc } from "@/src/shared/theme/colors";
 import { useEffect } from "react";
 import { Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { Caption, ELEVATION, Eyebrow, Strong } from "@/src/shared/ui";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,12 +11,12 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
 
 type AchievementToastProps = {
   title: string;
   description: string;
   points: number;
+  /** Se conserva por compatibilidad: ahora el aviso muestra a Mochi en lugar de un ícono. */
   icon?: string;
   onHide: () => void;
 };
@@ -23,13 +25,8 @@ const SLIDE_IN_MS = 380;
 const VISIBLE_MS = 2800;
 const SLIDE_OUT_MS = 320;
 
-export function AchievementToast({
-  title,
-  description,
-  points,
-  icon,
-  onHide,
-}: AchievementToastProps) {
+export function AchievementToast({ title, description, points, onHide }: AchievementToastProps) {
+  const insets = useSafeAreaInsets();
   const translateY = useSharedValue(-120);
   const opacity = useSharedValue(0);
 
@@ -72,46 +69,39 @@ export function AchievementToast({
     opacity: opacity.value,
   }));
 
-  const resolvedIcon = (icon ?? "trophy") as keyof typeof Ionicons.glyphMap;
+  const isReward = points > 0;
 
   return (
     <Animated.View
-      style={[animatedStyle, { position: "absolute", top: 56, left: 16, right: 16, zIndex: 999 }]}
+      style={[
+        animatedStyle,
+        { position: "absolute", top: insets.top + 8, left: 16, right: 16, zIndex: 999 },
+      ]}
+      accessibilityLiveRegion="polite"
+      accessibilityRole="alert"
     >
-      <View className="flex-row items-center rounded-2xl border-2 border-yellow-300 bg-yellow-50 px-4 py-3 shadow-md dark:border-yellow-700 dark:bg-yellow-950">
-        {/* Icono del logro */}
-        <View className="mr-3 h-11 w-11 items-center justify-center rounded-xl bg-yellow-200 dark:bg-yellow-800">
-          <Ionicons name={resolvedIcon} size={22} color={tc("#92400e")} />
+      <View
+        className="flex-row items-center gap-3 rounded-[22px] bg-canvas px-3.5 py-3"
+        style={ELEVATION[3]}
+      >
+        <MochiCharacter
+          expression={isReward ? "celebrating" : "happy"}
+          size={56}
+          animated={false}
+          shadow={false}
+        />
+        <View className="min-w-0 flex-1">
+          <Eyebrow className="text-accent-strong">
+            {isReward ? "Logro desbloqueado" : "Listo"}
+          </Eyebrow>
+          <Strong numberOfLines={1}>{title}</Strong>
+          {description ? <Caption numberOfLines={1}>{description}</Caption> : null}
         </View>
-
-        {/* Texto */}
-        <View className="flex-1">
-          <View className="flex-row items-center gap-1.5">
-            <Ionicons name="sparkles" size={12} color={tc("#d97706")} />
-            <Text className="text-xs font-extrabold uppercase tracking-wide text-yellow-700 dark:text-yellow-300">
-              Logro desbloqueado
-            </Text>
+        {isReward ? (
+          <View className="rounded-full bg-tint-kitchen px-2.5 py-1">
+            <Text className="font-body-extrabold text-xs text-tint-kitchen-ink">+{points}</Text>
           </View>
-          <Text
-            className="mt-0.5 text-sm font-extrabold text-yellow-950 dark:text-yellow-50"
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
-          <Text
-            className="text-xs font-semibold text-yellow-700 dark:text-yellow-300"
-            numberOfLines={1}
-          >
-            {description}
-          </Text>
-        </View>
-
-        {/* Puntos */}
-        <View className="ml-3 rounded-full bg-yellow-300 px-2.5 py-1 dark:bg-yellow-700">
-          <Text className="text-xs font-extrabold text-yellow-900 dark:text-yellow-100">
-            +{points}
-          </Text>
-        </View>
+        ) : null}
       </View>
     </Animated.View>
   );

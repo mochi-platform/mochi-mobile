@@ -1,3 +1,4 @@
+import { ELEVATION } from "@/src/shared/ui/elevation";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -212,15 +213,15 @@ export function TimePickerModal({
       <Pressable
         accessible={false}
         onPress={onCancel}
-        className="flex-1 items-center justify-center bg-black/50 px-6"
+        className="flex-1 items-center justify-center bg-ink/30 px-6"
       >
         {/* Pressable interior: tocar la tarjeta no cierra el modal. */}
         <Pressable accessible={false} className="w-full max-w-sm">
           <Animated.View
-            style={cardStyle}
-            className="rounded-card border border-line bg-surface p-5"
+            style={[ELEVATION[3], cardStyle]}
+            className="rounded-[28px] bg-canvas p-5"
           >
-            <Text className="text-center text-sm font-bold text-ink-muted">{label}</Text>
+            <Text className="text-center font-body-extrabold text-sm text-ink-muted">{label}</Text>
 
             <View className="mt-1 items-center">
               <Text

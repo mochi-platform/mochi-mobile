@@ -1,6 +1,6 @@
-import { tc } from "@/src/shared/theme/colors";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Modal, Text, TouchableOpacity, View } from "react-native";
+import { Modal, View } from "react-native";
+import { Body, Button, ELEVATION, Title } from "@/src/shared/ui";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -29,97 +29,49 @@ type ShowAlertParams = {
   buttons: CustomAlertButton[];
 };
 
-function getButtonStyles(style: CustomAlertButtonStyle | undefined) {
-  if (style === "cancel") {
-    return {
-      buttonStyle: {
-        backgroundColor: tc("#ffffff"),
-        borderWidth: 2,
-        borderColor: tc("#e9d5ff"),
-      },
-      textStyle: {
-        color: tc("#7e22ce"),
-      },
-    };
-  }
+const BUTTON_VARIANT: Record<CustomAlertButtonStyle, "primary" | "outline" | "danger"> = {
+  default: "primary",
+  cancel: "outline",
+  destructive: "danger",
+};
 
-  if (style === "destructive") {
-    return {
-      buttonStyle: {
-        backgroundColor: tc("#dc2626"),
-        borderWidth: 2,
-        borderColor: tc("#b91c1c"),
-      },
-      textStyle: {
-        color: tc("#ffffff"),
-      },
-    };
-  }
-
-  return {
-    buttonStyle: {
-      backgroundColor: tc("#a855f7"),
-    },
-    textStyle: {
-      color: tc("#ffffff"),
-    },
-  };
-}
-
+/** Diálogo propio de la app: tarjeta crema con la tipografía y los botones del sistema. */
 export function CustomAlert({ visible, title, message, buttons }: CustomAlertProps) {
-  const scale = useSharedValue(0.85);
+  const scale = useSharedValue(0.92);
   const isDualAction = buttons.length === 2;
 
   useEffect(() => {
     if (visible) {
-      scale.value = 0.85;
-      scale.value = withSpring(1, {
-        damping: 15,
-        stiffness: 190,
-        mass: 0.8,
-      });
+      scale.value = 0.92;
+      scale.value = withSpring(1, { damping: 16, stiffness: 220, mass: 0.8 });
       return;
     }
-
-    scale.value = withTiming(0.85, { duration: 120 });
+    scale.value = withTiming(0.92, { duration: 120 });
   }, [visible, scale]);
 
-  const cardAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const cardAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => undefined}>
-      <View className="flex-1 items-center justify-center bg-black/30 px-6">
+      <View className="flex-1 items-center justify-center bg-ink/30 px-6">
         <Animated.View
-          style={cardAnimatedStyle}
-          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-surface"
+          accessibilityViewIsModal
+          accessibilityRole="alert"
+          style={[ELEVATION[3], cardAnimatedStyle]}
+          className="w-full max-w-sm rounded-[28px] bg-canvas p-6"
         >
-          <Text className="text-center text-2xl font-extrabold text-purple-700 dark:text-purple-300">
-            {title}
-          </Text>
-          <Text className="mt-3 text-center text-base font-semibold leading-6 text-slate-600 dark:text-slate-400">
-            {message}
-          </Text>
-
-          <View className={`mt-6 ${isDualAction ? "flex-row" : ""}`}>
-            {buttons.map((button, index) => {
-              const { buttonStyle, textStyle } = getButtonStyles(button.style);
-
-              return (
-                <TouchableOpacity
-                  key={`${button.text}-${index}`}
-                  className={`rounded-2xl px-4 py-3 ${isDualAction ? `flex-1 ${index === 0 ? "mr-2" : "ml-2"}` : index > 0 ? "mt-3" : ""}`}
-                  style={buttonStyle}
-                  onPress={button.onPress}
-                  activeOpacity={0.85}
-                >
-                  <Text className="text-center text-base font-extrabold" style={textStyle}>
-                    {button.text}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <Title className="text-center text-[22px] leading-[27px]">{title}</Title>
+          <Body className="mt-2 text-center text-ink-muted">{message}</Body>
+          <View className={`mt-6 gap-2 ${isDualAction ? "flex-row" : ""}`}>
+            {buttons.map((button, index) => (
+              <View key={`${button.text}-${index}`} className={isDualAction ? "flex-1" : ""}>
+                <Button
+                  title={button.text}
+                  variant={BUTTON_VARIANT[button.style ?? "default"]}
+                  onPress={() => button.onPress?.()}
+                />
+              </View>
+            ))}
           </View>
         </Animated.View>
       </View>

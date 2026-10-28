@@ -34,6 +34,8 @@ const MIGRATED = [
   "app/recipe-player.tsx",
   "app/routine-player.tsx",
   "app/settings.tsx",
+  "src/shared/components/CustomAlert.tsx",
+  "src/shared/components/AchievementToast.tsx",
   "src/features/settings/components/**/*.tsx",
   "src/features/study/timer/components/StudySetupView.tsx",
   "src/features/study/timer/components/StudyTimerView.tsx",
