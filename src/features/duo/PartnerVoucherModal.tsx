@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Modal, ScrollView, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Button, Chip, Input } from "@/src/shared/ui";
+import { Button, Caption, Chip, Input, Sheet } from "@/src/shared/ui";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
 import { notifyVoucherGift } from "@/src/features/duo/push";
@@ -112,85 +112,66 @@ export function PartnerVoucherModal({ visible, spaceId, onClose, onCreated }: Pr
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
-        <ScrollView
-          className="max-h-[90%] rounded-t-3xl bg-canvas p-5"
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text className="text-xl font-extrabold text-ink">Crear un vale para ella</Text>
-
-          {templates.length > 0 ? (
-            <>
-              <Text className="mb-2 mt-4 text-sm font-bold text-ink">Ideas para empezar</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {templates.map((t) => (
-                  <Chip
-                    key={t.id}
-                    label={t.title}
-                    selected={templateId === t.id}
-                    onPress={() => applyTemplate(t)}
-                  />
-                ))}
-              </View>
-            </>
-          ) : null}
-
-          <View className="mt-4">
-            <Input label="Título" value={title} onChangeText={setTitle} maxLength={80} />
-            <Input
-              label="Descripción (opcional)"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-            />
-          </View>
-
-          <Text className="mb-2 text-sm font-bold text-ink">¿Cómo se canjea?</Text>
-          <View className="flex-row gap-2">
-            <Chip
-              label="Por puntos"
-              selected={mode === "points"}
-              onPress={() => setMode("points")}
-            />
-            <Chip
-              label="Regalo directo"
-              selected={mode === "gift"}
-              onPress={() => setMode("gift")}
-            />
-          </View>
-          {mode === "points" ? (
-            <View className="mt-3">
-              <Input
-                label="Costo en puntos"
-                keyboardType="number-pad"
-                value={cost}
-                onChangeText={setCost}
+    <Sheet visible={visible} onClose={onClose} title="Un vale para ella">
+      {templates.length > 0 ? (
+        <>
+          <Text className="mb-2 ml-1 font-body-bold text-sm text-ink">Ideas para empezar</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {templates.map((t) => (
+              <Chip
+                key={t.id}
+                label={t.title}
+                selected={templateId === t.id}
+                onPress={() => applyTemplate(t)}
               />
-            </View>
-          ) : (
-            <Text className="mt-2 text-xs font-semibold text-ink-muted">
-              Ella lo canjea gratis cuando quiera.
-            </Text>
-          )}
-
-          <View className="mt-3">
-            <Button
-              title={imageUri ? "Cambiar imagen" : "Agregar imagen (Duo Plus)"}
-              variant="soft"
-              onPress={() => void pickImage()}
-            />
+            ))}
           </View>
+        </>
+      ) : null}
 
-          {error ? <Text className="mt-3 text-sm font-semibold text-danger">{error}</Text> : null}
-
-          <View className="mb-6 mt-5 gap-2">
-            <Button title="Crear vale" loading={saving} onPress={() => void submit()} />
-            <Button title="Cancelar" variant="outline" onPress={onClose} />
-          </View>
-        </ScrollView>
+      <View className="mt-4">
+        <Input label="Título" value={title} onChangeText={setTitle} maxLength={80} />
+        <Input
+          label="Descripción (opcional)"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+        />
       </View>
-    </Modal>
+
+      <Text className="mb-2 ml-1 font-body-bold text-sm text-ink">¿Cómo se canjea?</Text>
+      <View className="flex-row gap-2">
+        <Chip label="Por puntos" selected={mode === "points"} onPress={() => setMode("points")} />
+        <Chip label="Regalo directo" selected={mode === "gift"} onPress={() => setMode("gift")} />
+      </View>
+      {mode === "points" ? (
+        <View className="mt-3">
+          <Input
+            label="Costo en puntos"
+            keyboardType="number-pad"
+            value={cost}
+            onChangeText={setCost}
+          />
+        </View>
+      ) : (
+        <Caption className="ml-1 mt-2">Ella lo canjea gratis cuando quiera.</Caption>
+      )}
+
+      <View className="mt-3">
+        <Button
+          title={imageUri ? "Cambiar imagen" : "Agregar imagen (Duo Plus)"}
+          variant="soft"
+          onPress={() => void pickImage()}
+        />
+      </View>
+
+      {error ? <Text className="ml-1 mt-3 font-body-bold text-sm text-danger">{error}</Text> : null}
+
+      <View className="mt-5 gap-2">
+        <Button title="Crear vale" loading={saving} onPress={() => void submit()} />
+        <Button title="Cancelar" variant="outline" onPress={onClose} />
+      </View>
+    </Sheet>
   );
 }
 

@@ -1,7 +1,8 @@
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState } from "react";
-import { Modal, Text, View } from "react-native";
+import { Modal, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { Button } from "@/src/shared/ui";
+import { Button, Caption, Title } from "@/src/shared/ui";
 
 type Props = { visible: boolean; onClose: () => void; onCode: (code: string) => void };
 
@@ -9,11 +10,12 @@ type Props = { visible: boolean; onClose: () => void; onCode: (code: string) => 
 export function QrScannerModal({ visible, onClose, onCode }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [handled, setHandled] = useState(false);
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 bg-canvas p-5">
-        <Text className="mt-8 text-xl font-extrabold text-ink">Escanea el código de tu pareja</Text>
+      <View className="flex-1 bg-canvas px-5" style={{ paddingTop: insets.top }}>
+        <Title className="mt-8">Escanea el código de tu pareja</Title>
         {permission?.granted ? (
           <View className="mt-4 flex-1 overflow-hidden rounded-card">
             <CameraView
@@ -30,13 +32,13 @@ export function QrScannerModal({ visible, onClose, onCode }: Props) {
           </View>
         ) : (
           <View className="mt-6">
-            <Text className="mb-3 text-sm font-semibold text-ink-muted">
+            <Caption className="mb-3">
               Necesitamos la cámara solo para leer el QR. No se guarda ninguna imagen.
-            </Text>
+            </Caption>
             <Button title="Permitir cámara" onPress={() => void requestPermission()} />
           </View>
         )}
-        <View className="mb-6 mt-4">
+        <View className="mt-4" style={{ marginBottom: insets.bottom + 12 }}>
           <Button title="Cerrar" variant="outline" onPress={onClose} />
         </View>
       </View>
