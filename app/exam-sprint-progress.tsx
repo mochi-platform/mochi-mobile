@@ -80,7 +80,7 @@ export function ExamSprintProgressScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-green-50 dark:bg-green-950"
+      className="flex-1 bg-canvas"
       edges={["left", "right", "bottom"]}
     >
       <KeyboardAvoidingView

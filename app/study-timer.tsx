@@ -533,7 +533,7 @@ export function StudyTimerScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-purple-50 px-6 dark:bg-purple-950">
+      <SafeAreaView className="flex-1 bg-canvas px-6 dark:bg-purple-950">
         <TouchableOpacity className="mt-2 flex-row items-center" onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={tc("#7c3aed")} />
           <Text className="ml-1 font-bold text-purple-700 dark:text-purple-300">Volver</Text>

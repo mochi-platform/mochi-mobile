@@ -298,7 +298,7 @@ export function VouchersScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-yellow-50 dark:bg-yellow-950">
+      <SafeAreaView className="flex-1 bg-canvas">
         <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
           <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={22} color={tc("#92400e")} />

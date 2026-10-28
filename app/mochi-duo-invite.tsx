@@ -153,7 +153,7 @@ export function MochiDuoInviteScreen() {
 
   if (activeSpace?.invite_status === "accepted") {
     return (
-      <SafeAreaView className="flex-1 bg-emerald-50 px-6 dark:bg-emerald-950">
+      <SafeAreaView className="flex-1 bg-canvas px-6 dark:bg-emerald-950">
         <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={tc("#047857")} />
           <Text className="ml-1 font-bold text-emerald-900 dark:text-emerald-100">Volver</Text>
@@ -180,7 +180,7 @@ export function MochiDuoInviteScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-emerald-50 dark:bg-emerald-950">
+      <SafeAreaView className="flex-1 bg-canvas">
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={22} color={tc("#047857")} />

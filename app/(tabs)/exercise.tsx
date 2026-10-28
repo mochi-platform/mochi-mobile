@@ -1,3 +1,4 @@
+import { TabBarSpacer } from "@/src/shared/ui/TabBarSpacer";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -261,7 +262,7 @@ export function ExerciseScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-teal-50 dark:bg-teal-950">
+      <View className="flex-1 bg-canvas">
         <ScrollView className="flex-1 px-5 pt-12" showsVerticalScrollIndicator={false}>
           <View className="mb-5 flex-row items-center">
             <Ionicons name="barbell" size={20} color={tc("#0f766e")} />
@@ -418,7 +419,7 @@ export function ExerciseScreen() {
             )}
           </View>
 
-          <View className="h-20" />
+          <TabBarSpacer />
         </ScrollView>
         {loading && (
           <View className="absolute inset-x-0 top-0 h-full items-center justify-center bg-teal-50/30 dark:bg-teal-950/30">

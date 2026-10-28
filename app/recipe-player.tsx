@@ -417,7 +417,7 @@ export function RecipePlayerScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-orange-50 dark:bg-orange-950">
+      <View className="flex-1 bg-canvas">
         <SafeAreaView className="flex-1">
           {/* Header */}
           <View className="px-5 pt-4">

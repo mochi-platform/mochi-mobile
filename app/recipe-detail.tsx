@@ -318,7 +318,7 @@ export function RecipeDetailScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-orange-50 dark:bg-orange-950">
+      <View className="flex-1 bg-canvas">
         <SafeAreaView className="flex-1">
           <ScrollView
             className="flex-1 px-5"

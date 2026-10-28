@@ -1,3 +1,4 @@
+import { getTabBarClearance } from "@/src/shared/lib/layout";
 import { tc } from "@/src/shared/theme/colors";
 import { useCallback, useState } from "react";
 import {
@@ -160,7 +161,7 @@ export function GratitudeScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-emerald-50 dark:bg-emerald-950">
+      <View className="flex-1 bg-canvas">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -170,7 +171,7 @@ export function GratitudeScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            contentContainerStyle={{ paddingBottom: getTabBarClearance(insets.bottom) }}
           >
             <TabHeader
               iconName="flower"

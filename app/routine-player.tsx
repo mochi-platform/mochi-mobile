@@ -298,7 +298,7 @@ export function RoutinePlayerScreen() {
   }
 
   return (
-    <View className="flex-1 bg-teal-50 dark:bg-teal-950">
+    <View className="flex-1 bg-canvas">
       {phase === "exercise" && exerciseImageUrl ? (
         <RNAnimated.View style={{ opacity: imageOpacity }} className="absolute inset-0">
           <ImageBackground

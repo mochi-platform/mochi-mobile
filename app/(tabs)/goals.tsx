@@ -1,3 +1,4 @@
+import { TabBarSpacer } from "@/src/shared/ui/TabBarSpacer";
 import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useState } from "react";
@@ -320,7 +321,7 @@ export function GoalsScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-purple-50 dark:bg-purple-950">
+      <View className="flex-1 bg-canvas">
         <ScrollView className="flex-1 px-5 pt-12" showsVerticalScrollIndicator={false}>
           <TabHeader
             iconName="flag"
@@ -369,7 +370,7 @@ export function GoalsScreen() {
             )}
           </View>
 
-          <View className="h-20" />
+          <TabBarSpacer />
         </ScrollView>
 
         <TouchableOpacity

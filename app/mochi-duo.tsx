@@ -342,7 +342,7 @@ export function MochiDuoScreen() {
 
   if (!space) {
     return (
-      <SafeAreaView className="flex-1 bg-emerald-50 px-6 dark:bg-emerald-950">
+      <SafeAreaView className="flex-1 bg-canvas px-6 dark:bg-emerald-950">
         <View className="mt-4">
           <TabHeader
             iconName="people"
@@ -375,7 +375,7 @@ export function MochiDuoScreen() {
 
   if (space.invite_status !== "accepted") {
     return (
-      <SafeAreaView className="flex-1 bg-emerald-50 px-6 dark:bg-emerald-950">
+      <SafeAreaView className="flex-1 bg-canvas px-6 dark:bg-emerald-950">
         <View className="mt-4">
           <TabHeader
             iconName="people"
@@ -412,7 +412,7 @@ export function MochiDuoScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-emerald-50 dark:bg-emerald-950">
+      <SafeAreaView className="flex-1 bg-canvas">
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           <View className="mt-4">
             <TabHeader

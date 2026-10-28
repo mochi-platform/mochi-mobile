@@ -360,7 +360,7 @@ export function ExamLogScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-pink-50 dark:bg-pink-950">
+    <SafeAreaView className="flex-1 bg-canvas">
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}

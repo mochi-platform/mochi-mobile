@@ -438,7 +438,7 @@ export function WeeklySummaryScreen() {
   const moodCharacter = stats.points >= 60 ? "excited" : stats.points >= 25 ? "happy" : "thinking";
 
   return (
-    <SafeAreaView className="flex-1 bg-indigo-50 dark:bg-indigo-950">
+    <SafeAreaView className="flex-1 bg-canvas">
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
         <View className="mt-4 rounded-3xl border border-indigo-200 bg-white p-4 dark:border-indigo-800 dark:bg-surface">
           <Text className="text-lg font-extrabold text-indigo-900 dark:text-indigo-100">

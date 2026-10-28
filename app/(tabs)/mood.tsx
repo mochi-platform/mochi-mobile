@@ -1,3 +1,4 @@
+import { getTabBarClearance } from "@/src/shared/lib/layout";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -273,7 +274,7 @@ export function MoodScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-orange-50 dark:bg-orange-950">
+      <View className="flex-1 bg-canvas">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -283,7 +284,7 @@ export function MoodScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            contentContainerStyle={{ paddingBottom: getTabBarClearance(insets.bottom) }}
           >
             <TabHeader
               iconName="heart"

@@ -477,7 +477,7 @@ export function SettingsScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-blue-50 dark:bg-blue-950">
+      <SafeAreaView className="flex-1 bg-canvas">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === "ios" ? "padding" : "height"}

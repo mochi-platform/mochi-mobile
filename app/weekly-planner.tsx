@@ -487,7 +487,7 @@ export function WeeklyPlannerScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-indigo-50 dark:bg-indigo-950">
+    <SafeAreaView className="flex-1 bg-canvas">
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
         <TouchableOpacity
           className="mt-4 flex-row items-center"

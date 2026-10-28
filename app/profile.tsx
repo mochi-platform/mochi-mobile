@@ -249,7 +249,7 @@ export function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-purple-50 dark:bg-purple-950">
+    <SafeAreaView className="flex-1 bg-canvas">
       <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
         <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={tc("#7c3aed")} />
