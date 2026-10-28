@@ -108,3 +108,17 @@ describe("mergeTextClasses", () => {
     expect(mergeTextClasses("font-body text-sm text-ink", "text-center")).toBe("font-body text-sm text-ink text-center");
   });
 });
+
+describe("splitPressableClasses", () => {
+  const { splitPressableClasses } = jest.requireActual<typeof import("../PressableScale")>("../PressableScale");
+  it("la caja exterior recibe tamaño, márgenes y posición; la interior, el resto", () => {
+    expect(splitPressableClasses("mt-4 h-10 w-10 flex-1 items-center justify-center rounded-full bg-accent")).toEqual({
+      outer: "mt-4 h-10 w-10 flex-1",
+      inner: "items-center justify-center rounded-full bg-accent",
+    });
+    expect(splitPressableClasses("absolute right-5 -mx-5 self-start min-w-0 p-4")).toEqual({
+      outer: "absolute right-5 -mx-5 self-start min-w-0",
+      inner: "p-4",
+    });
+  });
+});

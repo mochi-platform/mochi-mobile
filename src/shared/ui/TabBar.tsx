@@ -26,8 +26,8 @@ export function TabBar({ tabs, active, onSelect }: TabBarProps) {
     >
       <View
         accessibilityRole="tablist"
-        className="flex-row items-center justify-around rounded-[26px] bg-surface px-1.5"
-        style={[ELEVATION[3], { height: TAB_BAR_HEIGHT }]}
+        className="flex-row items-stretch bg-surface px-1.5"
+        style={[ELEVATION[3], { height: TAB_BAR_HEIGHT, borderRadius: 26 }]}
       >
         {tabs.map((tab) => {
           const on = tab.key === active;
@@ -41,9 +41,12 @@ export function TabBar({ tabs, active, onSelect }: TabBarProps) {
               onPress={() => {
                 if (!on) onSelect(tab);
               }}
-              className="min-w-[60px] items-center gap-0.5"
+              className="flex-1 items-center justify-center gap-0.5"
             >
-              <View className={`rounded-[14px] px-4 py-1 ${on ? "bg-accent-soft" : ""}`}>
+              <View
+                className={`items-center justify-center px-4 py-1 ${on ? "bg-accent-soft" : ""}`}
+                style={{ borderRadius: 14 }}
+              >
                 <Ionicons
                   name={(on ? tab.icon : `${tab.icon}-outline`) as keyof typeof Ionicons.glyphMap}
                   size={23}
