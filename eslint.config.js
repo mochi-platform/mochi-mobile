@@ -38,6 +38,7 @@ const MIGRATED = [
   "app/settings.tsx",
   "app/premium.tsx",
   "app/mochi-duo.tsx",
+  "app/auth/callback.tsx",
   "src/shared/components/CustomAlert.tsx",
   "src/shared/components/AchievementToast.tsx",
   "src/shared/components/QuickCaptureModal.tsx",

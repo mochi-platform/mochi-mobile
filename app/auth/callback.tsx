@@ -1,11 +1,10 @@
-import { tc } from "@/src/shared/theme/colors";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { supabase } from "@/src/shared/lib/supabase";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { Button, Caption, Display, MochiBubble, Title } from "@/src/shared/ui";
 
 type VerifyState = "loading" | "success" | "error";
 
@@ -92,15 +91,10 @@ export function AuthCallbackScreen() {
   // ─── Loading ───────────────────────────────────────────────────────────────
   if (state === "loading") {
     return (
-      <View className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
-        <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8 dark:border-purple-900 dark:bg-surface">
-          <MochiCharacter mood="thinking" size={80} />
-          <Text className="mt-4 text-center text-lg font-bold text-purple-900 dark:text-purple-100">
-            Verificando tu cuenta...
-          </Text>
-          <Text className="mt-1 text-center text-sm text-purple-400">Solo un momento...</Text>
-          <ActivityIndicator className="mt-4" color={tc("#7c3aed")} />
-        </View>
+      <View className="flex-1 items-center justify-center bg-canvas px-6">
+        <MochiCharacter expression="thinking" size={150} />
+        <Title className="mt-2 text-center">Verificando tu cuenta…</Title>
+        <Caption className="mt-1 text-center">Solo un momento.</Caption>
       </View>
     );
   }
@@ -108,55 +102,30 @@ export function AuthCallbackScreen() {
   // ─── Success ───────────────────────────────────────────────────────────────
   if (state === "success") {
     return (
-      <View className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
-        <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8 dark:border-purple-900 dark:bg-surface">
-          <MochiCharacter mood="happy" size={80} />
-
-          {/* Green check circle */}
-          <View className="mt-4 h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-            <Ionicons name="checkmark" size={36} color={tc("#16a34a")} />
-          </View>
-
-          <Text className="mt-4 text-center text-2xl font-extrabold text-purple-900 dark:text-purple-100">
-            ¡Cuenta verificada!
-          </Text>
-          <Text className="mt-2 text-center text-sm text-purple-600 dark:text-purple-400">
-            Bienvenida a Mochi
-          </Text>
-          <Text className="mt-3 text-center text-xs text-purple-300">
-            Serás redirigida en un momento...
-          </Text>
+      <View className="flex-1 justify-center bg-canvas px-6">
+        <View className="items-center">
+          <MochiCharacter expression="celebrating" size={170} />
+          <Display className="mt-2 text-center">¡Cuenta verificada!</Display>
         </View>
+        <MochiBubble
+          className="mt-4"
+          tail="none"
+          text="¡Qué bueno tenerte aquí! Te llevo adentro en un momento."
+        />
       </View>
     );
   }
 
   // ─── Error ─────────────────────────────────────────────────────────────────
   return (
-    <View className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
-      <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8 dark:border-purple-900 dark:bg-surface">
-        <MochiCharacter mood="sleepy" size={80} />
-
-        {/* Red X circle */}
-        <View className="mt-4 h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
-          <Ionicons name="close" size={36} color={tc("#dc2626")} />
-        </View>
-
-        <Text className="mt-4 text-center text-2xl font-extrabold text-purple-900 dark:text-purple-100">
-          Algo salió mal
-        </Text>
-
-        {errorMessage ? (
-          <Text className="mt-2 text-center text-sm text-red-500">{errorMessage}</Text>
-        ) : null}
-
-        <TouchableOpacity
-          className="mt-6 items-center rounded-2xl bg-purple-600 px-6 py-3"
-          onPress={goToLogin}
-          activeOpacity={0.85}
-        >
-          <Text className="font-semibold text-white">Ir al inicio</Text>
-        </TouchableOpacity>
+    <View className="flex-1 justify-center bg-canvas px-6">
+      <View className="items-center">
+        <MochiCharacter expression="worried" size={150} />
+        <Display className="mt-2 text-center">Algo salió mal</Display>
+        {errorMessage ? <Caption className="mt-1 text-center">{errorMessage}</Caption> : null}
+      </View>
+      <View className="mt-6">
+        <Button title="Ir al inicio" onPress={goToLogin} />
       </View>
     </View>
   );

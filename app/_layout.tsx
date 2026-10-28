@@ -1,23 +1,14 @@
-import { tc } from "@/src/shared/theme/colors";
 import "../global.css";
 import { useEffect, useRef } from "react";
 import { Stack, router, usePathname, useSegments, type ErrorBoundaryProps } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { Text, TouchableOpacity, useColorScheme, View } from "react-native";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
+import { useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { FONT_ASSETS } from "@/src/shared/theme/fonts";
 import { activeTabFor, tabsFor } from "@/src/features/navigation/tabs";
 import { TabBar } from "@/src/shared/ui/TabBar";
+import { Button, Caption, Display, MochiQuote, Title } from "@/src/shared/ui";
 import { ThemeProvider } from "@/src/core/providers/ThemeContext";
 import { initSentry, wrapWithSentry } from "@/src/shared/lib/observability/sentry";
 import {
@@ -73,30 +64,19 @@ function EdgeToEdgeSystemBars({ style }: SystemBarsProps) {
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
-    <View className="flex-1 items-center justify-center bg-white px-6 dark:bg-surface">
-      <EdgeToEdgeSystemBars style={{ statusBar: "dark", navigationBar: "light" }} />
-      <View className="w-full max-w-sm items-center rounded-3xl border border-rose-100 bg-rose-50 p-6 dark:border-rose-900 dark:bg-rose-950">
-        <View className="h-14 w-14 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900">
-          <Ionicons name="alert-circle" size={30} color={tc("#e11d48")} />
-        </View>
-        <Text className="mt-4 text-center text-xl font-bold text-rose-900 dark:text-rose-100">
-          Algo salió mal
-        </Text>
-        <Text className="mt-2 text-center text-sm font-semibold text-rose-700 dark:text-rose-300">
-          Ocurrió un error inesperado
-        </Text>
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-pink-200 px-5 py-3 dark:bg-pink-800"
-          onPress={retry}
-        >
-          <Text className="text-center text-base font-bold text-pink-900 dark:text-pink-100">
-            Reintentar
-          </Text>
-        </TouchableOpacity>
-        {error?.message ? (
-          <Text className="mt-3 text-center text-xs text-rose-500">{error.message}</Text>
-        ) : null}
+    <View className="flex-1 justify-center bg-canvas px-6">
+      <EdgeToEdgeSystemBars style={{ statusBar: "dark", navigationBar: "dark" }} />
+      <View className="items-center">
+        <MochiCharacter expression="worried" size={150} />
+        <Display className="mt-2 text-center">Algo salió mal</Display>
+        <MochiQuote className="mt-1 text-center text-[17px] leading-[23px] text-ink-muted">
+          Perdón, me tropecé. Probemos otra vez.
+        </MochiQuote>
       </View>
+      <View className="mt-6">
+        <Button title="Reintentar" onPress={retry} />
+      </View>
+      {error?.message ? <Caption className="mt-3 text-center">{error.message}</Caption> : null}
     </View>
   );
 }
@@ -192,12 +172,12 @@ function isRouteAllowed(
 }
 
 function RootLayoutNavigator() {
-  const { session, loading, requiresOnboarding, profileError, refreshProfile, appMode } = useSession();
+  const { session, loading, requiresOnboarding, profileError, refreshProfile, appMode } =
+    useSession();
   const { moduleVisibility, moduleVisibilityLoaded } = useModuleVisibility();
   const { theme } = useSystemBars();
   const pathname = usePathname();
   const segments = useSegments();
-  const loadingScale = useSharedValue(1);
   const notificationResponseListener = useRef<NotificationEventSubscription | null>(null);
 
   useEffect(() => {
@@ -236,28 +216,6 @@ function RootLayoutNavigator() {
       mounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (loading) {
-      loadingScale.value = withRepeat(
-        withSequence(
-          withTiming(1.06, {
-            duration: 650,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          withTiming(1, { duration: 650, easing: Easing.inOut(Easing.quad) }),
-        ),
-        -1,
-        false,
-      );
-      return;
-    }
-    loadingScale.value = withTiming(1, { duration: 180 });
-  }, [loading, loadingScale]);
-
-  const loadingAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: loadingScale.value }],
-  }));
 
   const sessionUserId = session?.user.id ?? null;
   const pathnameRef = useRef(pathname);
@@ -334,43 +292,25 @@ function RootLayoutNavigator() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
+      <View className="flex-1 items-center justify-center bg-canvas px-6">
         <EdgeToEdgeSystemBars style={{ statusBar: "dark", navigationBar: "dark" }} />
-        <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm dark:bg-surface">
-          <View className="items-center">
-            <Animated.View style={loadingAnimatedStyle}>
-              <MochiCharacter mood="thinking" size={90} />
-            </Animated.View>
-          </View>
-          <Text className="mt-4 text-center text-base font-semibold text-purple-900 dark:text-purple-100">
-            Cargando Mochi...
-          </Text>
-        </View>
+        <MochiCharacter expression="happy" size={150} />
+        <Caption className="mt-3">Despertando a Mochi…</Caption>
       </View>
     );
   }
 
   if (profileError && session) {
     return (
-      <View className="flex-1 items-center justify-center bg-yellow-50 px-6 dark:bg-yellow-950">
+      <View className="flex-1 justify-center bg-canvas px-6">
         <EdgeToEdgeSystemBars style={{ statusBar: "dark", navigationBar: "dark" }} />
-        <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm dark:bg-surface">
-          <Text className="text-center text-lg font-semibold text-purple-900 dark:text-purple-100">
-            Ups, no pudimos cargar tu perfil
-          </Text>
-          <Text className="mt-2 text-center text-sm text-purple-800 dark:text-purple-200">
-            {profileError}
-          </Text>
-          <TouchableOpacity
-            className="mt-5 rounded-2xl bg-yellow-300 px-4 py-3 dark:bg-yellow-700"
-            onPress={() => {
-              void refreshProfile();
-            }}
-          >
-            <Text className="text-center text-base font-semibold text-purple-900 dark:text-purple-100">
-              Reintentar
-            </Text>
-          </TouchableOpacity>
+        <View className="items-center">
+          <MochiCharacter expression="worried" size={130} />
+          <Title className="mt-2 text-center">No pudimos cargar tu perfil</Title>
+          <Caption className="mt-1 text-center">{profileError}</Caption>
+        </View>
+        <View className="mt-6">
+          <Button title="Reintentar" onPress={() => void refreshProfile()} />
         </View>
       </View>
     );
@@ -381,13 +321,11 @@ function RootLayoutNavigator() {
     !process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim()
   ) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-8 dark:bg-surface">
-        <Text className="text-center text-lg font-semibold text-gray-800 dark:text-gray-200">
-          Error de configuracion
-        </Text>
-        <Text className="mt-2 text-center text-sm text-gray-500">
+      <View className="flex-1 items-center justify-center bg-canvas px-8">
+        <Title className="text-center">Error de configuración</Title>
+        <Caption className="mt-2 text-center">
           Faltan variables de entorno requeridas. Revisa tu archivo .env
-        </Text>
+        </Caption>
       </View>
     );
   }
