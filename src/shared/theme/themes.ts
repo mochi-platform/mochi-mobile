@@ -61,9 +61,31 @@ export function getTheme(id: string | null | undefined): ThemeDef {
   return THEMES.find((theme) => theme.id === id) ?? THEMES[0];
 }
 
-/** Variables CSS que reemplazan las escalas de marca para el tema indicado. */
+/**
+ * Acento de cada tema (hex). El tema base usa el de global.css. Contraste AA verificado en
+ * src/shared/theme/__tests__/contrast.test.ts: blanco sobre `accent` y `strong` sobre `soft`.
+ */
+export const THEME_ACCENTS: Record<ThemeId, { accent: string; strong: string; soft: string }> = {
+  base: { accent: "#A35C8A", strong: "#8E4E78", soft: "#F5E6EF" },
+  menta: { accent: "#2D7A64", strong: "#22604E", soft: "#E1F2EB" },
+  melocoton: { accent: "#B0532F", strong: "#8C3F22", soft: "#FBE6DA" },
+  oceano: { accent: "#2E6A99", strong: "#24557C", soft: "#E0EDF7" },
+  fucsia: { accent: "#A33E8C", strong: "#84306F", soft: "#F7E1F1" },
+};
+
+const rgbChannels = (hex: string) =>
+  [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
+
+/** Variables CSS que reemplazan las escalas de marca y el acento para el tema indicado. */
 export function themeVariables(theme: ThemeDef, dark = false): Record<string, string> {
   const result: Record<string, string> = {};
+  if (theme.id !== "base") {
+    const accent = THEME_ACCENTS[theme.id];
+    result["--color-accent"] = rgbChannels(accent.accent);
+    result["--color-accent-strong"] = rgbChannels(accent.strong);
+    result["--color-accent-soft"] = rgbChannels(accent.soft);
+    result["--color-tint-duo-ink"] = rgbChannels(accent.strong);
+  }
   const scales: [string, Record<Shade, string>][] = [
     ["purple", PALETTES[theme.primary]],
     ["pink", PALETTES[theme.secondary]],

@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { TabDef, TabKey } from "@/src/features/navigation/tabs";
 import { TAB_BAR_HEIGHT, TAB_BAR_MARGIN_BOTTOM } from "@/src/shared/lib/layout";
+import { useAccent } from "@/src/core/providers/ThemeContext";
 import { COLORS } from "@/src/shared/theme/tokens";
 import { ELEVATION } from "./elevation";
 import { PressableScale } from "./PressableScale";
@@ -16,6 +17,7 @@ type TabBarProps = {
 /** Barra inferior flotante: crema, un solo acento y sin cambiar de color por pestaña. */
 export function TabBar({ tabs, active, onSelect }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const accent = useAccent();
   return (
     <View
       pointerEvents="box-none"
@@ -45,7 +47,7 @@ export function TabBar({ tabs, active, onSelect }: TabBarProps) {
                 <Ionicons
                   name={(on ? tab.icon : `${tab.icon}-outline`) as keyof typeof Ionicons.glyphMap}
                   size={23}
-                  color={on ? COLORS.accentStrong : COLORS.inkFaint}
+                  color={on ? accent.strong : COLORS.inkFaint}
                 />
               </View>
               <Text

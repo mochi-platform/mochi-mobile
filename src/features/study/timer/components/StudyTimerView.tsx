@@ -4,6 +4,7 @@ import { Text, View, type ViewStyle } from "react-native";
 import { formatTime } from "@/src/features/study/timer/helpers";
 import type { PomodoroPhase, TimerMode } from "@/src/features/study/timer/types";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { useAccent } from "@/src/core/providers/ThemeContext";
 import { COLORS } from "@/src/shared/theme/tokens";
 import {
   ACCENT_GLOW,
@@ -45,6 +46,7 @@ export function StudyTimerView({
   onToggleRunning,
   onComplete,
 }: StudyTimerViewProps) {
+  const accent = useAccent();
   const onBreak = timerMode === "pomodoro" && pomodoroPhase !== "focus";
   const progress = activeTimerDuration > 0 ? 1 - timeLeft / activeTimerDuration : 0;
 
@@ -67,7 +69,7 @@ export function StudyTimerView({
           progress={progress}
           size={248}
           stroke={14}
-          color={onBreak ? COLORS.positive : COLORS.accent}
+          color={onBreak ? COLORS.positive : accent.accent}
           accessibilityLabel={`Quedan ${formatTime(timeLeft)}`}
         >
           <MochiCharacter

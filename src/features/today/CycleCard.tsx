@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { useCycle } from "@/src/core/providers/CycleContext";
+import { useAccent } from "@/src/core/providers/ThemeContext";
 import { energyProfileFromPhase } from "@/src/shared/lib/ai";
 import { openHealthConnectSettingsScreen } from "@/src/shared/lib/healthConnect";
 import { reportError } from "@/src/shared/lib/observability/reportError";
-import { COLORS } from "@/src/shared/theme/tokens";
 import { Button, Caption, Eyebrow, ProgressRing, Surface, Title, haptic } from "@/src/shared/ui";
 
 const ENERGY_COPY = {
@@ -35,6 +35,7 @@ export function CycleCard() {
     );
   };
   const [saving, setSaving] = useState(false);
+  const accent = useAccent();
   const [logged, setLogged] = useState(false);
 
   const logToday = async () => {
@@ -92,7 +93,7 @@ export function CycleCard() {
         progress={cycleData.cycleLength > 0 ? cycleData.dayOfCycle / cycleData.cycleLength : 0}
         size={92}
         stroke={10}
-        color={COLORS.accent}
+        color={accent.accent}
         accessibilityLabel={`Día ${cycleData.dayOfCycle} de ${cycleData.cycleLength}`}
       >
         <Text className="font-display text-2xl text-ink">{cycleData.dayOfCycle}</Text>

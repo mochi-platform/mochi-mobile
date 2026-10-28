@@ -8,6 +8,7 @@ import { usePlan } from "@/src/shared/hooks/usePlan";
 import {
   canUseTheme,
   getTheme,
+  THEME_ACCENTS,
   themeVariables,
   type ThemeDef,
   type ThemeId,
@@ -80,4 +81,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme(): ThemeContextValue {
   return useContext(ThemeContext);
+}
+
+/** Acento del tema activo en hex, para íconos, anillos y gráficos (lo que no usa clases). */
+export function useAccent(): { accent: string; strong: string; soft: string } {
+  return THEME_ACCENTS[useContext(ThemeContext).theme.id];
 }

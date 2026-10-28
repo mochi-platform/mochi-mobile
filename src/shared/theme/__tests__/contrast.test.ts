@@ -1,3 +1,4 @@
+import { THEME_ACCENTS } from "../themes";
 import { COLORS, TINTS } from "../tokens";
 
 function luminance(hex: string): number {
@@ -25,5 +26,13 @@ describe("contraste de los tokens (WCAG AA)", () => {
 
   it.each(Object.entries(TINTS))("icono del tinte %s ≥ 3", (_, tint) => {
     expect(contrast(tint.ink, tint.bg)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("contraste de los acentos de cada tema", () => {
+  it.each(Object.entries(THEME_ACCENTS))("tema %s", (_, accent) => {
+    expect(contrast(COLORS.accentInk, accent.accent)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(accent.strong, accent.soft)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(accent.strong, COLORS.canvas)).toBeGreaterThanOrEqual(4.5);
   });
 });

@@ -24,6 +24,7 @@ import {
   checkStreakAchievements,
 } from "@/src/shared/lib/gamification";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
+import { useAccent } from "@/src/core/providers/ThemeContext";
 import { COLORS } from "@/src/shared/theme/tokens";
 import {
   Button,
@@ -68,6 +69,7 @@ export function RoutinePlayerScreen() {
   const { session } = useSession();
   const { showAchievement } = useAchievement();
   const insets = useSafeAreaInsets();
+  const accent = useAccent();
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("exercise");
@@ -368,7 +370,7 @@ export function RoutinePlayerScreen() {
               progress={ringProgress}
               size={236}
               stroke={14}
-              color={phase === "rest" ? COLORS.positive : COLORS.accent}
+              color={phase === "rest" ? COLORS.positive : accent.accent}
               accessibilityLabel={`Quedan ${formatTime(timeLeft)}`}
             >
               <MochiCharacter
