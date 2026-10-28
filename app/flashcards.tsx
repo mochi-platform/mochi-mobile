@@ -6,212 +6,218 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   interpolate,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { CARD_COLUMNS, type Card } from "@/src/features/flashcards/types";
+import { QUALITY, intervalLabel, nextSchedule, type Rating } from "@/src/features/flashcards/sm2";
+import { addPoints } from "@/src/shared/lib/gamification";
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
-import type { Flashcard } from "@/src/shared/types/database";
+import { Button, EmptyState, ErrorState } from "@/src/shared/ui";
 
-type Difficulty = 1 | 2 | 3;
+const RATINGS: { rating: Rating; label: string; className: string }[] = [
+  { rating: "again", label: "Otra vez", className: "bg-danger" },
+  { rating: "hard", label: "Difícil", className: "bg-warning" },
+  { rating: "good", label: "Bien", className: "bg-accent" },
+  { rating: "easy", label: "Fácil", className: "bg-positive" },
+];
 
+/** Repaso espaciado (SM-2): solo aparecen las tarjetas que ya toca ver. */
 export function FlashcardsScreen() {
   const params = useLocalSearchParams<{ deckId?: string }>();
   const deckId = typeof params.deckId === "string" ? params.deckId : "";
+  const reduceMotion = useReducedMotion();
 
-  const [cards, setCards] = useState<Flashcard[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [index, setIndex] = useState(0);
+  const [reviewed, setReviewed] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [flipped, setFlipped] = useState(false);
-
-  const flipValue = useSharedValue(0);
+  const flip = useSharedValue(0);
 
   useEffect(() => {
-    if (!deckId) {
-      setLoading(false);
-      return;
-    }
-
-    async function loadCards() {
+    void (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("flashcards")
-        .select("*")
-        .eq("deck_id", deckId)
-        .order("id", { ascending: true })
-        .returns<Flashcard[]>();
-
-      setCards(data ?? []);
-      setLoading(false);
-    }
-
-    void loadCards();
+      try {
+        let query = supabase
+          .from("flashcards")
+          .select(CARD_COLUMNS)
+          .lte("due_at", new Date().toISOString())
+          .order("due_at", { ascending: true })
+          .limit(50);
+        if (deckId) query = query.eq("deck_id", deckId);
+        const { data, error } = await query.returns<Card[]>();
+        if (error) throw error;
+        setCards(data ?? []);
+      } catch (error) {
+        reportError(error, { scope: "flashcards/load" });
+        setFailed(true);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [deckId]);
 
-  const currentCard = cards[index] ?? null;
-  const reviewedCount = Math.min(index + 1, cards.length);
-  const progress =
-    cards.length > 0 ? Math.round((reviewedCount / cards.length) * 100) : 0;
+  const card = cards[index] ?? null;
 
   const frontStyle = useAnimatedStyle(() => ({
-    transform: [
-      { rotateY: `${interpolate(flipValue.value, [0, 1], [0, 180])}deg` },
-    ],
-    opacity: interpolate(flipValue.value, [0, 0.5, 1], [1, 0, 0]),
+    transform: [{ rotateY: `${interpolate(flip.value, [0, 1], [0, 180])}deg` }],
+    opacity: interpolate(flip.value, [0, 0.5, 1], [1, 0, 0]),
   }));
-
   const backStyle = useAnimatedStyle(() => ({
-    transform: [
-      { rotateY: `${interpolate(flipValue.value, [0, 1], [-180, 0])}deg` },
-    ],
-    opacity: interpolate(flipValue.value, [0, 0.5, 1], [0, 0, 1]),
+    transform: [{ rotateY: `${interpolate(flip.value, [0, 1], [-180, 0])}deg` }],
+    opacity: interpolate(flip.value, [0, 0.5, 1], [0, 0, 1]),
   }));
 
-  const flipCard = () => {
+  const toggle = () => {
     const next = !flipped;
     setFlipped(next);
-    flipValue.value = withTiming(next ? 1 : 0, { duration: 300 });
+    flip.value = reduceMotion ? (next ? 1 : 0) : withTiming(next ? 1 : 0, { duration: 300 });
   };
 
-  const rateCard = async (difficulty: Difficulty) => {
-    if (!currentCard) return;
-
-    await supabase
-      .from("flashcards")
-      .update({
-        difficulty_rating: difficulty,
-        review_count: (currentCard.review_count ?? 0) + 1,
-        last_reviewed_at: new Date().toISOString(),
-      })
-      .eq("id", currentCard.id);
-
-    if (index >= cards.length - 1) {
-      setCompleted(true);
+  const rate = async (rating: Rating) => {
+    if (!card) return;
+    const { error } = await supabase.rpc("review_flashcard", {
+      p_card_id: card.id,
+      p_quality: QUALITY[rating],
+    });
+    if (error) {
+      reportError(error, { scope: "flashcards/review" });
       return;
     }
-
-    setIndex((prev) => prev + 1);
+    setReviewed((n) => n + 1);
+    if (index >= cards.length - 1) {
+      setCompleted(true);
+      const { data } = await supabase.auth.getUser();
+      if (data.user)
+        void addPoints(data.user.id, "study_session", undefined, `flashcards-${Date.now()}`);
+      return;
+    }
+    setIndex((i) => i + 1);
     setFlipped(false);
-    flipValue.value = withTiming(0, { duration: 200 });
+    flip.value = 0;
   };
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-violet-50">
-        <ActivityIndicator size="large" color="#7c3aed" />
+      <SafeAreaView className="flex-1 items-center justify-center bg-canvas">
+        <ActivityIndicator size="large" color="#8b6fd6" />
       </SafeAreaView>
     );
   }
-
-  if (!currentCard && !completed) {
+  if (failed) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-violet-50 px-6">
-        <Text className="text-center text-sm font-semibold text-violet-700">
-          No hay tarjetas en este mazo.
-        </Text>
+      <SafeAreaView className="flex-1 justify-center bg-canvas">
+        <ErrorState
+          onRetry={() => router.replace(deckId ? `/flashcards?deckId=${deckId}` : "/flashcards")}
+        />
       </SafeAreaView>
     );
   }
-
+  if (!card && !completed) {
+    return (
+      <SafeAreaView className="flex-1 justify-center bg-canvas px-4">
+        <EmptyState
+          title="Nada que repasar por hoy"
+          message="Cuando una tarjeta toque verse de nuevo, aparecerá aquí."
+          actionLabel="Volver a mis mazos"
+          onAction={() => router.back()}
+        />
+      </SafeAreaView>
+    );
+  }
   if (completed) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-violet-50 px-6">
-        <Text className="text-2xl font-extrabold text-violet-900">
-          ¡Repaso completo!
+      <SafeAreaView className="flex-1 items-center justify-center bg-canvas px-6">
+        <Text className="text-2xl font-extrabold text-ink">¡Repaso completo!</Text>
+        <Text className="mb-6 mt-2 text-center text-sm font-semibold text-ink-muted">
+          Repasaste {reviewed} tarjetas. Mochi te las mostrará de nuevo cuando toque.
         </Text>
-        <Text className="mt-2 text-center text-sm font-semibold text-violet-700">
-          Revisaste {cards.length} tarjetas. Excelente constancia.
-        </Text>
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-violet-500 px-6 py-3"
-          onPress={() => router.back()}
-        >
-          <Text className="font-bold text-white">Volver</Text>
-        </TouchableOpacity>
+        <View className="self-stretch">
+          <Button title="Volver" onPress={() => router.back()} />
+        </View>
       </SafeAreaView>
     );
   }
 
+  const current = card as Card;
+  const schedule = {
+    easeFactor: Number(current.ease_factor),
+    intervalDays: current.interval_days,
+    repetitions: current.repetitions,
+  };
+  const progress = Math.round(((index + 1) / cards.length) * 100);
+
   return (
-    <SafeAreaView className="flex-1 bg-violet-50 px-5">
+    <SafeAreaView className="flex-1 bg-canvas px-5">
       <View className="mt-4 flex-row items-center justify-between">
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
           onPress={() => router.back()}
-          className="flex-row items-center"
+          className="min-h-[44px] flex-row items-center"
         >
-          <Ionicons name="chevron-back" size={22} color="#6d28d9" />
-          <Text className="text-sm font-bold text-violet-700">Volver</Text>
+          <Ionicons name="chevron-back" size={22} color="#8b6fd6" />
+          <Text className="text-sm font-bold text-ink-muted">Volver</Text>
         </TouchableOpacity>
-        <Text className="text-xs font-bold text-violet-700">
-          {reviewedCount}/{cards.length}
+        <Text className="text-xs font-bold text-ink-muted">
+          {index + 1}/{cards.length}
         </Text>
       </View>
 
-      <View className="mt-4 h-2 w-full rounded-full bg-violet-100">
-        <View
-          className="h-2 rounded-full bg-violet-500"
-          style={{ width: `${progress}%` }}
-        />
+      <View className="mt-4 h-2 w-full rounded-full bg-accent-soft">
+        <View className="h-2 rounded-full bg-accent" style={{ width: `${progress}%` }} />
       </View>
 
       <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={
+          flipped
+            ? `Respuesta: ${current.back}`
+            : `Pregunta: ${current.front}. Toca para ver la respuesta`
+        }
         className="mt-8 h-80"
         activeOpacity={0.95}
-        onPress={flipCard}
+        onPress={toggle}
       >
         <Animated.View
           style={frontStyle}
-          className="absolute h-full w-full rounded-3xl border-2 border-violet-200 bg-white p-6"
+          className="absolute h-full w-full rounded-card border-2 border-line bg-surface p-6"
         >
-          <Text className="text-xs font-bold uppercase text-violet-600">
-            Frente
-          </Text>
-          <Text className="mt-4 text-lg font-extrabold text-violet-900">
-            {currentCard.front}
-          </Text>
+          <Text className="text-xs font-bold uppercase text-ink-muted">Frente</Text>
+          <Text className="mt-4 text-lg font-extrabold text-ink">{current.front}</Text>
         </Animated.View>
         <Animated.View
           style={backStyle}
-          className="absolute h-full w-full rounded-3xl border-2 border-violet-300 bg-violet-100 p-6"
+          className="absolute h-full w-full rounded-card border-2 border-accent bg-accent-soft p-6"
         >
-          <Text className="text-xs font-bold uppercase text-violet-700">
-            Respuesta
-          </Text>
-          <Text className="mt-4 text-lg font-extrabold text-violet-900">
-            {currentCard.back}
-          </Text>
+          <Text className="text-xs font-bold uppercase text-ink-muted">Respuesta</Text>
+          <Text className="mt-4 text-lg font-extrabold text-ink">{current.back}</Text>
         </Animated.View>
       </TouchableOpacity>
 
       {flipped ? (
-        <View className="mt-6 flex-row justify-between">
-          <TouchableOpacity
-            className="rounded-2xl bg-red-500 px-4 py-3"
-            onPress={() => {
-              void rateCard(1);
-            }}
-          >
-            <Text className="font-bold text-white">Difícil</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="rounded-2xl bg-yellow-500 px-4 py-3"
-            onPress={() => {
-              void rateCard(2);
-            }}
-          >
-            <Text className="font-bold text-white">Bien</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="rounded-2xl bg-green-500 px-4 py-3"
-            onPress={() => {
-              void rateCard(3);
-            }}
-          >
-            <Text className="font-bold text-white">Fácil</Text>
-          </TouchableOpacity>
+        <View className="mt-6 flex-row gap-2">
+          {RATINGS.map(({ rating, label, className }) => (
+            <TouchableOpacity
+              key={rating}
+              accessibilityRole="button"
+              className={`min-h-[56px] flex-1 items-center justify-center rounded-control px-1 ${className}`}
+              onPress={() => void rate(rating)}
+            >
+              <Text className="text-sm font-extrabold text-white">{label}</Text>
+              <Text className="text-[10px] font-semibold text-white">
+                {intervalLabel(nextSchedule(schedule, QUALITY[rating]).intervalDays)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       ) : (
-        <Text className="mt-6 text-center text-sm font-semibold text-violet-600">
+        <Text className="mt-6 text-center text-sm font-semibold text-ink-muted">
           Toca la tarjeta para voltearla
         </Text>
       )}

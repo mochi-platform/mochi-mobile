@@ -1,20 +1,16 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { tc } from "@/src/shared/theme/colors";
+import { useCallback, useMemo, useRef, useState, type ComponentRef } from "react";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Sharing from "expo-sharing";
 import { captureRef } from "react-native-view-shot";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
-import { callAI } from "@/src/shared/lib/ai";
+import { generateWeeklySummaryMessage } from "@/src/shared/lib/ai";
 import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
+import { toLocalISODate } from "@/src/shared/lib/dates";
+import { useFocusEffect } from "expo-router";
 
 type AtlasIntensity = "Baja" | "Media" | "Alta";
 
@@ -37,7 +33,7 @@ type WeeklySummaryStats = {
   habitsTotal: number;
   points: number;
   streak: number;
-  moods: Array<number | null>;
+  moods: (number | null)[];
 };
 
 function createEmptyStats(): WeeklySummaryStats {
@@ -54,7 +50,7 @@ function createEmptyStats(): WeeklySummaryStats {
 }
 
 function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  return toLocalISODate(date);
 }
 
 function getMonday(date: Date): Date {
@@ -93,7 +89,7 @@ function getAtlasRecommendation(intensity: AtlasIntensity): string {
 export function WeeklySummaryScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
-  const captureViewRef = useRef<View | null>(null);
+  const captureViewRef = useRef<ComponentRef<typeof View>>(null);
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -116,8 +112,8 @@ export function WeeklySummaryScreen() {
     return {
       start: monday,
       end: sunday,
-      startISO: monday.toISOString().slice(0, 10),
-      endISO: sunday.toISOString().slice(0, 10),
+      startISO: toLocalISODate(monday),
+      endISO: toLocalISODate(sunday),
     };
   }, []);
 
@@ -203,11 +199,7 @@ export function WeeklySummaryScreen() {
             .eq("user_id", userId)
             .gte("logged_date", range.startISO)
             .lte("logged_date", range.endISO),
-          supabase
-            .from("streaks")
-            .select("longest_streak")
-            .eq("user_id", userId)
-            .maybeSingle(),
+          supabase.from("streaks").select("longest_streak").eq("user_id", userId).maybeSingle(),
           supabase
             .from("mood_logs")
             .select("mood, logged_date")
@@ -239,9 +231,7 @@ export function WeeklySummaryScreen() {
           moodRes.error;
 
         if (baseError) {
-          setSummaryError(
-            baseError.message ?? "No se pudo cargar el resumen semanal",
-          );
+          setSummaryError(baseError.message ?? "No se pudo cargar el resumen semanal");
           setStats(createEmptyStats());
           setMessage("");
           setAtlasWeeks([]);
@@ -251,22 +241,24 @@ export function WeeklySummaryScreen() {
         }
 
         const studyHours =
-          (
-            (studyRes.data as Array<{ duration_seconds: number }> | null) ?? []
-          ).reduce((sum, row) => sum + row.duration_seconds, 0) / 3600;
+          ((studyRes.data as { duration_seconds: number }[] | null) ?? []).reduce(
+            (sum, row) => sum + row.duration_seconds,
+            0,
+          ) / 3600;
         const sessions = sessionsRes.count ?? 0;
         const routines = routineRes.count ?? 0;
         const habitsCompleted = habitsRes.count ?? 0;
         const habitsTotal = (habitsCountRes.count ?? 0) * 7;
-        const points =
-          sessions * 5 + routines * 10 + (gratitudeRes.count ?? 0) * 3;
+        const points = sessions * 5 + routines * 10 + (gratitudeRes.count ?? 0) * 3;
 
         const moodMap = new Map<string, number>();
         (
-          (moodRes.data as Array<{
-            mood: number;
-            logged_date: string;
-          }> | null) ?? []
+          (moodRes.data as
+            | {
+                mood: number;
+                logged_date: string;
+              }[]
+            | null) ?? []
         ).forEach((row) => {
           moodMap.set(row.logged_date, row.mood);
         });
@@ -274,7 +266,7 @@ export function WeeklySummaryScreen() {
         const moodDots = Array.from({ length: 7 }, (_, i) => {
           const date = new Date(range.start);
           date.setDate(range.start.getDate() + i);
-          return moodMap.get(date.toISOString().slice(0, 10)) ?? null;
+          return moodMap.get(toLocalISODate(date)) ?? null;
         });
 
         setStats({
@@ -284,9 +276,7 @@ export function WeeklySummaryScreen() {
           habitsCompleted,
           habitsTotal,
           points,
-          streak:
-            (streakRes.data as { longest_streak: number } | null)
-              ?.longest_streak ?? 0,
+          streak: (streakRes.data as { longest_streak: number } | null)?.longest_streak ?? 0,
           moods: moodDots,
         });
 
@@ -295,19 +285,14 @@ export function WeeklySummaryScreen() {
           if (atlasExamsRes.error) throw atlasExamsRes.error;
 
           const sessionsByWeek = new Map<string, number>();
-          (
-            (atlasSessionsRes.data as Array<{ completed_at: string }> | null) ??
-            []
-          ).forEach((row) => {
+          ((atlasSessionsRes.data as { completed_at: string }[] | null) ?? []).forEach((row) => {
             const sessionDate = row.completed_at.slice(0, 10);
             const weekKey = getWeekKeyByDate(sessionDate);
             sessionsByWeek.set(weekKey, (sessionsByWeek.get(weekKey) ?? 0) + 1);
           });
 
           const examsByWeek = new Map<string, number>();
-          (
-            (atlasExamsRes.data as Array<{ exam_date: string }> | null) ?? []
-          ).forEach((row) => {
+          ((atlasExamsRes.data as { exam_date: string }[] | null) ?? []).forEach((row) => {
             const weekKey = getWeekKeyByDate(row.exam_date);
             examsByWeek.set(weekKey, (examsByWeek.get(weekKey) ?? 0) + 1);
           });
@@ -345,8 +330,6 @@ export function WeeklySummaryScreen() {
           setAtlasLoading(false);
         }
 
-        const aiPrompt = `Resumen semanal de estudiante:\nHoras estudio: ${Number(studyHours.toFixed(1))}\nSesiones: ${sessions}\nRutinas: ${routines}\nHábitos: ${habitsCompleted}/${habitsTotal}\nPuntos: ${points}\nRacha: ${(streakRes.data as { longest_streak: number } | null)?.longest_streak ?? 0}\n\nEscribe un mensaje motivador de 2 a 3 líneas, cálido y en español.`;
-
         try {
           const usage = await requestAiUsage({
             reason: "ai_summary",
@@ -356,7 +339,15 @@ export function WeeklySummaryScreen() {
           if (!usage.allowed) {
             setMessage(buildAiLimitMessage(usage.reason));
           } else {
-            const aiMessage = await callAI(aiPrompt);
+            const aiMessage = await generateWeeklySummaryMessage({
+              studyHours: Number(studyHours.toFixed(1)),
+              sessions,
+              routines,
+              habitsCompleted,
+              habitsTotal,
+              points,
+              streak: (streakRes.data as { longest_streak: number } | null)?.longest_streak ?? 0,
+            });
             setMessage(aiMessage.trim());
           }
         } catch {
@@ -385,9 +376,7 @@ export function WeeklySummaryScreen() {
 
   const shareSummary = async () => {
     if (!captureViewRef.current) {
-      setShareError(
-        "No se pudo preparar la imagen para compartir. Intenta de nuevo.",
-      );
+      setShareError("No se pudo preparar la imagen para compartir. Intenta de nuevo.");
       return;
     }
 
@@ -400,9 +389,7 @@ export function WeeklySummaryScreen() {
       const canShare = await Sharing.isAvailableAsync();
 
       if (!canShare) {
-        setShareError(
-          "Este dispositivo no permite compartir desde esta pantalla.",
-        );
+        setShareError("Este dispositivo no permite compartir desde esta pantalla.");
         return;
       }
 
@@ -413,17 +400,17 @@ export function WeeklySummaryScreen() {
   };
 
   const moodClass = (mood: number | null): string => {
-    if (mood === null) return "bg-slate-200";
-    if (mood <= 2) return "bg-orange-300";
-    if (mood === 3) return "bg-yellow-300";
-    return "bg-emerald-300";
+    if (mood === null) return "bg-slate-200 dark:bg-slate-800";
+    if (mood <= 2) return "bg-orange-300 dark:bg-orange-700";
+    if (mood === 3) return "bg-yellow-300 dark:bg-yellow-700";
+    return "bg-emerald-300 dark:bg-emerald-700";
   };
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-indigo-50">
-        <ActivityIndicator size="large" color="#6366f1" />
-        <Text className="mt-3 text-sm font-semibold text-indigo-700">
+      <SafeAreaView className="flex-1 items-center justify-center bg-indigo-50 dark:bg-indigo-950">
+        <ActivityIndicator size="large" color={tc("#6366f1")} />
+        <Text className="mt-3 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
           Preparando tu resumen semanal...
         </Text>
       </SafeAreaView>
@@ -432,15 +419,15 @@ export function WeeklySummaryScreen() {
 
   if (summaryError) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-indigo-50 px-6">
-        <View className="w-full rounded-2xl border border-red-200 bg-red-50 p-4">
-          <Text className="text-base font-extrabold text-red-700">
+      <SafeAreaView className="flex-1 items-center justify-center bg-indigo-50 px-6 dark:bg-indigo-950">
+        <View className="w-full rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+          <Text className="text-base font-extrabold text-red-700 dark:text-red-300">
             No pudimos cargar tu resumen semanal
           </Text>
-          <Text className="mt-2 text-sm font-semibold text-red-700">
+          <Text className="mt-2 text-sm font-semibold text-red-700 dark:text-red-300">
             {summaryError}
           </Text>
-          <Text className="mt-2 text-xs font-semibold text-red-600">
+          <Text className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">
             Intenta abrir esta pantalla nuevamente en unos segundos.
           </Text>
         </View>
@@ -448,71 +435,70 @@ export function WeeklySummaryScreen() {
     );
   }
 
-  const moodCharacter =
-    stats.points >= 60 ? "excited" : stats.points >= 25 ? "happy" : "thinking";
+  const moodCharacter = stats.points >= 60 ? "excited" : stats.points >= 25 ? "happy" : "thinking";
 
   return (
-    <SafeAreaView className="flex-1 bg-indigo-50">
+    <SafeAreaView className="flex-1 bg-indigo-50 dark:bg-indigo-950">
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <View className="mt-4 rounded-3xl border border-indigo-200 bg-white p-4">
-          <Text className="text-lg font-extrabold text-indigo-900">
+        <View className="mt-4 rounded-3xl border border-indigo-200 bg-white p-4 dark:border-indigo-800 dark:bg-surface">
+          <Text className="text-lg font-extrabold text-indigo-900 dark:text-indigo-100">
             Tu semana del {range.startISO} al {range.endISO}
           </Text>
           <View className="mt-3 items-center">
             <MochiCharacter mood={moodCharacter} size={84} />
-            <Text className="mt-3 text-center text-sm font-semibold text-indigo-700">
+            <Text className="mt-3 text-center text-sm font-semibold text-indigo-700 dark:text-indigo-300">
               {message}
             </Text>
           </View>
         </View>
 
         <View className="mt-4 grid gap-3">
-          <View className="rounded-2xl border border-indigo-200 bg-indigo-100 p-3">
-            <Text className="text-xs font-bold text-indigo-700">
+          <View className="rounded-2xl border border-indigo-200 bg-indigo-100 p-3 dark:border-indigo-800 dark:bg-indigo-900">
+            <Text className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
               Horas de estudio
             </Text>
-            <Text className="text-2xl font-black text-indigo-900">
+            <Text className="text-2xl font-black text-indigo-900 dark:text-indigo-100">
               {stats.studyHours}
             </Text>
           </View>
-          <View className="rounded-2xl border border-blue-200 bg-blue-100 p-3">
-            <Text className="text-xs font-bold text-blue-700">Sesiones</Text>
-            <Text className="text-2xl font-black text-blue-900">
+          <View className="rounded-2xl border border-blue-200 bg-blue-100 p-3 dark:border-blue-800 dark:bg-blue-900">
+            <Text className="text-xs font-bold text-blue-700 dark:text-blue-300">Sesiones</Text>
+            <Text className="text-2xl font-black text-blue-900 dark:text-blue-100">
               {stats.sessions}
             </Text>
           </View>
-          <View className="rounded-2xl border border-teal-200 bg-teal-100 p-3">
-            <Text className="text-xs font-bold text-teal-700">Rutinas</Text>
-            <Text className="text-2xl font-black text-teal-900">
+          <View className="rounded-2xl border border-teal-200 bg-teal-100 p-3 dark:border-teal-800 dark:bg-teal-900">
+            <Text className="text-xs font-bold text-teal-700 dark:text-teal-300">Rutinas</Text>
+            <Text className="text-2xl font-black text-teal-900 dark:text-teal-100">
               {stats.routines}
             </Text>
           </View>
-          <View className="rounded-2xl border border-green-200 bg-green-100 p-3">
-            <Text className="text-xs font-bold text-green-700">Hábitos</Text>
-            <Text className="text-2xl font-black text-green-900">
+          <View className="rounded-2xl border border-green-200 bg-green-100 p-3 dark:border-green-800 dark:bg-green-900">
+            <Text className="text-xs font-bold text-green-700 dark:text-green-300">Hábitos</Text>
+            <Text className="text-2xl font-black text-green-900 dark:text-green-100">
               {stats.habitsCompleted}/{stats.habitsTotal}
             </Text>
           </View>
-          <View className="rounded-2xl border border-yellow-200 bg-yellow-100 p-3">
-            <Text className="text-xs font-bold text-yellow-700">
+          <View className="rounded-2xl border border-yellow-200 bg-yellow-100 p-3 dark:border-yellow-800 dark:bg-yellow-900">
+            <Text className="text-xs font-bold text-yellow-700 dark:text-yellow-300">
               Puntos ganados
             </Text>
-            <Text className="text-2xl font-black text-yellow-900">
+            <Text className="text-2xl font-black text-yellow-900 dark:text-yellow-100">
               {stats.points}
             </Text>
           </View>
-          <View className="rounded-2xl border border-orange-200 bg-orange-100 p-3">
-            <Text className="text-xs font-bold text-orange-700">
+          <View className="rounded-2xl border border-orange-200 bg-orange-100 p-3 dark:border-orange-800 dark:bg-orange-900">
+            <Text className="text-xs font-bold text-orange-700 dark:text-orange-300">
               Racha más larga
             </Text>
-            <Text className="text-2xl font-black text-orange-900">
+            <Text className="text-2xl font-black text-orange-900 dark:text-orange-100">
               {stats.streak}
             </Text>
           </View>
         </View>
 
-        <View className="mt-4 rounded-2xl border border-pink-200 bg-white p-3">
-          <Text className="text-sm font-bold text-pink-800">Ánimo semanal</Text>
+        <View className="mt-4 rounded-2xl border border-pink-200 bg-white p-3 dark:border-pink-800 dark:bg-surface">
+          <Text className="text-sm font-bold text-pink-800 dark:text-pink-200">Ánimo semanal</Text>
           <View className="mt-2 flex-row">
             {stats.moods.map((mood, index) => (
               <View
@@ -523,26 +509,26 @@ export function WeeklySummaryScreen() {
           </View>
         </View>
 
-        <View className="mt-4 rounded-2xl border border-violet-200 bg-white p-3">
-          <Text className="text-base font-extrabold text-violet-900">
+        <View className="mt-4 rounded-2xl border border-violet-200 bg-white p-3 dark:border-violet-800 dark:bg-surface">
+          <Text className="text-base font-extrabold text-violet-900 dark:text-violet-100">
             Atlas de semestre
           </Text>
-          <Text className="mt-1 text-xs font-semibold text-violet-700">
+          <Text className="mt-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
             16 semanas de carga y presión académica
           </Text>
 
           {atlasLoading ? (
             <View className="items-center py-4">
-              <ActivityIndicator size="small" color="#7c3aed" />
-              <Text className="mt-2 text-xs font-semibold text-violet-700">
+              <ActivityIndicator size="small" color={tc("#7c3aed")} />
+              <Text className="mt-2 text-xs font-semibold text-violet-700 dark:text-violet-300">
                 Cargando atlas...
               </Text>
             </View>
           ) : null}
 
           {atlasError ? (
-            <View className="mt-3 rounded-xl border border-red-200 bg-red-50 p-2">
-              <Text className="text-xs font-semibold text-red-700">
+            <View className="mt-3 rounded-xl border border-red-200 bg-red-50 p-2 dark:border-red-800 dark:bg-red-950">
+              <Text className="text-xs font-semibold text-red-700 dark:text-red-300">
                 {atlasError}
               </Text>
             </View>
@@ -553,25 +539,25 @@ export function WeeklySummaryScreen() {
               {atlasWeeks.map((week) => (
                 <View
                   key={week.key}
-                  className={`mb-2 rounded-xl border p-2 ${week.isCurrentWeek ? "border-violet-400 bg-violet-50" : "border-violet-100 bg-violet-50"}`}
+                  className={`mb-2 rounded-xl border p-2 ${week.isCurrentWeek ? "border-violet-400 bg-violet-50 dark:bg-violet-950" : "border-violet-100 bg-violet-50 dark:border-violet-900 dark:bg-violet-950"}`}
                 >
                   <View className="flex-row items-center justify-between">
-                    <Text className="text-xs font-bold text-violet-900">
+                    <Text className="text-xs font-bold text-violet-900 dark:text-violet-100">
                       Semana {week.startISO} - {week.endISO}
                     </Text>
                     <View
-                      className={`rounded-full px-2 py-1 ${week.intensity === "Alta" ? "bg-rose-100" : week.intensity === "Media" ? "bg-amber-100" : "bg-emerald-100"}`}
+                      className={`rounded-full px-2 py-1 ${week.intensity === "Alta" ? "bg-rose-100 dark:bg-rose-900" : week.intensity === "Media" ? "bg-amber-100 dark:bg-amber-900" : "bg-emerald-100 dark:bg-emerald-900"}`}
                     >
-                      <Text className="text-[10px] font-bold text-slate-800">
+                      <Text className="text-[10px] font-bold text-slate-800 dark:text-slate-200">
                         {week.intensity}
                       </Text>
                     </View>
                   </View>
 
-                  <Text className="mt-1 text-[11px] font-semibold text-violet-800">
+                  <Text className="mt-1 text-[11px] font-semibold text-violet-800 dark:text-violet-200">
                     Sesiones: {week.sessions} · Exámenes: {week.exams}
                   </Text>
-                  <Text className="mt-1 text-[11px] font-semibold text-violet-700">
+                  <Text className="mt-1 text-[11px] font-semibold text-violet-700 dark:text-violet-300">
                     {week.recommendation}
                   </Text>
                 </View>
@@ -585,19 +571,18 @@ export function WeeklySummaryScreen() {
             captureViewRef.current = node;
           }}
           collapsable={false}
-          className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4"
+          className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4 dark:border-indigo-800 dark:bg-surface"
         >
-          <Text className="text-center text-base font-extrabold text-indigo-900">
+          <Text className="text-center text-base font-extrabold text-indigo-900 dark:text-indigo-100">
             Mi semana en Mochi
           </Text>
-          <Text className="mt-1 text-center text-xs font-semibold text-indigo-700">
+          <Text className="mt-1 text-center text-xs font-semibold text-indigo-700 dark:text-indigo-300">
             Semana: {range.startISO} - {range.endISO}
           </Text>
-          <Text className="mt-2 text-center text-sm font-semibold text-indigo-900">
-            {stats.studyHours}h estudio · {stats.sessions} sesiones ·{" "}
-            {stats.points} puntos
+          <Text className="mt-2 text-center text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+            {stats.studyHours}h estudio · {stats.sessions} sesiones · {stats.points} puntos
           </Text>
-          <Text className="mt-2 text-center text-xs font-semibold text-indigo-600">
+          <Text className="mt-2 text-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
             Descarga Mochi en mochi.siramong.tech
           </Text>
         </View>
@@ -612,8 +597,8 @@ export function WeeklySummaryScreen() {
         </TouchableOpacity>
 
         {shareError ? (
-          <View className="mb-10 rounded-2xl border border-red-200 bg-red-50 p-3">
-            <Text className="text-center text-sm font-semibold text-red-700">
+          <View className="mb-10 rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+            <Text className="text-center text-sm font-semibold text-red-700 dark:text-red-300">
               {shareError}
             </Text>
           </View>

@@ -1,3 +1,4 @@
+import { tc } from "@/src/shared/theme/colors";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -10,6 +11,7 @@ type VerifyState = "loading" | "success" | "error";
 
 export function AuthCallbackScreen() {
   const params = useLocalSearchParams<{
+    code?: string;
     token_hash?: string;
     type?: string;
     access_token?: string;
@@ -29,10 +31,20 @@ export function AuthCallbackScreen() {
   async function verifySession() {
     // Case 1: explicit error param from Supabase redirect
     if (params.error) {
-      setErrorMessage(
-        params.error_description ?? "El enlace de verificación no es válido.",
-      );
+      setErrorMessage(params.error_description ?? "El enlace de verificación no es válido.");
       setState("error");
+      return;
+    }
+
+    // Case 1b: PKCE authorization code
+    if (params.code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+      if (error) {
+        setErrorMessage(error.message);
+        setState("error");
+      } else {
+        setState("success");
+      }
       return;
     }
 
@@ -80,16 +92,14 @@ export function AuthCallbackScreen() {
   // ─── Loading ───────────────────────────────────────────────────────────────
   if (state === "loading") {
     return (
-      <View className="flex-1 items-center justify-center bg-purple-50 px-6">
-        <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8">
+      <View className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
+        <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8 dark:border-purple-900 dark:bg-surface">
           <MochiCharacter mood="thinking" size={80} />
-          <Text className="mt-4 text-center text-lg font-bold text-purple-900">
+          <Text className="mt-4 text-center text-lg font-bold text-purple-900 dark:text-purple-100">
             Verificando tu cuenta...
           </Text>
-          <Text className="mt-1 text-center text-sm text-purple-400">
-            Solo un momento...
-          </Text>
-          <ActivityIndicator className="mt-4" color="#7c3aed" />
+          <Text className="mt-1 text-center text-sm text-purple-400">Solo un momento...</Text>
+          <ActivityIndicator className="mt-4" color={tc("#7c3aed")} />
         </View>
       </View>
     );
@@ -98,19 +108,19 @@ export function AuthCallbackScreen() {
   // ─── Success ───────────────────────────────────────────────────────────────
   if (state === "success") {
     return (
-      <View className="flex-1 items-center justify-center bg-purple-50 px-6">
-        <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8">
+      <View className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
+        <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8 dark:border-purple-900 dark:bg-surface">
           <MochiCharacter mood="happy" size={80} />
 
           {/* Green check circle */}
-          <View className="mt-4 h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <Ionicons name="checkmark" size={36} color="#16a34a" />
+          <View className="mt-4 h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+            <Ionicons name="checkmark" size={36} color={tc("#16a34a")} />
           </View>
 
-          <Text className="mt-4 text-center text-2xl font-extrabold text-purple-900">
+          <Text className="mt-4 text-center text-2xl font-extrabold text-purple-900 dark:text-purple-100">
             ¡Cuenta verificada!
           </Text>
-          <Text className="mt-2 text-center text-sm text-purple-600">
+          <Text className="mt-2 text-center text-sm text-purple-600 dark:text-purple-400">
             Bienvenida a Mochi
           </Text>
           <Text className="mt-3 text-center text-xs text-purple-300">
@@ -123,23 +133,21 @@ export function AuthCallbackScreen() {
 
   // ─── Error ─────────────────────────────────────────────────────────────────
   return (
-    <View className="flex-1 items-center justify-center bg-purple-50 px-6">
-      <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8">
+    <View className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
+      <View className="w-full max-w-sm items-center rounded-3xl border border-purple-100 bg-white p-8 dark:border-purple-900 dark:bg-surface">
         <MochiCharacter mood="sleepy" size={80} />
 
         {/* Red X circle */}
-        <View className="mt-4 h-16 w-16 items-center justify-center rounded-full bg-red-100">
-          <Ionicons name="close" size={36} color="#dc2626" />
+        <View className="mt-4 h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
+          <Ionicons name="close" size={36} color={tc("#dc2626")} />
         </View>
 
-        <Text className="mt-4 text-center text-2xl font-extrabold text-purple-900">
+        <Text className="mt-4 text-center text-2xl font-extrabold text-purple-900 dark:text-purple-100">
           Algo salió mal
         </Text>
 
         {errorMessage ? (
-          <Text className="mt-2 text-center text-sm text-red-500">
-            {errorMessage}
-          </Text>
+          <Text className="mt-2 text-center text-sm text-red-500">{errorMessage}</Text>
         ) : null}
 
         <TouchableOpacity

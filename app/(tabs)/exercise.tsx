@@ -1,8 +1,9 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -17,11 +18,7 @@ import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCycleRecommendation } from "@/src/shared/hooks/useCycleRecommendation";
-import { TabHeader } from "@/src/shared/components/TabHeader";
-import type {
-  Exercise,
-  RoutineWithExercises,
-} from "@/src/shared/types/database";
+import type { Exercise, RoutineWithExercises } from "@/src/shared/types/database";
 
 type ExerciseCardProps = {
   exercise: Exercise;
@@ -35,15 +32,6 @@ type RoutineCardProps = {
 };
 
 const dayMap = ["D", "L", "M", "X", "J", "V", "S"];
-
-const exerciseAccentMap: Record<string, string> = {
-  pink: "bg-pink-100",
-  blue: "bg-blue-100",
-  yellow: "bg-yellow-100",
-  teal: "bg-teal-100",
-  purple: "bg-purple-100",
-  green: "bg-green-100",
-};
 
 function formatRoutineTime(routine: RoutineWithExercises): string {
   const totalSeconds = routine.routine_exercises.reduce((sum, item) => {
@@ -86,37 +74,37 @@ function RoutineCard({ routine, index, animationSeed }: RoutineCardProps) {
   return (
     <Animated.View
       style={animatedStyle}
-      className="mb-3 rounded-3xl border-2 border-teal-200 bg-white p-4"
+      className="mb-3 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface"
     >
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Text className="text-lg font-extrabold text-slate-800">
+          <Text className="text-lg font-extrabold text-slate-800 dark:text-slate-200">
             {routine.name}
           </Text>
           <View className="mt-2 flex-row flex-wrap gap-2">
             {routine.days.map((dayNum) => (
               <View
                 key={`${routine.id}-${dayNum}`}
-                className="rounded-full bg-teal-100 px-2.5 py-1"
+                className="rounded-full bg-teal-100 px-2.5 py-1 dark:bg-teal-900"
               >
-                <Text className="text-xs font-bold text-teal-800">
+                <Text className="text-xs font-bold text-teal-800 dark:text-teal-200">
                   {dayMap[dayNum] ?? "?"}
                 </Text>
               </View>
             ))}
           </View>
-          <Text className="mt-2 text-sm font-semibold text-slate-600">
+          <Text className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-400">
             {routine.routine_exercises.length} ejercicios • {formatRoutineTime(routine)}
           </Text>
         </View>
 
         <TouchableOpacity
-          className="h-11 w-11 items-center justify-center rounded-2xl bg-teal-200"
+          className="h-11 w-11 items-center justify-center rounded-2xl bg-teal-200 dark:bg-teal-800"
           onPress={() => router.push(`/routine-player?routineId=${routine.id}`)}
           accessibilityRole="button"
           accessibilityLabel={`Iniciar rutina ${routine.name}`}
         >
-          <Ionicons name="play" size={18} color="#0d9488" />
+          <Ionicons name="play" size={18} color={tc("#0d9488")} />
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -125,20 +113,17 @@ function RoutineCard({ routine, index, animationSeed }: RoutineCardProps) {
 
 function ExerciseCard({ exercise, onDelete }: ExerciseCardProps) {
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onLongPress={() => onDelete(exercise.id)}
-    >
-      <View className="mb-3 rounded-3xl border border-teal-200 bg-white p-4">
-        <Text className="text-base font-extrabold text-slate-800">
+    <TouchableOpacity activeOpacity={0.9} onLongPress={() => onDelete(exercise.id)}>
+      <View className="mb-3 rounded-3xl border border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
+        <Text className="text-base font-extrabold text-slate-800 dark:text-slate-200">
           {exercise.name}
         </Text>
-        <Text className="mt-1 text-xs font-semibold text-slate-600">
+        <Text className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
           {exercise.sets} series • {exercise.reps} repeticiones •{" "}
           {Math.ceil(exercise.duration_seconds / 60)} min
         </Text>
         {exercise.notes ? (
-          <Text className="mt-2 text-xs font-semibold text-teal-700">
+          <Text className="mt-2 text-xs font-semibold text-teal-700 dark:text-teal-300">
             {exercise.notes}
           </Text>
         ) : null}
@@ -213,18 +198,14 @@ export function ExerciseScreen() {
       ]);
 
       if (exercisesRes.error) {
-        setExerciseError(
-          exercisesRes.error.message ?? "No se pudieron cargar los ejercicios",
-        );
+        setExerciseError(exercisesRes.error.message ?? "No se pudieron cargar los ejercicios");
         setExercises([]);
       } else {
         setExercises((exercisesRes.data ?? []) as Exercise[]);
       }
 
       if (routinesRes.error) {
-        setRoutineError(
-          routinesRes.error.message ?? "No se pudieron cargar las rutinas",
-        );
+        setRoutineError(routinesRes.error.message ?? "No se pudieron cargar las rutinas");
         setRoutines([]);
       } else {
         setRoutines((routinesRes.data ?? []) as RoutineWithExercises[]);
@@ -232,8 +213,7 @@ export function ExerciseScreen() {
 
       setAnimationSeed((prev) => prev + 1);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "No se pudo cargar el módulo";
+      const message = err instanceof Error ? err.message : "No se pudo cargar el módulo";
       setExerciseError((prev) => prev ?? message);
       setRoutineError((prev) => prev ?? message);
     } finally {
@@ -270,13 +250,8 @@ export function ExerciseScreen() {
       if (deleteError) throw deleteError;
       await loadData();
     } catch (err) {
-      console.error(
-        "[ExerciseList] error eliminando ejercicio:",
-        err instanceof Error ? err.message : String(err),
-      );
-      setExerciseError(
-        err instanceof Error ? err.message : "No se pudo eliminar el ejercicio",
-      );
+      reportError(err, { scope: "ExerciseList" });
+      setExerciseError(err instanceof Error ? err.message : "No se pudo eliminar el ejercicio");
     }
   };
 
@@ -286,18 +261,15 @@ export function ExerciseScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-teal-50">
-        <ScrollView
-          className="flex-1 px-5 pt-12"
-          showsVerticalScrollIndicator={false}
-        >
+      <View className="flex-1 bg-teal-50 dark:bg-teal-950">
+        <ScrollView className="flex-1 px-5 pt-12" showsVerticalScrollIndicator={false}>
           <View className="mb-5 flex-row items-center">
-            <Ionicons name="barbell" size={20} color="#0f766e" />
+            <Ionicons name="barbell" size={20} color={tc("#0f766e")} />
             <View className="ml-2 flex-1">
-              <Text className="text-2xl font-extrabold text-teal-900">
+              <Text className="text-2xl font-extrabold text-teal-900 dark:text-teal-100">
                 Ejercicio
               </Text>
-              <Text className="text-sm font-semibold text-teal-600">
+              <Text className="text-sm font-semibold text-teal-600 dark:text-teal-400">
                 Ejercicios guardados y rutinas listas para iniciar
               </Text>
             </View>
@@ -305,12 +277,12 @@ export function ExerciseScreen() {
 
           {tip && (
             <View
-              className={`mb-4 rounded-2xl border p-3 ${personality?.phaseBadgeClass ?? "border-teal-200 bg-white"}`}
+              className={`mb-4 rounded-2xl border p-3 ${personality?.phaseBadgeClass ?? "border-teal-200 bg-white dark:border-teal-800 dark:bg-surface"}`}
             >
-              <Text className="text-xs font-extrabold text-slate-800">
+              <Text className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
                 Consejo para hoy
               </Text>
-              <Text className="mt-1 text-xs font-semibold text-slate-700">
+              <Text className="mt-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
                 {tip}
               </Text>
             </View>
@@ -318,62 +290,61 @@ export function ExerciseScreen() {
 
           {!loading && hasContent && (
             <View className="mb-4 flex-row gap-3">
-              <View className="flex-1 rounded-2xl border border-teal-200 bg-white p-4">
-                <Text className="text-3xl font-extrabold text-teal-900">
+              <View className="flex-1 rounded-2xl border border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
+                <Text className="text-3xl font-extrabold text-teal-900 dark:text-teal-100">
                   {totalExercises}
                 </Text>
-                <Text className="mt-1 text-xs font-bold text-teal-600">
+                <Text className="mt-1 text-xs font-bold text-teal-600 dark:text-teal-400">
                   {totalExercises === 1 ? "ejercicio" : "ejercicios"}
                 </Text>
               </View>
-              <View className="flex-1 rounded-2xl border border-violet-200 bg-violet-50 p-4">
-                <Text className="text-3xl font-extrabold text-violet-900">
+              <View className="flex-1 rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-800 dark:bg-violet-950">
+                <Text className="text-3xl font-extrabold text-violet-900 dark:text-violet-100">
                   {totalRoutines}
                 </Text>
-                <Text className="mt-1 text-xs font-bold text-violet-600">
+                <Text className="mt-1 text-xs font-bold text-violet-600 dark:text-violet-400">
                   {totalRoutines === 1 ? "rutina" : "rutinas"}
                 </Text>
               </View>
-              <View className="flex-1 rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                <Text className="text-3xl font-extrabold text-rose-900">
+              <View className="flex-1 rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950">
+                <Text className="text-3xl font-extrabold text-rose-900 dark:text-rose-100">
                   {totalRoutineExercises}
                 </Text>
-                <Text className="mt-1 text-xs font-bold text-rose-600">
+                <Text className="mt-1 text-xs font-bold text-rose-600 dark:text-rose-400">
                   ejercicios en rutinas
                 </Text>
               </View>
             </View>
           )}
 
-          <View className="mb-5 rounded-3xl border-2 border-teal-200 bg-white p-4">
+          <View className="mb-5 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center">
-                <Ionicons name="repeat-outline" size={18} color="#0f766e" />
-                <Text className="ml-2 text-base font-extrabold text-teal-900">
+                <Ionicons name="repeat-outline" size={18} color={tc("#0f766e")} />
+                <Text className="ml-2 text-base font-extrabold text-teal-900 dark:text-teal-100">
                   Rutinas
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => router.push("/routine-create")}
-                className="rounded-full bg-teal-50 px-3 py-2"
+                className="rounded-full bg-teal-50 px-3 py-2 dark:bg-teal-950"
               >
-                <Text className="text-xs font-extrabold text-teal-700">
+                <Text className="text-xs font-extrabold text-teal-700 dark:text-teal-300">
                   Nueva rutina
                 </Text>
               </TouchableOpacity>
             </View>
 
             {routineError ? (
-              <View className="rounded-2xl border border-red-200 bg-red-50 p-3">
-                <Text className="text-sm font-semibold text-red-700">
+              <View className="rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+                <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
                   {routineError}
                 </Text>
               </View>
             ) : routines.length === 0 ? (
-              <View className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
-                <Text className="text-sm font-semibold text-teal-700">
-                  Aún no tienes rutinas. Crea una usando tus ejercicios
-                  guardados.
+              <View className="rounded-2xl border border-teal-100 bg-teal-50 p-4 dark:border-teal-900 dark:bg-teal-950">
+                <Text className="text-sm font-semibold text-teal-700 dark:text-teal-300">
+                  Aún no tienes rutinas. Crea una usando tus ejercicios guardados.
                 </Text>
               </View>
             ) : (
@@ -388,33 +359,33 @@ export function ExerciseScreen() {
             )}
           </View>
 
-          <View className="mb-5 rounded-3xl border-2 border-teal-200 bg-white p-4">
+          <View className="mb-5 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center">
-                <Ionicons name="barbell-outline" size={18} color="#0f766e" />
-                <Text className="ml-2 text-base font-extrabold text-teal-900">
+                <Ionicons name="barbell-outline" size={18} color={tc("#0f766e")} />
+                <Text className="ml-2 text-base font-extrabold text-teal-900 dark:text-teal-100">
                   Ejercicios
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={handleCreateExercise}
-                className="rounded-full bg-teal-50 px-3 py-2"
+                className="rounded-full bg-teal-50 px-3 py-2 dark:bg-teal-950"
               >
-                <Text className="text-xs font-extrabold text-teal-700">
+                <Text className="text-xs font-extrabold text-teal-700 dark:text-teal-300">
                   Nuevo ejercicio
                 </Text>
               </TouchableOpacity>
             </View>
 
             {exerciseError ? (
-              <View className="rounded-2xl border border-red-200 bg-red-50 p-3">
-                <Text className="text-sm font-semibold text-red-700">
+              <View className="rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+                <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
                   {exerciseError}
                 </Text>
               </View>
             ) : exercises.length === 0 ? (
-              <View className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
-                <Text className="text-sm font-semibold text-teal-700">
+              <View className="rounded-2xl border border-teal-100 bg-teal-50 p-4 dark:border-teal-900 dark:bg-teal-950">
+                <Text className="text-sm font-semibold text-teal-700 dark:text-teal-300">
                   Aún no tienes ejercicios. Crea uno para usarlo en tus rutinas.
                 </Text>
               </View>
@@ -450,11 +421,11 @@ export function ExerciseScreen() {
           <View className="h-20" />
         </ScrollView>
         {loading && (
-          <View className="absolute inset-x-0 top-0 h-full items-center justify-center bg-teal-50/30">
+          <View className="absolute inset-x-0 top-0 h-full items-center justify-center bg-teal-50/30 dark:bg-teal-950/30">
             <Animated.View style={loadingAnimatedStyle}>
               <MochiCharacter mood="thinking" size={90} />
             </Animated.View>
-            <Text className="mt-4 text-sm font-semibold text-teal-700">
+            <Text className="mt-4 text-sm font-semibold text-teal-700 dark:text-teal-300">
               Cargando ejercicios y rutinas...
             </Text>
           </View>
@@ -463,7 +434,7 @@ export function ExerciseScreen() {
       <FloatingActionButton
         onPress={() => router.push("/routine-create")}
         containerClassName="bg-violet-500"
-        borderClassName="border-purple-300"
+        borderClassName="border-purple-300 dark:border-purple-700"
         iconName="repeat-outline"
         accessibilityLabel="Crear rutina"
         bottomOffset={72}
@@ -471,7 +442,7 @@ export function ExerciseScreen() {
       <FloatingActionButton
         onPress={handleCreateExercise}
         containerClassName="bg-teal-500"
-        borderClassName="border-teal-300"
+        borderClassName="border-teal-300 dark:border-teal-700"
         iconName="barbell-outline"
         accessibilityLabel="Crear ejercicio"
       />

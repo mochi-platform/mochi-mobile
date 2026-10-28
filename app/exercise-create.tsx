@@ -1,3 +1,5 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { tc } from "@/src/shared/theme/colors";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -11,10 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { suggestExerciseDescription } from "@/src/shared/lib/ai";
@@ -35,9 +34,7 @@ export function CreateExerciseScreen() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
 
-  const returnTo = Array.isArray(params.returnTo)
-    ? params.returnTo[0]
-    : params.returnTo;
+  const returnTo = Array.isArray(params.returnTo) ? params.returnTo[0] : params.returnTo;
 
   const handleGoBack = () => {
     if (returnTo && returnTo.startsWith("/")) {
@@ -65,10 +62,7 @@ export function CreateExerciseScreen() {
       setDuration(String(suggestion.estimatedDuration || 60));
       setNotes(suggestion.description);
     } catch (error) {
-      console.error(
-        "[ExerciseCreate] error solicitando sugerencia IA:",
-        error instanceof Error ? error.message : String(error),
-      );
+      reportError(error, { scope: "ExerciseCreate" });
     } finally {
       setAiLoading(false);
     }
@@ -119,10 +113,7 @@ export function CreateExerciseScreen() {
     } catch (error) {
       showAlert({
         title: "Error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "No se pudo crear el ejercicio",
+        message: error instanceof Error ? error.message : "No se pudo crear el ejercicio",
         buttons: [{ text: "Entendido", style: "destructive" }],
       });
     } finally {
@@ -131,43 +122,40 @@ export function CreateExerciseScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-teal-100">
+    <SafeAreaView className="flex-1 bg-teal-100 dark:bg-teal-900">
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
-          className="flex-1 bg-teal-100"
+          className="flex-1 bg-teal-100 dark:bg-teal-900"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         >
           <View className="px-5 py-6">
             {/* Header */}
-            <TouchableOpacity
-              onPress={handleGoBack}
-              className="mb-4 flex-row items-center"
-            >
-              <Ionicons name="chevron-back" size={24} color="#0d9488" />
-              <Text className="ml-2 text-lg font-bold text-teal-700">
+            <TouchableOpacity onPress={handleGoBack} className="mb-4 flex-row items-center">
+              <Ionicons name="chevron-back" size={24} color={tc("#0d9488")} />
+              <Text className="ml-2 text-lg font-bold text-teal-700 dark:text-teal-300">
                 Volver
               </Text>
             </TouchableOpacity>
 
-            <Text className="text-3xl font-extrabold text-teal-900">
+            <Text className="text-3xl font-extrabold text-teal-900 dark:text-teal-100">
               Nuevo ejercicio
             </Text>
-            <Text className="mt-1 text-sm font-semibold text-teal-600">
+            <Text className="mt-1 text-sm font-semibold text-teal-600 dark:text-teal-400">
               Añade un ejercicio personalizado a tu banco
             </Text>
 
             {/* Exercise name */}
-            <View className="mt-6 rounded-3xl border-2 border-teal-200 bg-white p-4">
-              <Text className="text-sm font-bold text-teal-900">
+            <View className="mt-6 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
+              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
                 Nombre del ejercicio
               </Text>
               <TextInput
-                className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-base text-teal-900"
+                className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-base text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
                 placeholder="Ejemplo: Flexiones"
                 value={name}
                 onChangeText={setName}
@@ -176,19 +164,15 @@ export function CreateExerciseScreen() {
             </View>
 
             {/* AI Description suggestion */}
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4">
+            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
               <View className="flex-row items-center justify-between">
-                <Text className="text-sm font-bold text-teal-900">
+                <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
                   Sugerencias con IA
                 </Text>
                 {aiDescription && (
-                  <View className="flex-row items-center gap-1 rounded-full bg-green-100 px-3 py-1">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={14}
-                      color="#059669"
-                    />
-                    <Text className="text-xs font-bold text-green-700">
+                  <View className="flex-row items-center gap-1 rounded-full bg-green-100 px-3 py-1 dark:bg-green-900">
+                    <Ionicons name="checkmark-circle" size={14} color={tc("#059669")} />
+                    <Text className="text-xs font-bold text-green-700 dark:text-green-300">
                       Aplicable
                     </Text>
                   </View>
@@ -199,21 +183,21 @@ export function CreateExerciseScreen() {
                 label="Obtener sugerencias"
                 onPress={handleAISuggest}
                 iconName="sparkles"
-                iconColor="#0d9488"
+                iconColor={tc("#0d9488")}
                 iconSize={16}
                 loading={aiLoading}
-                loadingColor="#0d9488"
+                loadingColor={tc("#0d9488")}
                 disabled={!name.trim()}
-                containerClassName="mt-3 w-full rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 py-3"
-                textClassName="text-teal-700"
+                containerClassName="mt-3 w-full rounded-2xl bg-gradient-to-r from-yellow-100 dark:from-yellow-900 to-yellow-50 dark:to-yellow-950 py-3"
+                textClassName="text-teal-700 dark:text-teal-300"
               />
 
               {aiDescription && (
-                <View className="mt-3 rounded-2xl bg-teal-50 p-3">
-                  <Text className="text-xs font-semibold text-teal-700">
+                <View className="mt-3 rounded-2xl bg-teal-50 p-3 dark:bg-teal-950">
+                  <Text className="text-xs font-semibold text-teal-700 dark:text-teal-300">
                     Descripción sugerida:
                   </Text>
-                  <Text className="mt-1 text-sm font-semibold text-teal-900">
+                  <Text className="mt-1 text-sm font-semibold text-teal-900 dark:text-teal-100">
                     {aiDescription}
                   </Text>
                 </View>
@@ -221,18 +205,18 @@ export function CreateExerciseScreen() {
             </View>
 
             {/* Sets, reps, duration */}
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4">
-              <Text className="text-sm font-bold text-teal-900">
+            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
+              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
                 Configuración
               </Text>
 
               <View className="mt-3 flex-row gap-3">
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-teal-600">
+                  <Text className="text-xs font-semibold text-teal-600 dark:text-teal-400">
                     Series
                   </Text>
                   <TextInput
-                    className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-center text-base font-bold text-teal-900"
+                    className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-center text-base font-bold text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
                     keyboardType="number-pad"
                     value={sets}
                     onChangeText={setSets}
@@ -241,11 +225,11 @@ export function CreateExerciseScreen() {
                 </View>
 
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-teal-600">
+                  <Text className="text-xs font-semibold text-teal-600 dark:text-teal-400">
                     Repeticiones
                   </Text>
                   <TextInput
-                    className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-center text-base font-bold text-teal-900"
+                    className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-center text-base font-bold text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
                     keyboardType="number-pad"
                     value={reps}
                     onChangeText={setReps}
@@ -254,11 +238,11 @@ export function CreateExerciseScreen() {
                 </View>
 
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-teal-600">
+                  <Text className="text-xs font-semibold text-teal-600 dark:text-teal-400">
                     Segundos
                   </Text>
                   <TextInput
-                    className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-center text-base font-bold text-teal-900"
+                    className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-center text-base font-bold text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
                     keyboardType="number-pad"
                     value={duration}
                     onChangeText={setDuration}
@@ -269,12 +253,12 @@ export function CreateExerciseScreen() {
             </View>
 
             {/* Notes */}
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4">
-              <Text className="text-sm font-bold text-teal-900">
+            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
+              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
                 Notas (descripción completa)
               </Text>
               <TextInput
-                className="mt-2 min-h-20 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-base text-teal-900"
+                className="mt-2 min-h-20 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-base text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
                 placeholder="Cómo hacerlo, posición correcta, respiración, etc."
                 value={notes}
                 onChangeText={setNotes}

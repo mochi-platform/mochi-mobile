@@ -1,14 +1,9 @@
+import { tc } from "@/src/shared/theme/colors";
 import "../global.css";
-import { useEffect, useRef, useState, type ComponentType } from "react";
-import {
-  Stack,
-  router,
-  usePathname,
-  useSegments,
-  type ErrorBoundaryProps,
-} from "expo-router";
+import { useEffect, useRef } from "react";
+import { Stack, router, usePathname, useSegments, type ErrorBoundaryProps } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -17,25 +12,35 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import { isExpoGo } from "@/lib/env";
+import { StatusBar } from "expo-status-bar";
 import {
-  SessionProvider,
-  useSession,
-} from "@/src/core/providers/SessionContext";
+  bottomNavRoutes,
+  getBottomNavScreen,
+  getVisibleTabs,
+} from "@/src/features/home/navigation";
+import { WellnessSubNav } from "@/src/features/wellness/WellnessSubNav";
+import { ThemeProvider } from "@/src/core/providers/ThemeContext";
+import { initSentry, wrapWithSentry } from "@/src/shared/lib/observability/sentry";
+import {
+  resetAnalytics,
+  syncAnalyticsConsent,
+  track,
+} from "@/src/shared/lib/observability/analytics";
+import { NavigationBar } from "expo-navigation-bar";
+import { isExpoGo } from "@/lib/env";
+import { listenWidgetActions } from "@/src/shared/widgets/widgetActions";
+import { registerDuoPush } from "@/src/features/duo/push";
+import { SessionProvider, useSession } from "@/src/core/providers/SessionContext";
 import {
   ModuleVisibilityProvider,
   useModuleVisibility,
 } from "@/src/core/providers/ModuleVisibilityContext";
-import {
-  SystemBarsProvider,
-  useSystemBars,
-} from "@/src/core/providers/SystemBarsContext";
+import { SystemBarsProvider, useSystemBars } from "@/src/core/providers/SystemBarsContext";
 import { AchievementProvider } from "@/src/core/providers/AchievementContext";
+import { QueryProvider } from "@/src/core/providers/QueryProvider";
+import { OfflineBanner } from "@/src/shared/components/OfflineBanner";
 import { CycleProvider } from "@/src/core/providers/CycleContext";
-import {
-  BottomNav,
-  type MobileScreen,
-} from "@/src/features/home/components/BottomNav";
+import { BottomNav } from "@/src/features/home/components/BottomNav";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 
 type NotificationModule = typeof import("expo-notifications");
@@ -56,114 +61,46 @@ async function getNotificationsModule(): Promise<NotificationModule | null> {
 }
 
 function EdgeToEdgeSystemBars({ style }: SystemBarsProps) {
-  const [SystemBarsComponent, setSystemBarsComponent] =
-    useState<ComponentType<SystemBarsProps> | null>(null);
-
-  useEffect(() => {
-    if (isExpoGo) return;
-
-    let mounted = true;
-    void import("react-native-edge-to-edge")
-      .then((module) => {
-        if (!mounted) return;
-        setSystemBarsComponent(() => module.SystemBars);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setSystemBarsComponent(null);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (isExpoGo || !SystemBarsComponent) return null;
-  return <SystemBarsComponent style={style} />;
+  const scheme = useColorScheme();
+  if (isExpoGo) return null;
+  // Las pantallas declaran el estilo pensado para fondo claro; en oscuro los iconos van claros.
+  const isDark = scheme === "dark";
+  return (
+    <>
+      <StatusBar style={isDark ? "light" : style.statusBar === "dark" ? "dark" : "light"} />
+      <NavigationBar style={isDark ? "light" : style.navigationBar} />
+    </>
+  );
 }
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
-    <View className="flex-1 items-center justify-center bg-white px-6">
-      <EdgeToEdgeSystemBars
-        style={{ statusBar: "dark", navigationBar: "light" }}
-      />
-      <View className="w-full max-w-sm items-center rounded-3xl border border-rose-100 bg-rose-50 p-6">
-        <View className="h-14 w-14 items-center justify-center rounded-full bg-rose-100">
-          <Ionicons name="alert-circle" size={30} color="#e11d48" />
+    <View className="flex-1 items-center justify-center bg-white px-6 dark:bg-surface">
+      <EdgeToEdgeSystemBars style={{ statusBar: "dark", navigationBar: "light" }} />
+      <View className="w-full max-w-sm items-center rounded-3xl border border-rose-100 bg-rose-50 p-6 dark:border-rose-900 dark:bg-rose-950">
+        <View className="h-14 w-14 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900">
+          <Ionicons name="alert-circle" size={30} color={tc("#e11d48")} />
         </View>
-        <Text className="mt-4 text-center text-xl font-bold text-rose-900">
+        <Text className="mt-4 text-center text-xl font-bold text-rose-900 dark:text-rose-100">
           Algo salió mal
         </Text>
-        <Text className="mt-2 text-center text-sm font-semibold text-rose-700">
+        <Text className="mt-2 text-center text-sm font-semibold text-rose-700 dark:text-rose-300">
           Ocurrió un error inesperado
         </Text>
         <TouchableOpacity
-          className="mt-6 rounded-2xl bg-pink-200 px-5 py-3"
+          className="mt-6 rounded-2xl bg-pink-200 px-5 py-3 dark:bg-pink-800"
           onPress={retry}
         >
-          <Text className="text-center text-base font-bold text-pink-900">
+          <Text className="text-center text-base font-bold text-pink-900 dark:text-pink-100">
             Reintentar
           </Text>
         </TouchableOpacity>
         {error?.message ? (
-          <Text className="mt-3 text-center text-xs text-rose-500">
-            {error.message}
-          </Text>
+          <Text className="mt-3 text-center text-xs text-rose-500">{error.message}</Text>
         ) : null}
       </View>
     </View>
   );
-}
-
-const bottomNavRoutes: Record<MobileScreen, string> = {
-  home: "/(tabs)",
-  study: "/(tabs)/study",
-  "mochi-duo": "/mochi-duo",
-  exercise: "/(tabs)/exercise",
-  habits: "/(tabs)/habits",
-  cooking: "/(tabs)/cooking",
-};
-
-function getBottomNavScreen(pathname: string): MobileScreen {
-  if (pathname === "/mochi-duo" || pathname.startsWith("/mochi-duo")) {
-    return "mochi-duo";
-  }
-
-  if (pathname === "/study") {
-    return "study";
-  }
-
-  if (pathname === "/exercise") {
-    return "exercise";
-  }
-
-  if (pathname === "/habits") {
-    return "habits";
-  }
-
-  if (pathname === "/cooking") {
-    return "cooking";
-  }
-
-  return "home";
-}
-
-function getVisibleTabs(settings: {
-  partner_features_enabled: boolean;
-  study_enabled: boolean;
-  exercise_enabled: boolean;
-  habits_enabled: boolean;
-  cooking_enabled: boolean;
-}): MobileScreen[] {
-  return [
-    "home",
-    ...(settings.study_enabled ? (["study"] as const) : []),
-    ...(settings.partner_features_enabled ? (["mochi-duo"] as const) : []),
-    ...(settings.exercise_enabled ? (["exercise"] as const) : []),
-    ...(settings.habits_enabled ? (["habits"] as const) : []),
-    ...(settings.cooking_enabled ? (["cooking"] as const) : []),
-  ];
 }
 
 function isRouteAllowed(
@@ -186,6 +123,8 @@ function isRouteAllowed(
     pathname === "/onboarding" ||
     pathname === "/settings" ||
     pathname === "/profile" ||
+    pathname === "/wellness" ||
+    pathname === "/premium" ||
     pathname === "/weekly-summary" ||
     pathname === "/flashcards" ||
     pathname.startsWith("/auth")
@@ -244,11 +183,7 @@ function isRouteAllowed(
     return settings.exercise_enabled;
   }
 
-  if (
-    pathname === "/cooking" ||
-    pathname === "/recipe-detail" ||
-    pathname === "/recipe-player"
-  ) {
+  if (pathname === "/cooking" || pathname === "/recipe-detail" || pathname === "/recipe-player") {
     return settings.cooking_enabled;
   }
 
@@ -256,15 +191,26 @@ function isRouteAllowed(
 }
 
 function RootLayoutNavigator() {
-  const { session, loading, requiresOnboarding, profileError, refreshProfile } =
-    useSession();
+  const { session, loading, requiresOnboarding, profileError, refreshProfile } = useSession();
   const { moduleVisibility, moduleVisibilityLoaded } = useModuleVisibility();
   const { theme } = useSystemBars();
   const pathname = usePathname();
   const segments = useSegments();
   const loadingScale = useSharedValue(1);
-  const notificationResponseListener =
-    useRef<NotificationEventSubscription | null>(null);
+  const notificationResponseListener = useRef<NotificationEventSubscription | null>(null);
+
+  useEffect(() => {
+    let release: (() => void) | null = null;
+    let cancelled = false;
+    void listenWidgetActions().then((stop) => {
+      if (cancelled) stop();
+      else release = stop;
+    });
+    return () => {
+      cancelled = true;
+      release?.();
+    };
+  }, []);
 
   useEffect(() => {
     if (isExpoGo) return;
@@ -312,14 +258,41 @@ function RootLayoutNavigator() {
     transform: [{ scale: loadingScale.value }],
   }));
 
+  const sessionUserId = session?.user.id ?? null;
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+
+  const segs: string[] = segments;
+  const moduleSegment = segs[0] === "(tabs)" ? (segs[1] ?? "index") : segs[0];
+  useEffect(() => {
+    // Solo el nombre de la pantalla; nunca contenido ni parámetros.
+    if (session && moduleSegment) track("module_opened", { module: String(moduleSegment) });
+  }, [moduleSegment, session]);
+
   useEffect(() => {
     if (loading) return;
-    if (!session) {
+    if (session?.user.id) {
+      void syncAnalyticsConsent(session.user.id);
+      void registerDuoPush();
+    } else {
+      resetAnalytics();
+    }
+  }, [session?.user.id, loading]);
+
+  useEffect(() => {
+    if (loading) return;
+    // Durante la recuperación de contraseña la sesión existe pero debe quedarse en esa pantalla.
+    if (pathnameRef.current.startsWith("/auth/reset")) return;
+    if (!sessionUserId) {
       router.replace("/login");
       return;
     }
+    // Al terminar el onboarding se queda en él para mostrar "Todo listo"; sus botones navegan.
+    if (!requiresOnboarding && pathnameRef.current.startsWith("/onboarding")) return;
     router.replace(requiresOnboarding ? "/onboarding" : "/");
-  }, [session, loading, requiresOnboarding]);
+    // Depende del id de la usuaria, no del objeto de sesión: al volver de un permiso del
+    // sistema la sesión se refresca y no debe reiniciar la pantalla.
+  }, [sessionUserId, loading, requiresOnboarding]);
 
   useEffect(() => {
     if (isExpoGo) return;
@@ -329,12 +302,9 @@ function RootLayoutNavigator() {
       const Notifications = await getNotificationsModule();
       if (!mounted || !Notifications) return;
 
-      notificationResponseListener.current =
-        Notifications.addNotificationResponseReceivedListener((response) => {
-          const data = response.notification.request.content.data as Record<
-            string,
-            unknown
-          > | null;
+      notificationResponseListener.current = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          const data = response.notification.request.content.data as Record<string, unknown> | null;
           const screen = typeof data?.screen === "string" ? data.screen : null;
 
           if (screen === "habits") router.push("/(tabs)/habits");
@@ -342,7 +312,9 @@ function RootLayoutNavigator() {
           else if (screen === "cooking") router.push("/(tabs)/cooking");
           else if (screen === "weekly-summary") router.push("/weekly-summary");
           else if (screen === "exam-log") router.push("/exam-log");
-        });
+          else if (data?.type === "voucher") router.push("/vouchers");
+        },
+      );
     })();
 
     return () => {
@@ -357,28 +329,19 @@ function RootLayoutNavigator() {
     if (requiresOnboarding || loading) return;
     if (isRouteAllowed(pathname, moduleVisibility)) return;
     router.replace("/");
-  }, [
-    loading,
-    moduleVisibility,
-    moduleVisibilityLoaded,
-    pathname,
-    requiresOnboarding,
-    session,
-  ]);
+  }, [loading, moduleVisibility, moduleVisibilityLoaded, pathname, requiresOnboarding, session]);
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-purple-50 px-6">
-        <EdgeToEdgeSystemBars
-          style={{ statusBar: "dark", navigationBar: "dark" }}
-        />
-        <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm">
+      <View className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
+        <EdgeToEdgeSystemBars style={{ statusBar: "dark", navigationBar: "dark" }} />
+        <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm dark:bg-surface">
           <View className="items-center">
             <Animated.View style={loadingAnimatedStyle}>
               <MochiCharacter mood="thinking" size={90} />
             </Animated.View>
           </View>
-          <Text className="mt-4 text-center text-base font-semibold text-purple-900">
+          <Text className="mt-4 text-center text-base font-semibold text-purple-900 dark:text-purple-100">
             Cargando Mochi...
           </Text>
         </View>
@@ -388,24 +351,22 @@ function RootLayoutNavigator() {
 
   if (profileError && session) {
     return (
-      <View className="flex-1 items-center justify-center bg-yellow-50 px-6">
-        <EdgeToEdgeSystemBars
-          style={{ statusBar: "dark", navigationBar: "dark" }}
-        />
-        <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm">
-          <Text className="text-center text-lg font-semibold text-purple-900">
+      <View className="flex-1 items-center justify-center bg-yellow-50 px-6 dark:bg-yellow-950">
+        <EdgeToEdgeSystemBars style={{ statusBar: "dark", navigationBar: "dark" }} />
+        <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm dark:bg-surface">
+          <Text className="text-center text-lg font-semibold text-purple-900 dark:text-purple-100">
             Ups, no pudimos cargar tu perfil
           </Text>
-          <Text className="mt-2 text-center text-sm text-purple-800">
+          <Text className="mt-2 text-center text-sm text-purple-800 dark:text-purple-200">
             {profileError}
           </Text>
           <TouchableOpacity
-            className="mt-5 rounded-2xl bg-yellow-300 px-4 py-3"
+            className="mt-5 rounded-2xl bg-yellow-300 px-4 py-3 dark:bg-yellow-700"
             onPress={() => {
               void refreshProfile();
             }}
           >
-            <Text className="text-center text-base font-semibold text-purple-900">
+            <Text className="text-center text-base font-semibold text-purple-900 dark:text-purple-100">
               Reintentar
             </Text>
           </TouchableOpacity>
@@ -419,8 +380,8 @@ function RootLayoutNavigator() {
     !process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim()
   ) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-8">
-        <Text className="text-center text-lg font-semibold text-gray-800">
+      <View className="flex-1 items-center justify-center bg-white px-8 dark:bg-surface">
+        <Text className="text-center text-lg font-semibold text-gray-800 dark:text-gray-200">
           Error de configuracion
         </Text>
         <Text className="mt-2 text-center text-sm text-gray-500">
@@ -431,12 +392,12 @@ function RootLayoutNavigator() {
   }
 
   const showBottomNav =
-    (pathname.startsWith("/(tabs)") || pathname === "/" || segments[0] === "(tabs)") &&
-    Boolean(session) &&
-    !requiresOnboarding &&
-    !pathname.startsWith("/auth") &&
-    pathname !== "/login" ||
-    (Boolean(session) && pathname.startsWith("/mochi-duo"));
+    ((pathname.startsWith("/(tabs)") || pathname === "/" || segments[0] === "(tabs)") &&
+      Boolean(session) &&
+      !requiresOnboarding &&
+      !pathname.startsWith("/auth") &&
+      pathname !== "/login") ||
+    (Boolean(session) && (pathname.startsWith("/mochi-duo") || pathname === "/profile"));
   const currentScreen = getBottomNavScreen(pathname);
   const visibleTabs = getVisibleTabs(moduleVisibility);
 
@@ -453,6 +414,9 @@ function RootLayoutNavigator() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
       </View>
+      {showBottomNav && currentScreen === "wellness" ? (
+        <WellnessSubNav pathname={pathname} visibility={moduleVisibility} />
+      ) : null}
       {showBottomNav ? (
         <BottomNav
           currentScreen={currentScreen}
@@ -469,15 +433,22 @@ function RootLayoutNavigator() {
   );
 }
 
+initSentry();
+
 export function RootLayout() {
   return (
     <SystemBarsProvider>
       <SessionProvider>
         <ModuleVisibilityProvider>
           <AchievementProvider>
-            <CycleProvider>
-              <RootLayoutNavigator />
-            </CycleProvider>
+            <ThemeProvider>
+              <QueryProvider>
+                <CycleProvider>
+                  <RootLayoutNavigator />
+                  <OfflineBanner />
+                </CycleProvider>
+              </QueryProvider>
+            </ThemeProvider>
           </AchievementProvider>
         </ModuleVisibilityProvider>
       </SessionProvider>
@@ -485,4 +456,4 @@ export function RootLayout() {
   );
 }
 
-export default RootLayout;
+export default wrapWithSentry(RootLayout);

@@ -1,3 +1,4 @@
+import { tc } from "@/src/shared/theme/colors";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,12 +11,8 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { router, useFocusEffect } from "expo-router";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import type { Exercise } from "@/src/shared/types/database";
@@ -64,11 +61,7 @@ export function RoutineCreateScreen() {
 
       setExercises(data ?? []);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "No se pudieron cargar los ejercicios",
-      );
+      setError(err instanceof Error ? err.message : "No se pudieron cargar los ejercicios");
       setExercises([]);
     } finally {
       setLoadingExercises(false);
@@ -83,9 +76,7 @@ export function RoutineCreateScreen() {
 
   const toggleDay = (dayId: number) => {
     setSelectedDays((prev) =>
-      prev.includes(dayId)
-        ? prev.filter((current) => current !== dayId)
-        : [...prev, dayId],
+      prev.includes(dayId) ? prev.filter((current) => current !== dayId) : [...prev, dayId],
     );
   };
 
@@ -151,13 +142,11 @@ export function RoutineCreateScreen() {
 
       if (routineError) throw routineError;
 
-      const routineExercisesPayload = selectedExerciseIds.map(
-        (exerciseId, index) => ({
-          routine_id: routineData.id,
-          exercise_id: exerciseId,
-          order_index: index,
-        }),
-      );
+      const routineExercisesPayload = selectedExerciseIds.map((exerciseId, index) => ({
+        routine_id: routineData.id,
+        exercise_id: exerciseId,
+        order_index: index,
+      }));
 
       const { error: routineExercisesError } = await supabase
         .from("routine_exercises")
@@ -178,8 +167,7 @@ export function RoutineCreateScreen() {
     } catch (err) {
       showAlert({
         title: "Error",
-        message:
-          err instanceof Error ? err.message : "No se pudo crear la rutina",
+        message: err instanceof Error ? err.message : "No se pudo crear la rutina",
         buttons: [{ text: "Entendido", style: "destructive" }],
       });
     } finally {
@@ -188,41 +176,38 @@ export function RoutineCreateScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-teal-100">
+    <SafeAreaView className="flex-1 bg-teal-100 dark:bg-teal-900">
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
-          className="flex-1 bg-teal-100"
+          className="flex-1 bg-teal-100 dark:bg-teal-900"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         >
           <View className="px-5 py-6">
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="mb-4 flex-row items-center"
-            >
-              <Ionicons name="chevron-back" size={24} color="#0d9488" />
-              <Text className="ml-2 text-lg font-bold text-teal-700">
+            <TouchableOpacity onPress={() => router.back()} className="mb-4 flex-row items-center">
+              <Ionicons name="chevron-back" size={24} color={tc("#0d9488")} />
+              <Text className="ml-2 text-lg font-bold text-teal-700 dark:text-teal-300">
                 Volver
               </Text>
             </TouchableOpacity>
 
-            <Text className="text-3xl font-extrabold text-teal-900">
+            <Text className="text-3xl font-extrabold text-teal-900 dark:text-teal-100">
               Nueva rutina
             </Text>
-            <Text className="mt-1 text-sm font-semibold text-teal-600">
+            <Text className="mt-1 text-sm font-semibold text-teal-600 dark:text-teal-400">
               Crea una rutina con tus ejercicios guardados
             </Text>
 
-            <View className="mt-6 rounded-3xl border-2 border-teal-200 bg-white p-4">
-              <Text className="text-sm font-bold text-teal-900">
+            <View className="mt-6 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
+              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
                 Nombre de la rutina
               </Text>
               <TextInput
-                className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-base text-teal-900"
+                className="mt-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-base text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-100"
                 placeholder="Ejemplo: Fuerza de tren inferior"
                 value={routineName}
                 onChangeText={setRoutineName}
@@ -230,8 +215,8 @@ export function RoutineCreateScreen() {
               />
             </View>
 
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4">
-              <Text className="text-sm font-bold text-teal-900">
+            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
+              <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
                 Días de entrenamiento
               </Text>
               <View className="mt-3 flex-row flex-wrap">
@@ -241,17 +226,17 @@ export function RoutineCreateScreen() {
                   return (
                     <TouchableOpacity
                       key={day.id}
-                      className={`mb-2 mr-2 rounded-2xl border px-4 py-3 ${active ? "border-teal-600 bg-teal-500" : "border-teal-200 bg-teal-50"}`}
+                      className={`mb-2 mr-2 rounded-2xl border px-4 py-3 ${active ? "border-teal-600 bg-teal-500" : "border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-950"}`}
                       onPress={() => toggleDay(day.id)}
                       disabled={saving}
                     >
                       <Text
-                        className={`text-sm font-extrabold ${active ? "text-white" : "text-teal-800"}`}
+                        className={`text-sm font-extrabold ${active ? "text-white" : "text-teal-800 dark:text-teal-200"}`}
                       >
                         {day.short}
                       </Text>
                       <Text
-                        className={`text-xs font-semibold ${active ? "text-teal-50" : "text-teal-600"}`}
+                        className={`text-xs font-semibold ${active ? "text-teal-50" : "text-teal-600 dark:text-teal-400"}`}
                       >
                         {day.label}
                       </Text>
@@ -261,19 +246,17 @@ export function RoutineCreateScreen() {
               </View>
             </View>
 
-            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4">
+            <View className="mt-4 rounded-3xl border-2 border-teal-200 bg-white p-4 dark:border-teal-800 dark:bg-surface">
               <View className="flex-row items-center justify-between">
-                <Text className="text-sm font-bold text-teal-900">
+                <Text className="text-sm font-bold text-teal-900 dark:text-teal-100">
                   Ejercicios para la rutina
                 </Text>
                 <TouchableOpacity
-                  className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2"
-                  onPress={() =>
-                    router.push("/exercise-create?returnTo=/routine-create")
-                  }
+                  className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 dark:border-teal-800 dark:bg-teal-950"
+                  onPress={() => router.push("/exercise-create?returnTo=/routine-create")}
                   disabled={saving}
                 >
-                  <Text className="text-xs font-bold text-teal-700">
+                  <Text className="text-xs font-bold text-teal-700 dark:text-teal-300">
                     Añadir ejercicio nuevo
                   </Text>
                 </TouchableOpacity>
@@ -281,50 +264,46 @@ export function RoutineCreateScreen() {
 
               {loadingExercises ? (
                 <View className="items-center py-8">
-                  <ActivityIndicator size="small" color="#14b8a6" />
-                  <Text className="mt-3 text-sm font-semibold text-teal-700">
+                  <ActivityIndicator size="small" color={tc("#14b8a6")} />
+                  <Text className="mt-3 text-sm font-semibold text-teal-700 dark:text-teal-300">
                     Cargando ejercicios...
                   </Text>
                 </View>
               ) : error ? (
-                <View className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3">
-                  <Text className="text-sm font-semibold text-red-700">
+                <View className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+                  <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
                     {error}
                   </Text>
                 </View>
               ) : exercises.length === 0 ? (
-                <View className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4">
-                  <Text className="text-sm font-semibold text-teal-700">
-                    Aún no tienes ejercicios guardados. Crea el primero para
-                    armar tu rutina.
+                <View className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-800 dark:bg-teal-950">
+                  <Text className="text-sm font-semibold text-teal-700 dark:text-teal-300">
+                    Aún no tienes ejercicios guardados. Crea el primero para armar tu rutina.
                   </Text>
                 </View>
               ) : (
                 <View className="mt-4">
                   {exercises.map((exercise) => {
-                    const isSelected = selectedExerciseIds.includes(
-                      exercise.id,
-                    );
+                    const isSelected = selectedExerciseIds.includes(exercise.id);
 
                     return (
                       <TouchableOpacity
                         key={exercise.id}
-                        className="mb-3 flex-row items-center rounded-2xl border border-teal-100 bg-teal-50 p-3"
+                        className="mb-3 flex-row items-center rounded-2xl border border-teal-100 bg-teal-50 p-3 dark:border-teal-900 dark:bg-teal-950"
                         onPress={() => toggleExercise(exercise.id)}
                         disabled={saving}
                       >
                         <Ionicons
                           name={isSelected ? "checkbox" : "square"}
                           size={22}
-                          color={isSelected ? "#0d9488" : "#94a3b8"}
+                          color={isSelected ? tc("#0d9488") : tc("#94a3b8")}
                         />
                         <View className="ml-3 flex-1">
-                          <Text className="text-sm font-bold text-slate-800">
+                          <Text className="text-sm font-bold text-slate-800 dark:text-slate-200">
                             {exercise.name}
                           </Text>
-                          <Text className="text-xs font-semibold text-slate-600">
-                            {exercise.sets} series • {exercise.reps}{" "}
-                            repeticiones •{" "}
+                          <Text className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                            {exercise.sets} series • {exercise.reps} repeticiones •{" "}
                             {Math.ceil(exercise.duration_seconds / 60)} min
                           </Text>
                         </View>

@@ -14,7 +14,7 @@ export default function TabsLayout() {
         options={{
           title: "Inicio",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" color={color} size={size} />
+            <Ionicons name="home" color={color as string} size={size} />
           ),
         }}
       />
@@ -23,7 +23,7 @@ export default function TabsLayout() {
         options={{
           title: "Estudio",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="school-outline" color={color} size={size} />
+            <Ionicons name="school-outline" color={color as string} size={size} />
           ),
         }}
       />
@@ -32,7 +32,7 @@ export default function TabsLayout() {
         options={{
           title: "Ejercicio",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="barbell" color={color} size={size} />
+            <Ionicons name="barbell" color={color as string} size={size} />
           ),
         }}
       />
@@ -41,7 +41,7 @@ export default function TabsLayout() {
         options={{
           title: "Hábitos",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="leaf" color={color} size={size} />
+            <Ionicons name="leaf" color={color as string} size={size} />
           ),
         }}
       />
@@ -50,7 +50,16 @@ export default function TabsLayout() {
         options={{
           title: "Cocina",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="restaurant" color={color} size={size} />
+            <Ionicons name="restaurant" color={color as string} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="wellness"
+        options={{
+          title: "Bienestar",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="leaf" color={color as string} size={size} />
           ),
         }}
       />

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { tc } from "@/src/shared/theme/colors";
 import { useCallback, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
@@ -18,9 +17,11 @@ import { useSession } from "@/src/core/providers/SessionContext";
 import { addPoints } from "@/src/shared/lib/gamification";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { GratitudeLog } from "@/src/shared/types/database";
+import { toLocalISODate } from "@/src/shared/lib/dates";
+import { useFocusEffect } from "expo-router";
 
 function getTodayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalISODate(new Date());
 }
 
 function formatDate(isoDate: string): string {
@@ -67,9 +68,7 @@ export function GratitudeScreen() {
       const todayISO = getTodayISO();
       const { data: todayData, error: todayError } = await supabase
         .from("gratitude_logs")
-        .select(
-          "id, user_id, entry_1, entry_2, entry_3, logged_date, created_at",
-        )
+        .select("id, user_id, entry_1, entry_2, entry_3, logged_date, created_at")
         .eq("user_id", userId)
         .eq("logged_date", todayISO)
         .maybeSingle();
@@ -78,9 +77,7 @@ export function GratitudeScreen() {
 
       const { data: historyData, error: historyError } = await supabase
         .from("gratitude_logs")
-        .select(
-          "id, user_id, entry_1, entry_2, entry_3, logged_date, created_at",
-        )
+        .select("id, user_id, entry_1, entry_2, entry_3, logged_date, created_at")
         .eq("user_id", userId)
         .order("logged_date", { ascending: false })
         .limit(5);
@@ -96,11 +93,7 @@ export function GratitudeScreen() {
       setEntry3(normalizedToday?.entry_3 ?? "");
       setEditingToday(false);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "No se pudo cargar tu diario de gratitud",
-      );
+      setError(err instanceof Error ? err.message : "No se pudo cargar tu diario de gratitud");
       setTodayEntry(null);
       setHistory([]);
     } finally {
@@ -132,22 +125,20 @@ export function GratitudeScreen() {
       setSaving(true);
 
       const todayISO = getTodayISO();
-      const { error: upsertError } = await supabase
-        .from("gratitude_logs")
-        .upsert(
-          {
-            user_id: userId,
-            entry_1: entry1.trim(),
-            entry_2: entry2.trim() || null,
-            entry_3: entry3.trim() || null,
-            logged_date: todayISO,
-          },
-          { onConflict: "user_id,logged_date" },
-        );
+      const { error: upsertError } = await supabase.from("gratitude_logs").upsert(
+        {
+          user_id: userId,
+          entry_1: entry1.trim(),
+          entry_2: entry2.trim() || null,
+          entry_3: entry3.trim() || null,
+          logged_date: todayISO,
+        },
+        { onConflict: "user_id,logged_date" },
+      );
 
       if (upsertError) throw upsertError;
 
-      await addPoints(userId, 3);
+      await addPoints(userId, "gratitude_entry");
 
       showAlert({
         title: "Gratitud guardada",
@@ -159,8 +150,7 @@ export function GratitudeScreen() {
     } catch (err) {
       showAlert({
         title: "Error",
-        message:
-          err instanceof Error ? err.message : "No se pudo guardar tu registro",
+        message: err instanceof Error ? err.message : "No se pudo guardar tu registro",
         buttons: [{ text: "Entendido", style: "destructive" }],
       });
     } finally {
@@ -170,7 +160,7 @@ export function GratitudeScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-emerald-50">
+      <View className="flex-1 bg-emerald-50 dark:bg-emerald-950">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -186,164 +176,162 @@ export function GratitudeScreen() {
               iconName="flower"
               title="Gratitud"
               subtitle="Escribe hasta 3 cosas bonitas de tu día"
-              iconColor="#047857"
-              titleClassName="text-2xl font-extrabold text-emerald-900"
-              subtitleClassName="text-sm font-semibold text-emerald-700"
+              iconColor={tc("#047857")}
+              titleClassName="text-2xl font-extrabold text-emerald-900 dark:text-emerald-100"
+              subtitleClassName="text-sm font-semibold text-emerald-700 dark:text-emerald-300"
             />
 
-              {loading ? (
-                <View className="mt-6 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6">
-                  <MochiCharacter mood="thinking" size={88} />
-                  <Text className="mt-3 text-sm font-semibold text-emerald-800">
-                    Cargando diario...
-                  </Text>
-                </View>
-              ) : error ? (
-                <View className="mt-6 items-center rounded-3xl border-2 border-red-200 bg-red-50 p-6">
-                  <MochiCharacter mood="sleepy" size={80} />
-                  <Text className="mt-3 text-center text-sm font-semibold text-red-700">
-                    {error}
-                  </Text>
-                  <TouchableOpacity
-                    className="mt-4 rounded-2xl bg-red-500 px-5 py-2"
-                    onPress={() => void loadGratitudeData()}
-                  >
-                    <Text className="font-extrabold text-white">
-                      Reintentar
+            {loading ? (
+              <View className="mt-6 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6 dark:border-emerald-800 dark:bg-surface">
+                <MochiCharacter mood="thinking" size={88} />
+                <Text className="mt-3 text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                  Cargando diario...
+                </Text>
+              </View>
+            ) : error ? (
+              <View className="mt-6 items-center rounded-3xl border-2 border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-950">
+                <MochiCharacter mood="sleepy" size={80} />
+                <Text className="mt-3 text-center text-sm font-semibold text-red-700 dark:text-red-300">
+                  {error}
+                </Text>
+                <TouchableOpacity
+                  className="mt-4 rounded-2xl bg-red-500 px-5 py-2"
+                  onPress={() => void loadGratitudeData()}
+                >
+                  <Text className="font-extrabold text-white">Reintentar</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-4 dark:border-emerald-800 dark:bg-surface">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
+                      Registro de hoy
                     </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <>
-                  <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-4">
-                    <View className="flex-row items-center justify-between">
-                      <Text className="text-lg font-extrabold text-emerald-900">
-                        Registro de hoy
+                    {todayEntry && !editingToday && (
+                      <TouchableOpacity
+                        className="rounded-full bg-emerald-100 px-3 py-1 dark:bg-emerald-900"
+                        onPress={() => setEditingToday(true)}
+                      >
+                        <Text className="text-xs font-extrabold text-emerald-800 dark:text-emerald-200">
+                          Editar
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {showEditor ? (
+                    <>
+                      <View className="mt-4">
+                        <Text className="mb-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                          Cosa 1
+                        </Text>
+                        <TextInput
+                          className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-slate-200"
+                          placeholder="Algo lindo de hoy"
+                          placeholderTextColor={tc("#6ee7b7")}
+                          value={entry1}
+                          onChangeText={setEntry1}
+                        />
+                      </View>
+
+                      <View className="mt-4">
+                        <Text className="mb-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                          Cosa 2 (opcional)
+                        </Text>
+                        <TextInput
+                          className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-slate-200"
+                          placeholder="Otra cosa que agradeces"
+                          placeholderTextColor={tc("#6ee7b7")}
+                          value={entry2}
+                          onChangeText={setEntry2}
+                        />
+                      </View>
+
+                      <View className="mt-4">
+                        <Text className="mb-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                          Cosa 3 (opcional)
+                        </Text>
+                        <TextInput
+                          className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-slate-200"
+                          placeholder="Una más para cerrar el día"
+                          placeholderTextColor={tc("#6ee7b7")}
+                          value={entry3}
+                          onChangeText={setEntry3}
+                        />
+                      </View>
+
+                      <TouchableOpacity
+                        className="mt-5 items-center rounded-2xl bg-emerald-500 py-3"
+                        onPress={() => void handleSaveGratitude()}
+                        disabled={saving}
+                      >
+                        <Text className="font-extrabold text-white">
+                          {saving ? "Guardando..." : "Guardar gratitud"}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <View className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
+                      <Text className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                        1. {todayEntry.entry_1}
                       </Text>
-                      {todayEntry && !editingToday && (
-                        <TouchableOpacity
-                          className="rounded-full bg-emerald-100 px-3 py-1"
-                          onPress={() => setEditingToday(true)}
-                        >
-                          <Text className="text-xs font-extrabold text-emerald-800">
-                            Editar
-                          </Text>
-                        </TouchableOpacity>
-                      )}
+                      {todayEntry.entry_2 ? (
+                        <Text className="mt-2 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                          2. {todayEntry.entry_2}
+                        </Text>
+                      ) : null}
+                      {todayEntry.entry_3 ? (
+                        <Text className="mt-2 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                          3. {todayEntry.entry_3}
+                        </Text>
+                      ) : null}
                     </View>
+                  )}
+                </View>
 
-                    {showEditor ? (
-                      <>
-                        <View className="mt-4">
-                          <Text className="mb-2 text-sm font-bold text-emerald-900">
-                            Cosa 1
-                          </Text>
-                          <TextInput
-                            className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-800"
-                            placeholder="Algo lindo de hoy"
-                            placeholderTextColor="#6ee7b7"
-                            value={entry1}
-                            onChangeText={setEntry1}
-                          />
-                        </View>
+                <View className="mt-6">
+                  <Text className="text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
+                    Últimos 5 registros
+                  </Text>
 
-                        <View className="mt-4">
-                          <Text className="mb-2 text-sm font-bold text-emerald-900">
-                            Cosa 2 (opcional)
-                          </Text>
-                          <TextInput
-                            className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-800"
-                            placeholder="Otra cosa que agradeces"
-                            placeholderTextColor="#6ee7b7"
-                            value={entry2}
-                            onChangeText={setEntry2}
-                          />
-                        </View>
-
-                        <View className="mt-4">
-                          <Text className="mb-2 text-sm font-bold text-emerald-900">
-                            Cosa 3 (opcional)
-                          </Text>
-                          <TextInput
-                            className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-800"
-                            placeholder="Una más para cerrar el día"
-                            placeholderTextColor="#6ee7b7"
-                            value={entry3}
-                            onChangeText={setEntry3}
-                          />
-                        </View>
-
-                        <TouchableOpacity
-                          className="mt-5 items-center rounded-2xl bg-emerald-500 py-3"
-                          onPress={() => void handleSaveGratitude()}
-                          disabled={saving}
+                  {history.length === 0 ? (
+                    <View className="mt-3 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6 dark:border-emerald-800 dark:bg-surface">
+                      <MochiCharacter mood="happy" size={76} />
+                      <Text className="mt-3 text-center text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                        Tu diario está vacío por ahora. Empieza hoy.
+                      </Text>
+                    </View>
+                  ) : (
+                    <View className="mt-3">
+                      {history.map((entry) => (
+                        <View
+                          key={entry.id}
+                          className="mb-3 rounded-2xl border-2 border-emerald-200 bg-white p-4 dark:border-emerald-800 dark:bg-surface"
                         >
-                          <Text className="font-extrabold text-white">
-                            {saving ? "Guardando..." : "Guardar gratitud"}
+                          <Text className="text-xs font-extrabold uppercase text-emerald-700 dark:text-emerald-300">
+                            {formatDate(entry.logged_date)}
                           </Text>
-                        </TouchableOpacity>
-                      </>
-                    ) : (
-                      <View className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                        <Text className="text-sm font-semibold text-emerald-900">
-                          1. {todayEntry.entry_1}
-                        </Text>
-                        {todayEntry.entry_2 ? (
-                          <Text className="mt-2 text-sm font-semibold text-emerald-900">
-                            2. {todayEntry.entry_2}
+                          <Text className="mt-2 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                            1. {entry.entry_1}
                           </Text>
-                        ) : null}
-                        {todayEntry.entry_3 ? (
-                          <Text className="mt-2 text-sm font-semibold text-emerald-900">
-                            3. {todayEntry.entry_3}
-                          </Text>
-                        ) : null}
-                      </View>
-                    )}
-                  </View>
-
-                  <View className="mt-6">
-                    <Text className="text-lg font-extrabold text-emerald-900">
-                      Últimos 5 registros
-                    </Text>
-
-                    {history.length === 0 ? (
-                      <View className="mt-3 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6">
-                        <MochiCharacter mood="happy" size={76} />
-                        <Text className="mt-3 text-center text-sm font-semibold text-emerald-800">
-                          Tu diario está vacío por ahora. Empieza hoy.
-                        </Text>
-                      </View>
-                    ) : (
-                      <View className="mt-3">
-                        {history.map((entry) => (
-                          <View
-                            key={entry.id}
-                            className="mb-3 rounded-2xl border-2 border-emerald-200 bg-white p-4"
-                          >
-                            <Text className="text-xs font-extrabold uppercase text-emerald-700">
-                              {formatDate(entry.logged_date)}
+                          {entry.entry_2 ? (
+                            <Text className="mt-1 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                              2. {entry.entry_2}
                             </Text>
-                            <Text className="mt-2 text-sm font-semibold text-emerald-900">
-                              1. {entry.entry_1}
+                          ) : null}
+                          {entry.entry_3 ? (
+                            <Text className="mt-1 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                              3. {entry.entry_3}
                             </Text>
-                            {entry.entry_2 ? (
-                              <Text className="mt-1 text-sm font-semibold text-emerald-900">
-                                2. {entry.entry_2}
-                              </Text>
-                            ) : null}
-                            {entry.entry_3 ? (
-                              <Text className="mt-1 text-sm font-semibold text-emerald-900">
-                                3. {entry.entry_3}
-                              </Text>
-                            ) : null}
-                          </View>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                </>
-              )}
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </View>

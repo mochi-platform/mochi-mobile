@@ -1,14 +1,9 @@
+import { tc } from "@/src/shared/theme/colors";
+import { toLocalISODate } from "@/src/shared/lib/dates";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { router } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useCycle } from "@/src/core/providers/CycleContext";
@@ -52,7 +47,7 @@ const DAY_LABELS: Record<number, string> = {
 const BLOCK_COLORS = ["purple", "blue", "pink", "teal", "yellow", "green"] as const;
 
 function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  return toLocalISODate(date);
 }
 
 function getDaysUntil(dateISO: string): number {
@@ -90,9 +85,7 @@ function minutesToTime(value: number): string {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
-function normalizeSuggestion(
-  suggestion: StudyBlockSuggestion,
-): PlannerSuggestionItem | null {
+function normalizeSuggestion(suggestion: StudyBlockSuggestion): PlannerSuggestionItem | null {
   const subject = suggestion.subject.trim();
   const reason = suggestion.reason.trim();
   const day = Number(suggestion.day_of_week);
@@ -152,14 +145,12 @@ function buildPlannerContext(input: {
   const examsSummary =
     input.upcomingExams.length > 0
       ? input.upcomingExams
-          .map((exam) => `${exam.subject} (${getDaysUntil(exam.exam_date)} dias)`) 
+          .map((exam) => `${exam.subject} (${getDaysUntil(exam.exam_date)} dias)`)
           .join("; ")
       : "No hay examenes proximos.";
 
   const energySummary =
-    input.energyLevels.length > 0
-      ? input.energyLevels.join(", ")
-      : "Sin registros recientes";
+    input.energyLevels.length > 0 ? input.energyLevels.join(", ") : "Sin registros recientes";
 
   const moodSummary =
     input.moodLevels.length > 0 ? input.moodLevels.join(", ") : "Sin registros recientes";
@@ -188,23 +179,23 @@ function getRiskTone(risk: number): {
 } {
   if (risk >= 70) {
     return {
-      cardClass: "border-rose-200 bg-rose-50",
-      textClass: "text-rose-700",
+      cardClass: "border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950",
+      textClass: "text-rose-700 dark:text-rose-300",
       badgeClass: "bg-rose-500",
     };
   }
 
   if (risk >= 40) {
     return {
-      cardClass: "border-amber-200 bg-amber-50",
-      textClass: "text-amber-700",
+      cardClass: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950",
+      textClass: "text-amber-700 dark:text-amber-300",
       badgeClass: "bg-amber-500",
     };
   }
 
   return {
-    cardClass: "border-emerald-200 bg-emerald-50",
-    textClass: "text-emerald-700",
+    cardClass: "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950",
+    textClass: "text-emerald-700 dark:text-emerald-300",
     badgeClass: "bg-emerald-500",
   };
 }
@@ -221,7 +212,10 @@ export function WeeklyPlannerScreen() {
   const [suggestions, setSuggestions] = useState<PlannerSuggestionItem[]>([]);
   const [wellness, setWellness] = useState<PredictWellnessRiskOutput | null>(null);
 
-  const riskTone = useMemo(() => getRiskTone(wellness?.riskPercentage ?? 0), [wellness?.riskPercentage]);
+  const riskTone = useMemo(
+    () => getRiskTone(wellness?.riskPercentage ?? 0),
+    [wellness?.riskPercentage],
+  );
 
   const generatePlanner = useCallback(async () => {
     const userId = session?.user.id;
@@ -303,20 +297,16 @@ export function WeeklyPlannerScreen() {
         throw baseError;
       }
 
-      const currentBlocks =
-        (studyBlocksRes.data as PlannerStudyBlock[] | null) ?? [];
-      const upcomingExams =
-        (upcomingExamsRes.data as PlannerExamItem[] | null) ?? [];
+      const currentBlocks = (studyBlocksRes.data as PlannerStudyBlock[] | null) ?? [];
+      const upcomingExams = (upcomingExamsRes.data as PlannerExamItem[] | null) ?? [];
 
-      const energyLevels =
-        ((energyRes.data as Array<{ overall_rating: number }> | null) ?? [])
-          .map((item) => item.overall_rating)
-          .filter((value) => Number.isFinite(value));
+      const energyLevels = ((energyRes.data as { overall_rating: number }[] | null) ?? [])
+        .map((item) => item.overall_rating)
+        .filter((value) => Number.isFinite(value));
 
-      const moodLevels =
-        ((moodRes.data as Array<{ mood: number }> | null) ?? [])
-          .map((item) => item.mood)
-          .filter((value) => Number.isFinite(value));
+      const moodLevels = ((moodRes.data as { mood: number }[] | null) ?? [])
+        .map((item) => item.mood)
+        .filter((value) => Number.isFinite(value));
 
       const currentStreak = streakRes.data?.current_streak ?? 0;
       const activeGoals = activeGoalsRes.count ?? 0;
@@ -372,11 +362,7 @@ export function WeeklyPlannerScreen() {
       if (suggestionsResult.status === "fulfilled") {
         const nextSuggestions = suggestionsResult.value
           .map((suggestion) => normalizeSuggestion(suggestion))
-          .filter(
-            (
-              suggestion,
-            ): suggestion is PlannerSuggestionItem => suggestion !== null,
-          );
+          .filter((suggestion): suggestion is PlannerSuggestionItem => suggestion !== null);
 
         const deduped = Array.from(
           new Map(nextSuggestions.map((suggestion) => [suggestion.key, suggestion])).values(),
@@ -393,10 +379,7 @@ export function WeeklyPlannerScreen() {
         setWellness(null);
       }
 
-      if (
-        suggestionsResult.status === "rejected" &&
-        wellnessResult.status === "rejected"
-      ) {
+      if (suggestionsResult.status === "rejected" && wellnessResult.status === "rejected") {
         setError("No pudimos generar tu planner esta vez. Intenta nuevamente.");
       }
 
@@ -444,12 +427,15 @@ export function WeeklyPlannerScreen() {
       }
 
       const existingKeys = new Set(
-        ((existingRows as Array<{
-          subject: string;
-          day_of_week: number;
-          start_time: string;
-        }> | null) ?? [])
-          .map((row) => `${row.subject.trim().toLowerCase()}:${row.day_of_week}:${row.start_time}`),
+        (
+          (existingRows as
+            | {
+                subject: string;
+                day_of_week: number;
+                start_time: string;
+              }[]
+            | null) ?? []
+        ).map((row) => `${row.subject.trim().toLowerCase()}:${row.day_of_week}:${row.start_time}`),
       );
 
       const toInsert = suggestions
@@ -471,9 +457,7 @@ export function WeeklyPlannerScreen() {
         return;
       }
 
-      const { error: insertError } = await supabase
-        .from("study_blocks")
-        .insert(toInsert);
+      const { error: insertError } = await supabase.from("study_blocks").insert(toInsert);
 
       if (insertError) {
         throw insertError;
@@ -484,9 +468,7 @@ export function WeeklyPlannerScreen() {
       );
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "No se pudieron guardar los bloques sugeridos.",
+        err instanceof Error ? err.message : "No se pudieron guardar los bloques sugeridos.",
       );
     } finally {
       setSaving(false);
@@ -495,9 +477,9 @@ export function WeeklyPlannerScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-indigo-50">
-        <ActivityIndicator size="small" color="#4f46e5" />
-        <Text className="mt-3 text-sm font-semibold text-indigo-700">
+      <SafeAreaView className="flex-1 items-center justify-center bg-indigo-50 dark:bg-indigo-950">
+        <ActivityIndicator size="small" color={tc("#4f46e5")} />
+        <Text className="mt-3 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
           Preparando tu planner semanal...
         </Text>
       </SafeAreaView>
@@ -505,29 +487,31 @@ export function WeeklyPlannerScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-indigo-50">
+    <SafeAreaView className="flex-1 bg-indigo-50 dark:bg-indigo-950">
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
         <TouchableOpacity
           className="mt-4 flex-row items-center"
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="chevron-back" size={22} color="#3730a3" />
-          <Text className="ml-1 text-sm font-bold text-indigo-800">Volver</Text>
+          <Ionicons name="chevron-back" size={22} color={tc("#3730a3")} />
+          <Text className="ml-1 text-sm font-bold text-indigo-800 dark:text-indigo-200">
+            Volver
+          </Text>
         </TouchableOpacity>
 
-        <View className="mt-5 rounded-3xl border-2 border-indigo-200 bg-white p-5">
+        <View className="mt-5 rounded-3xl border-2 border-indigo-200 bg-white p-5 dark:border-indigo-800 dark:bg-surface">
           <View className="flex-row items-start justify-between">
             <View className="flex-1 pr-3">
-              <Text className="text-2xl font-extrabold text-indigo-900">
+              <Text className="text-2xl font-extrabold text-indigo-900 dark:text-indigo-100">
                 Mochi Weekly Planner
               </Text>
-              <Text className="mt-1 text-sm font-semibold text-indigo-700">
+              <Text className="mt-1 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
                 Sugerencias proactivas segun examenes, ciclo y habitos recientes.
               </Text>
             </View>
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100">
-              <Ionicons name="sparkles" size={20} color="#4338ca" />
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-900">
+              <Ionicons name="sparkles" size={20} color={tc("#4338ca")} />
             </View>
           </View>
 
@@ -538,10 +522,10 @@ export function WeeklyPlannerScreen() {
                 void generatePlanner();
               }}
               iconName="refresh"
-              iconColor="#ffffff"
+              iconColor={tc("#ffffff")}
               iconSize={14}
               loading={generating}
-              loadingColor="#ffffff"
+              loadingColor={tc("#ffffff")}
               containerClassName="flex-1 rounded-2xl bg-indigo-600 px-3 py-3"
               textClassName="text-xs text-white"
             />
@@ -552,25 +536,27 @@ export function WeeklyPlannerScreen() {
                 void handleSaveSuggestions();
               }}
               iconName="save"
-              iconColor="#ffffff"
+              iconColor={tc("#ffffff")}
               iconSize={14}
               loading={saving}
-              loadingColor="#ffffff"
+              loadingColor={tc("#ffffff")}
               disabled={suggestions.length === 0}
-              containerClassName={`flex-1 rounded-2xl px-3 py-3 ${saving ? "bg-emerald-300" : "bg-emerald-500"}`}
+              containerClassName={`flex-1 rounded-2xl px-3 py-3 ${saving ? "bg-emerald-300 dark:bg-emerald-700" : "bg-emerald-500"}`}
               textClassName="text-xs text-white"
             />
           </View>
 
           {saveMessage ? (
-            <View className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2">
-              <Text className="text-xs font-bold text-emerald-700">{saveMessage}</Text>
+            <View className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-950">
+              <Text className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                {saveMessage}
+              </Text>
             </View>
           ) : null}
 
           {error ? (
-            <View className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2">
-              <Text className="text-xs font-bold text-rose-700">{error}</Text>
+            <View className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 dark:border-rose-800 dark:bg-rose-950">
+              <Text className="text-xs font-bold text-rose-700 dark:text-rose-300">{error}</Text>
             </View>
           ) : null}
         </View>
@@ -596,7 +582,7 @@ export function WeeklyPlannerScreen() {
               {wellness.recommendations.slice(0, 3).map((recommendation, index) => (
                 <View
                   key={`${recommendation.type}-${index}`}
-                  className="rounded-2xl border border-white/60 bg-white/80 p-3"
+                  className="rounded-2xl border border-white/60 bg-white/80 p-3 dark:bg-surface/80"
                 >
                   <Text className="text-xs font-bold uppercase text-slate-500">
                     {recommendation.urgency === "high"
@@ -605,7 +591,7 @@ export function WeeklyPlannerScreen() {
                         ? "Prioridad media"
                         : "Prioridad baja"}
                   </Text>
-                  <Text className="mt-1 text-sm font-semibold text-slate-700">
+                  <Text className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
                     {recommendation.text}
                   </Text>
                 </View>
@@ -614,18 +600,18 @@ export function WeeklyPlannerScreen() {
           </View>
         ) : null}
 
-        <View className="mb-8 mt-4 rounded-3xl border-2 border-violet-200 bg-white p-4">
-          <Text className="text-base font-extrabold text-violet-900">
+        <View className="mb-8 mt-4 rounded-3xl border-2 border-violet-200 bg-white p-4 dark:border-violet-800 dark:bg-surface">
+          <Text className="text-base font-extrabold text-violet-900 dark:text-violet-100">
             Bloques sugeridos para esta semana
           </Text>
 
           {suggestions.length === 0 ? (
-            <View className="mt-4 items-center rounded-2xl border border-violet-200 bg-violet-50 p-5">
+            <View className="mt-4 items-center rounded-2xl border border-violet-200 bg-violet-50 p-5 dark:border-violet-800 dark:bg-violet-950">
               <MochiCharacter mood="thinking" size={84} />
-              <Text className="mt-3 text-center text-sm font-bold text-violet-800">
+              <Text className="mt-3 text-center text-sm font-bold text-violet-800 dark:text-violet-200">
                 Aun no hay sugerencias disponibles
               </Text>
-              <Text className="mt-1 text-center text-xs font-semibold text-violet-600">
+              <Text className="mt-1 text-center text-xs font-semibold text-violet-600 dark:text-violet-400">
                 Regenera el plan y Mochi te propondra bloques concretos.
               </Text>
             </View>
@@ -634,22 +620,22 @@ export function WeeklyPlannerScreen() {
               {suggestions.map((suggestion) => (
                 <View
                   key={suggestion.key}
-                  className="rounded-2xl border border-violet-200 bg-violet-50 p-3"
+                  className="rounded-2xl border border-violet-200 bg-violet-50 p-3 dark:border-violet-800 dark:bg-violet-950"
                 >
                   <View className="flex-row items-center justify-between">
-                    <Text className="text-sm font-extrabold text-violet-900">
+                    <Text className="text-sm font-extrabold text-violet-900 dark:text-violet-100">
                       {suggestion.subject}
                     </Text>
-                    <Text className="text-xs font-bold text-violet-700">
+                    <Text className="text-xs font-bold text-violet-700 dark:text-violet-300">
                       {DAY_LABELS[suggestion.day_of_week]}
                     </Text>
                   </View>
 
-                  <Text className="mt-1 text-xs font-semibold text-violet-700">
+                  <Text className="mt-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
                     {suggestion.start_time} - {suggestion.end_time}
                   </Text>
 
-                  <Text className="mt-2 text-xs font-semibold text-slate-600">
+                  <Text className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
                     {suggestion.reason}
                   </Text>
                 </View>

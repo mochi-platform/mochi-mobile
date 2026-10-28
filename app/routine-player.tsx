@@ -1,3 +1,5 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -43,10 +45,7 @@ function StarIcon({ delay }: { delay: number }) {
   const scale = useSharedValue(0);
 
   useEffect(() => {
-    scale.value = withDelay(
-      delay,
-      withSpring(1, { damping: 6, stiffness: 150 }),
-    );
+    scale.value = withDelay(delay, withSpring(1, { damping: 6, stiffness: 150 }));
   }, [scale, delay]);
 
   const animStyle = useAnimatedStyle(() => ({
@@ -55,7 +54,7 @@ function StarIcon({ delay }: { delay: number }) {
 
   return (
     <Animated.View style={animStyle} className="mx-2">
-      <Ionicons name="star" size={36} color="#f59e0b" />
+      <Ionicons name="star" size={36} color={tc("#f59e0b")} />
     </Animated.View>
   );
 }
@@ -108,10 +107,7 @@ export function RoutinePlayerScreen() {
         setRoutine(sorted);
         if (sorted.routine_exercises.length > 0) {
           const first = sorted.routine_exercises[0];
-          const dur =
-            first.exercise?.duration_seconds > 0
-              ? first.exercise.duration_seconds
-              : 60;
+          const dur = first.exercise?.duration_seconds > 0 ? first.exercise.duration_seconds : 60;
           setTimeLeft(dur);
         }
       } catch (err) {
@@ -159,6 +155,7 @@ export function RoutinePlayerScreen() {
     if (timeLeft === 0 && !loading && routine && phase !== "complete") {
       handlePhaseEnd();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- las dependencias omitidas son estables o se excluyen a propósito para no reiniciar el efecto
   }, [timeLeft]);
 
   function handlePhaseEnd() {
@@ -180,9 +177,7 @@ export function RoutinePlayerScreen() {
         setCurrentExerciseIndex(nextIndex);
         const nextExercise = routine.routine_exercises[nextIndex];
         const dur =
-          nextExercise.exercise?.duration_seconds > 0
-            ? nextExercise.exercise.duration_seconds
-            : 60;
+          nextExercise.exercise?.duration_seconds > 0 ? nextExercise.exercise.duration_seconds : 60;
         setTimeLeft(dur);
         setPhase("exercise");
       }
@@ -204,15 +199,12 @@ export function RoutinePlayerScreen() {
         routine_id: routine.id,
         completed_at: new Date().toISOString(),
       });
-      await addPoints(session.user.id, 10, showAchievement);
+      await addPoints(session.user.id, "routine_completed", showAchievement);
       await updateStreak(session.user.id);
       await checkExerciseAchievements(session.user.id, showAchievement);
       await checkStreakAchievements(session.user.id, showAchievement);
     } catch (err) {
-      console.error(
-        "[RoutinePlayer] error completando rutina:",
-        err instanceof Error ? err.message : String(err),
-      );
+      reportError(err, { scope: "RoutinePlayer" });
     }
   }
 
@@ -251,9 +243,9 @@ export function RoutinePlayerScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-teal-50">
+      <SafeAreaView className="flex-1 items-center justify-center bg-teal-50 dark:bg-teal-950">
         <MochiCharacter mood="thinking" size={96} />
-        <Text className="mt-4 text-sm font-semibold text-teal-700">
+        <Text className="mt-4 text-sm font-semibold text-teal-700 dark:text-teal-300">
           Preparando tu rutina...
         </Text>
       </SafeAreaView>
@@ -262,9 +254,9 @@ export function RoutinePlayerScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-teal-50 px-6">
+      <SafeAreaView className="flex-1 items-center justify-center bg-teal-50 px-6 dark:bg-teal-950">
         <MochiCharacter mood="sleepy" size={80} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600">
+        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
           {error}
         </Text>
         <TouchableOpacity
@@ -279,16 +271,16 @@ export function RoutinePlayerScreen() {
 
   if (phase === "complete") {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-teal-50 px-6">
+      <SafeAreaView className="flex-1 items-center justify-center bg-teal-50 px-6 dark:bg-teal-950">
         <MochiCharacter mood="excited" size={120} />
-        <Text className="mt-6 text-2xl font-extrabold text-teal-900">
+        <Text className="mt-6 text-2xl font-extrabold text-teal-900 dark:text-teal-100">
           ¡Rutina completada!
         </Text>
-        <Text className="mt-2 text-sm font-semibold text-teal-600">
+        <Text className="mt-2 text-sm font-semibold text-teal-600 dark:text-teal-400">
           Terminaste {routine?.routine_exercises.length} ejercicios
         </Text>
-        <View className="mt-4 rounded-full bg-yellow-200 px-5 py-2">
-          <Text className="font-extrabold text-yellow-900">+10 puntos</Text>
+        <View className="mt-4 rounded-full bg-yellow-200 px-5 py-2 dark:bg-yellow-800">
+          <Text className="font-extrabold text-yellow-900 dark:text-yellow-100">+10 puntos</Text>
         </View>
         <View className="mt-6 flex-row items-center justify-center">
           <StarIcon delay={0} />
@@ -306,12 +298,9 @@ export function RoutinePlayerScreen() {
   }
 
   return (
-    <View className="flex-1 bg-teal-50">
+    <View className="flex-1 bg-teal-50 dark:bg-teal-950">
       {phase === "exercise" && exerciseImageUrl ? (
-        <RNAnimated.View
-          style={{ opacity: imageOpacity }}
-          className="absolute inset-0"
-        >
+        <RNAnimated.View style={{ opacity: imageOpacity }} className="absolute inset-0">
           <ImageBackground
             source={{ uri: exerciseImageUrl }}
             className="h-full w-full"
@@ -333,16 +322,13 @@ export function RoutinePlayerScreen() {
       ) : null}
 
       <SafeAreaView className="flex-1 px-6">
-        <TouchableOpacity
-          className="mt-2 flex-row items-center"
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={22} color="#0d9488" />
-          <Text className="ml-1 font-bold text-teal-700">Volver</Text>
+        <TouchableOpacity className="mt-2 flex-row items-center" onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color={tc("#0d9488")} />
+          <Text className="ml-1 font-bold text-teal-700 dark:text-teal-300">Volver</Text>
         </TouchableOpacity>
 
         <View className="mt-4">
-          <Text className="text-xl font-extrabold text-teal-900">
+          <Text className="text-xl font-extrabold text-teal-900 dark:text-teal-100">
             {routine?.name}
           </Text>
           <Text className="mt-1 text-sm font-semibold text-teal-500">
@@ -351,48 +337,36 @@ export function RoutinePlayerScreen() {
         </View>
 
         <View className="mt-4">
-          <View className="h-3 w-full overflow-hidden rounded-full bg-teal-100">
-            <Animated.View
-              style={progressStyle}
-              className="h-3 rounded-full bg-teal-500"
-            />
+          <View className="h-3 w-full overflow-hidden rounded-full bg-teal-100 dark:bg-teal-900">
+            <Animated.View style={progressStyle} className="h-3 rounded-full bg-teal-500" />
           </View>
         </View>
 
         {phase === "exercise" ? (
           <View className="mt-8 flex-1 items-center">
-            <View className="h-52 w-52 items-center justify-center rounded-full border-8 border-teal-200 bg-teal-100">
-              <Text className="text-5xl font-extrabold text-teal-900">
+            <View className="h-52 w-52 items-center justify-center rounded-full border-8 border-teal-200 bg-teal-100 dark:border-teal-800 dark:bg-teal-900">
+              <Text className="text-5xl font-extrabold text-teal-900 dark:text-teal-100">
                 {formatTime(timeLeft)}
               </Text>
-              <Text className="mt-1 text-sm font-semibold text-teal-500">
-                restante
-              </Text>
+              <Text className="mt-1 text-sm font-semibold text-teal-500">restante</Text>
             </View>
-            <Text className="mt-6 text-xl font-extrabold text-teal-900">
+            <Text className="mt-6 text-xl font-extrabold text-teal-900 dark:text-teal-100">
               {currentExercise?.name}
             </Text>
-            {currentExercise &&
-              (currentExercise.sets > 0 || currentExercise.reps > 0) && (
-                <Text className="mt-2 text-sm font-semibold text-teal-600">
-                  {currentExercise.sets > 0
-                    ? `${currentExercise.sets} series`
-                    : ""}
-                  {currentExercise.sets > 0 && currentExercise.reps > 0
-                    ? " × "
-                    : ""}
-                  {currentExercise.reps > 0
-                    ? `${currentExercise.reps} reps`
-                    : ""}
-                </Text>
-              )}
+            {currentExercise && (currentExercise.sets > 0 || currentExercise.reps > 0) && (
+              <Text className="mt-2 text-sm font-semibold text-teal-600 dark:text-teal-400">
+                {currentExercise.sets > 0 ? `${currentExercise.sets} series` : ""}
+                {currentExercise.sets > 0 && currentExercise.reps > 0 ? " × " : ""}
+                {currentExercise.reps > 0 ? `${currentExercise.reps} reps` : ""}
+              </Text>
+            )}
             {currentExercise?.notes ? (
-              <Text className="mt-2 px-4 text-center text-xs font-semibold text-teal-800">
+              <Text className="mt-2 px-4 text-center text-xs font-semibold text-teal-800 dark:text-teal-200">
                 {currentExercise.notes}
               </Text>
             ) : null}
             {imageLoading ? (
-              <Text className="mt-2 text-xs font-semibold text-teal-800">
+              <Text className="mt-2 text-xs font-semibold text-teal-800 dark:text-teal-200">
                 Cargando imagen del ejercicio...
               </Text>
             ) : null}
@@ -406,22 +380,22 @@ export function RoutinePlayerScreen() {
         ) : (
           <View className="mt-8 flex-1 items-center">
             <MochiCharacter mood="happy" size={80} />
-            <Text className="mt-4 text-xl font-extrabold text-teal-900">
+            <Text className="mt-4 text-xl font-extrabold text-teal-900 dark:text-teal-100">
               Descansa
             </Text>
-            <Text className="mt-2 text-4xl font-extrabold text-teal-700">
+            <Text className="mt-2 text-4xl font-extrabold text-teal-700 dark:text-teal-300">
               {timeLeft}s
             </Text>
             <Text className="mt-2 text-sm font-semibold text-teal-500">
               Siguiente:{" "}
-              {routine?.routine_exercises[currentExerciseIndex + 1]?.exercise
-                ?.name ?? "Último ejercicio"}
+              {routine?.routine_exercises[currentExerciseIndex + 1]?.exercise?.name ??
+                "Último ejercicio"}
             </Text>
             <TouchableOpacity
-              className="mt-8 rounded-2xl border-2 border-teal-300 bg-white px-8 py-4"
+              className="mt-8 rounded-2xl border-2 border-teal-300 bg-white px-8 py-4 dark:border-teal-700 dark:bg-surface"
               onPress={handleSkip}
             >
-              <Text className="font-bold text-teal-700">Saltar descanso</Text>
+              <Text className="font-bold text-teal-700 dark:text-teal-300">Saltar descanso</Text>
             </TouchableOpacity>
           </View>
         )}

@@ -1,3 +1,4 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import Animated, {
@@ -61,10 +62,7 @@ export function DailyMotivation({
           setMessage(msg);
         }
       } catch (error) {
-        console.error(
-          "[DailyMotivation] Error al obtener mensaje:",
-          error instanceof Error ? error.message : String(error),
-        );
+        reportError(error, { scope: "DailyMotivation" });
 
         if (mounted) {
           setMessage("Hoy es un buen dia para avanzar un paso mas.");
@@ -80,25 +78,19 @@ export function DailyMotivation({
     return () => {
       mounted = false;
     };
-  }, [
-    studyBlockCount,
-    hasRoutine,
-    timeOfDay,
-    shimmerOpacity,
-    personality?.phaseLabel,
-  ]);
+  }, [studyBlockCount, hasRoutine, timeOfDay, shimmerOpacity, personality?.phaseLabel]);
 
   return (
-    <View className="rounded-3xl border-2 border-yellow-200 bg-yellow-50 p-4 flex-row items-center">
+    <View className="flex-row items-center rounded-3xl border-2 border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-950">
       <MochiCharacter mood={personality?.mochiMood ?? "happy"} size={56} />
-      <View className="flex-1 ml-3">
+      <View className="ml-3 flex-1">
         {loading ? (
           <Animated.View style={shimmerStyle}>
-            <View className="h-3 w-full rounded-full bg-yellow-200 mb-2" />
-            <View className="h-3 w-3/4 rounded-full bg-yellow-200" />
+            <View className="mb-2 h-3 w-full rounded-full bg-yellow-200 dark:bg-yellow-800" />
+            <View className="h-3 w-3/4 rounded-full bg-yellow-200 dark:bg-yellow-800" />
           </Animated.View>
         ) : (
-          <Text className="text-sm font-semibold text-yellow-900 leading-5">
+          <Text className="text-sm font-semibold leading-5 text-yellow-900 dark:text-yellow-100">
             {message}
           </Text>
         )}

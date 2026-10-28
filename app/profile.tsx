@@ -1,5 +1,6 @@
+import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -10,8 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { router, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
@@ -24,19 +24,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { supabase } from "@/src/shared/lib/supabase";
-import {
-  getLevelProgress,
-  getMochiLevel,
-  MOCHI_LEVELS,
-} from "@/src/shared/lib/supabase/levels";
+import { getLevelProgress, getMochiLevel, MOCHI_LEVELS } from "@/src/shared/lib/supabase/levels";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import type {
-  Achievement,
-  UserAchievement,
-  Streak,
-} from "@/src/shared/types/database";
+import type { Achievement, UserAchievement, Streak } from "@/src/shared/types/database";
 
 interface Profile {
   full_name: string;
@@ -49,9 +41,7 @@ export function ProfileScreen() {
   const { session } = useSession();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [streak, setStreak] = useState<Streak | null>(null);
-  const [userAchievements, setUserAchievements] = useState<UserAchievement[]>(
-    [],
-  );
+  const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,11 +49,9 @@ export function ProfileScreen() {
   const [draftMochiName, setDraftMochiName] = useState("");
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
-  const [shareAchievement, setShareAchievement] = useState<Achievement | null>(
-    null,
-  );
+  const [shareAchievement, setShareAchievement] = useState<Achievement | null>(null);
   const [sharingAchievement, setSharingAchievement] = useState(false);
-  const shareCardRef = useRef<View | null>(null);
+  const shareCardRef = useRef<ComponentRef<typeof View>>(null);
 
   const loadingScale = useSharedValue(1);
 
@@ -118,10 +106,8 @@ export function ProfileScreen() {
         supabase.from("achievements").select("*"),
       ]);
 
-      if (profileRes.error && profileRes.error.code !== "PGRST116")
-        throw profileRes.error;
-      if (streakRes.error && streakRes.error.code !== "PGRST116")
-        throw streakRes.error;
+      if (profileRes.error && profileRes.error.code !== "PGRST116") throw profileRes.error;
+      if (streakRes.error && streakRes.error.code !== "PGRST116") throw streakRes.error;
       if (userAchRes.error) throw userAchRes.error;
       if (allAchRes.error) throw allAchRes.error;
 
@@ -174,16 +160,12 @@ export function ProfileScreen() {
       if (updateError) throw updateError;
 
       setProfile((prev) =>
-        prev
-          ? { ...prev, mochi_name: trimmedName.length > 0 ? trimmedName : null }
-          : prev,
+        prev ? { ...prev, mochi_name: trimmedName.length > 0 ? trimmedName : null } : prev,
       );
       setIsNameModalVisible(false);
     } catch (err) {
       setNameError(
-        err instanceof Error
-          ? err.message
-          : "No pudimos actualizar el nombre. Intenta de nuevo.",
+        err instanceof Error ? err.message : "No pudimos actualizar el nombre. Intenta de nuevo.",
       );
     } finally {
       setSavingName(false);
@@ -233,19 +215,16 @@ export function ProfileScreen() {
   const totalPoints = profile?.total_points ?? 0;
   const level = getMochiLevel(totalPoints);
   const levelProgress = getLevelProgress(totalPoints);
-  const nextLevel =
-    MOCHI_LEVELS.find((item) => item.level === level.level + 1) ?? null;
-  const pointsToNext = nextLevel
-    ? Math.max(0, nextLevel.minPoints - totalPoints)
-    : 0;
+  const nextLevel = MOCHI_LEVELS.find((item) => item.level === level.level + 1) ?? null;
+  const pointsToNext = nextLevel ? Math.max(0, nextLevel.minPoints - totalPoints) : 0;
 
   if (loading && !profile) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-purple-50">
+      <SafeAreaView className="flex-1 items-center justify-center bg-purple-50 dark:bg-purple-950">
         <Animated.View style={loadingAnimatedStyle}>
           <MochiCharacter mood="thinking" size={96} />
         </Animated.View>
-        <Text className="mt-4 text-sm font-semibold text-purple-700">
+        <Text className="mt-4 text-sm font-semibold text-purple-700 dark:text-purple-300">
           Cargando perfil...
         </Text>
       </SafeAreaView>
@@ -254,9 +233,9 @@ export function ProfileScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-purple-50 px-6">
+      <SafeAreaView className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
         <MochiCharacter mood="sleepy" size={80} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600">
+        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
           {error}
         </Text>
         <TouchableOpacity
@@ -270,19 +249,16 @@ export function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-purple-50">
+    <SafeAreaView className="flex-1 bg-purple-50 dark:bg-purple-950">
       <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
-        <TouchableOpacity
-          className="mt-4 flex-row items-center"
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={22} color="#7c3aed" />
-          <Text className="ml-1 font-bold text-purple-700">Volver</Text>
+        <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color={tc("#7c3aed")} />
+          <Text className="ml-1 font-bold text-purple-700 dark:text-purple-300">Volver</Text>
         </TouchableOpacity>
 
         <View className="mt-6 items-center">
           <MochiCharacter mood="happy" size={80} />
-          <Text className="mt-4 text-2xl font-extrabold text-purple-900">
+          <Text className="mt-4 text-2xl font-extrabold text-purple-900 dark:text-purple-100">
             {(profile?.mochi_name ?? "").trim() || "Mochi"}
           </Text>
 
@@ -290,41 +266,41 @@ export function ProfileScreen() {
             label="Renombrar"
             onPress={openEditNameModal}
             iconName="create"
-            iconColor="#7c3aed"
-            containerClassName="mt-2 w-full border border-purple-200 bg-white"
-            textClassName="text-purple-800"
+            iconColor={tc("#7c3aed")}
+            containerClassName="mt-2 w-full border border-purple-200 dark:border-purple-800 bg-white dark:bg-surface"
+            textClassName="text-purple-800 dark:text-purple-200"
           />
 
           <View className="mt-3 flex-row items-center">
-            <View className="mr-3 flex-row items-center rounded-full bg-yellow-200 px-4 py-2">
+            <View className="mr-3 flex-row items-center rounded-full bg-yellow-200 px-4 py-2 dark:bg-yellow-800">
               {loading ? (
-                <ActivityIndicator size="small" color="#92400e" />
+                <ActivityIndicator size="small" color={tc("#92400e")} />
               ) : (
-                <Ionicons name="star" size={14} color="#92400e" />
+                <Ionicons name="star" size={14} color={tc("#92400e")} />
               )}
-              <Text className="ml-1 font-extrabold text-yellow-900">
+              <Text className="ml-1 font-extrabold text-yellow-900 dark:text-yellow-100">
                 {profile?.total_points ?? 0} puntos
               </Text>
             </View>
-            <View className="flex-row items-center rounded-full bg-orange-100 px-4 py-2">
-              <Ionicons name="flame" size={14} color="#ea580c" />
-              <Text className="ml-1 font-extrabold text-orange-800">
+            <View className="flex-row items-center rounded-full bg-orange-100 px-4 py-2 dark:bg-orange-900">
+              <Ionicons name="flame" size={14} color={tc("#ea580c")} />
+              <Text className="ml-1 font-extrabold text-orange-800 dark:text-orange-200">
                 {streak?.current_streak ?? 0} días
               </Text>
             </View>
           </View>
 
-          <View className="mt-3 w-full rounded-2xl border border-purple-200 bg-purple-100 px-3 py-3">
-            <Text className="text-xs font-bold text-purple-700">
+          <View className="mt-3 w-full rounded-2xl border border-purple-200 bg-purple-100 px-3 py-3 dark:border-purple-800 dark:bg-purple-900">
+            <Text className="text-xs font-bold text-purple-700 dark:text-purple-300">
               Nivel {level.level} · {level.name}
             </Text>
-            <View className="mt-2 h-2 w-full rounded-full bg-purple-200">
+            <View className="mt-2 h-2 w-full rounded-full bg-purple-200 dark:bg-purple-800">
               <View
                 className="h-2 rounded-full bg-purple-500"
                 style={{ width: `${levelProgress}%` }}
               />
             </View>
-            <Text className="mt-1 text-xs font-semibold text-purple-700">
+            <Text className="mt-1 text-xs font-semibold text-purple-700 dark:text-purple-300">
               {nextLevel
                 ? `${pointsToNext} puntos para ${nextLevel.name}`
                 : "Nivel máximo alcanzado"}
@@ -342,29 +318,29 @@ export function ProfileScreen() {
           label="Configuración"
           onPress={() => router.push("/settings")}
           iconName="settings"
-          iconColor="#7c3aed"
-          containerClassName="mt-3 w-full border border-purple-200 bg-white"
-          textClassName="text-purple-800"
+          iconColor={tc("#7c3aed")}
+          containerClassName="mt-3 w-full border border-purple-200 dark:border-purple-800 bg-white dark:bg-surface"
+          textClassName="text-purple-800 dark:text-purple-200"
         />
 
         <IconCtaButton
           label="Ver analíticas"
           onPress={() => router.push("/analytics")}
           iconName="stats-chart"
-          iconColor="#0369a1"
-          containerClassName="mt-3 w-full border border-sky-200 bg-sky-50"
-          textClassName="text-sky-800"
+          iconColor={tc("#0369a1")}
+          containerClassName="mt-3 w-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950"
+          textClassName="text-sky-800 dark:text-sky-200"
         />
 
         <View className="mt-8">
-          <Text className="mb-4 text-lg font-extrabold text-purple-900">
+          <Text className="mb-4 text-lg font-extrabold text-purple-900 dark:text-purple-100">
             Logros
           </Text>
 
           {allAchievements.length === 0 ? (
-            <View className="items-center rounded-3xl border-2 border-purple-200 bg-white p-6">
+            <View className="items-center rounded-3xl border-2 border-purple-200 bg-white p-6 dark:border-purple-800 dark:bg-surface">
               <MochiCharacter mood="happy" size={64} />
-              <Text className="mt-3 text-center text-sm font-semibold text-purple-600">
+              <Text className="mt-3 text-center text-sm font-semibold text-purple-600 dark:text-purple-400">
                 Completa actividades para desbloquear logros
               </Text>
             </View>
@@ -377,46 +353,41 @@ export function ProfileScreen() {
                     <View
                       className={`h-40 rounded-2xl border-2 p-3 ${
                         isUnlocked
-                          ? "border-purple-200 bg-purple-100"
-                          : "border-gray-200 bg-gray-100 opacity-60"
+                          ? "border-purple-200 bg-purple-100 dark:border-purple-800 dark:bg-purple-900"
+                          : "border-gray-200 bg-gray-100 opacity-60 dark:border-gray-800 dark:bg-gray-900"
                       }`}
                     >
                       <View className="flex-row items-center justify-between">
-                        <View className="h-9 w-9 items-center justify-center rounded-xl bg-white">
+                        <View className="h-9 w-9 items-center justify-center rounded-xl bg-white dark:bg-surface">
                           <Ionicons
                             name={
                               isUnlocked
-                                ? ((achievement.icon as keyof typeof Ionicons.glyphMap) ??
-                                  "trophy")
+                                ? ((achievement.icon as keyof typeof Ionicons.glyphMap) ?? "trophy")
                                 : "lock-closed"
                             }
                             size={18}
-                            color={isUnlocked ? "#7c3aed" : "#9ca3af"}
+                            color={isUnlocked ? tc("#7c3aed") : tc("#9ca3af")}
                           />
                         </View>
                         {isUnlocked ? (
                           <View className="flex-row items-center">
-                            <View className="rounded-full bg-purple-200 px-2 py-0.5">
-                              <Text className="text-xs font-bold text-purple-800">
+                            <View className="rounded-full bg-purple-200 px-2 py-0.5 dark:bg-purple-800">
+                              <Text className="text-xs font-bold text-purple-800 dark:text-purple-200">
                                 +{achievement.points}
                               </Text>
                             </View>
                             <TouchableOpacity
-                              className="ml-2 h-7 w-7 items-center justify-center rounded-full bg-purple-200"
+                              className="ml-2 h-7 w-7 items-center justify-center rounded-full bg-purple-200 dark:bg-purple-800"
                               onPress={() => setShareAchievement(achievement)}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
-                              <Ionicons
-                                name="share-social"
-                                size={13}
-                                color="#5b21b6"
-                              />
+                              <Ionicons name="share-social" size={13} color={tc("#5b21b6")} />
                             </TouchableOpacity>
                           </View>
                         ) : null}
                       </View>
                       <Text
-                        className={`mt-2 text-xs font-bold ${isUnlocked ? "text-purple-900" : "text-gray-500"}`}
+                        className={`mt-2 text-xs font-bold ${isUnlocked ? "text-purple-900 dark:text-purple-100" : "text-gray-500"}`}
                         numberOfLines={2}
                       >
                         {achievement.title}
@@ -450,11 +421,11 @@ export function ProfileScreen() {
         onRequestClose={closeEditNameModal}
       >
         <View className="flex-1 items-center justify-center bg-black/30 px-6">
-          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
-            <Text className="text-center text-2xl font-extrabold text-purple-700">
+          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-surface">
+            <Text className="text-center text-2xl font-extrabold text-purple-700 dark:text-purple-300">
               Cambiar nombre
             </Text>
-            <Text className="mt-2 text-center text-sm font-semibold text-slate-600">
+            <Text className="mt-2 text-center text-sm font-semibold text-slate-600 dark:text-slate-400">
               Elige cómo quieres llamar a Mochi.
             </Text>
 
@@ -462,15 +433,15 @@ export function ProfileScreen() {
               value={draftMochiName}
               onChangeText={setDraftMochiName}
               placeholder="Ej: Mochi Estrella"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={tc("#94a3b8")}
               autoCapitalize="words"
               maxLength={24}
               editable={!savingName}
-              className="mt-5 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-base font-semibold text-purple-900"
+              className="mt-5 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-base font-semibold text-purple-900 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-100"
             />
 
             {nameError ? (
-              <Text className="mt-2 text-center text-xs font-semibold text-red-600">
+              <Text className="mt-2 text-center text-xs font-semibold text-red-600 dark:text-red-400">
                 {nameError}
               </Text>
             ) : (
@@ -481,12 +452,12 @@ export function ProfileScreen() {
 
             <View className="mt-6 flex-row">
               <TouchableOpacity
-                className="mr-2 flex-1 rounded-2xl border-2 border-purple-200 bg-white px-4 py-3"
+                className="mr-2 flex-1 rounded-2xl border-2 border-purple-200 bg-white px-4 py-3 dark:border-purple-800 dark:bg-surface"
                 onPress={closeEditNameModal}
                 activeOpacity={0.85}
                 disabled={savingName}
               >
-                <Text className="text-center text-base font-extrabold text-purple-700">
+                <Text className="text-center text-base font-extrabold text-purple-700 dark:text-purple-300">
                   Cancelar
                 </Text>
               </TouchableOpacity>
@@ -498,11 +469,9 @@ export function ProfileScreen() {
                 disabled={savingName}
               >
                 {savingName ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color={tc("#ffffff")} />
                 ) : (
-                  <Text className="text-center text-base font-extrabold text-white">
-                    Guardar
-                  </Text>
+                  <Text className="text-center text-base font-extrabold text-white">Guardar</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -521,44 +490,44 @@ export function ProfileScreen() {
         }}
       >
         <View className="flex-1 items-center justify-center bg-black/30 px-6">
-          <View className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl">
+          <View className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl dark:bg-surface">
             <View
               ref={shareCardRef}
               collapsable={false}
-              className="rounded-3xl border-2 border-purple-200 bg-purple-50 p-5"
+              className="rounded-3xl border-2 border-purple-200 bg-purple-50 p-5 dark:border-purple-800 dark:bg-purple-950"
             >
               <View className="items-center">
                 <MochiCharacter mood="excited" size={76} />
-                <Text className="mt-3 text-xs font-bold uppercase text-purple-600">
+                <Text className="mt-3 text-xs font-bold uppercase text-purple-600 dark:text-purple-400">
                   Logro desbloqueado
                 </Text>
-                <Text className="mt-1 text-center text-lg font-extrabold text-purple-900">
+                <Text className="mt-1 text-center text-lg font-extrabold text-purple-900 dark:text-purple-100">
                   {shareAchievement?.title}
                 </Text>
               </View>
 
-              <Text className="mt-3 text-center text-sm font-semibold text-purple-700">
+              <Text className="mt-3 text-center text-sm font-semibold text-purple-700 dark:text-purple-300">
                 {shareAchievement?.description}
               </Text>
 
-              <View className="mt-4 self-center rounded-full bg-yellow-200 px-4 py-1.5">
-                <Text className="text-xs font-extrabold text-yellow-900">
+              <View className="mt-4 self-center rounded-full bg-yellow-200 px-4 py-1.5 dark:bg-yellow-800">
+                <Text className="text-xs font-extrabold text-yellow-900 dark:text-yellow-100">
                   +{shareAchievement?.points ?? 0} puntos
                 </Text>
               </View>
 
-              <Text className="mt-4 text-center text-xs font-semibold text-purple-600">
+              <Text className="mt-4 text-center text-xs font-semibold text-purple-600 dark:text-purple-400">
                 {(profile?.full_name ?? "Mi progreso") + " en Mochi"}
               </Text>
             </View>
 
             <View className="mt-4 flex-row">
               <TouchableOpacity
-                className="mr-2 flex-1 rounded-2xl border-2 border-purple-200 bg-white px-4 py-3"
+                className="mr-2 flex-1 rounded-2xl border-2 border-purple-200 bg-white px-4 py-3 dark:border-purple-800 dark:bg-surface"
                 onPress={() => setShareAchievement(null)}
                 disabled={sharingAchievement}
               >
-                <Text className="text-center text-base font-extrabold text-purple-700">
+                <Text className="text-center text-base font-extrabold text-purple-700 dark:text-purple-300">
                   Cerrar
                 </Text>
               </TouchableOpacity>
@@ -571,11 +540,9 @@ export function ProfileScreen() {
                 disabled={sharingAchievement}
               >
                 {sharingAchievement ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color={tc("#ffffff")} />
                 ) : (
-                  <Text className="text-center text-base font-extrabold text-white">
-                    Compartir
-                  </Text>
+                  <Text className="text-center text-base font-extrabold text-white">Compartir</Text>
                 )}
               </TouchableOpacity>
             </View>

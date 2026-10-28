@@ -1,8 +1,9 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { router } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { router, useFocusEffect } from "expo-router";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -35,12 +36,12 @@ const dayOfWeekMap: Record<string, number> = {
 const dayLettersByGetDay = ["D", "L", "M", "X", "J", "V", "S"];
 
 const colorMap: Record<string, string> = {
-  pink: "bg-pink-200",
-  blue: "bg-blue-200",
-  yellow: "bg-yellow-200",
-  teal: "bg-teal-200",
-  purple: "bg-purple-200",
-  green: "bg-green-200",
+  pink: "bg-pink-200 dark:bg-pink-800",
+  blue: "bg-blue-200 dark:bg-blue-800",
+  yellow: "bg-yellow-200 dark:bg-yellow-800",
+  teal: "bg-teal-200 dark:bg-teal-800",
+  purple: "bg-purple-200 dark:bg-purple-800",
+  green: "bg-green-200 dark:bg-green-800",
 };
 
 type AnimatedStudyCardProps = {
@@ -100,7 +101,7 @@ function AnimatedStudyCard({
   return (
     <Animated.View
       style={animatedStyle}
-      className={`mb-3 rounded-2xl border border-slate-100 p-4 ${colorMap[block.color] || "bg-purple-200"}`}
+      className={`mb-3 rounded-2xl border border-slate-100 p-4 dark:border-slate-900 ${colorMap[block.color] || "bg-purple-200 dark:bg-purple-800"}`}
     >
       <View className="flex-row items-center justify-between">
         <TouchableOpacity
@@ -108,16 +109,16 @@ function AnimatedStudyCard({
           onPress={() => router.push(`/study-timer?blockId=${block.id}`)}
           activeOpacity={0.85}
         >
-          <Text className="text-base font-extrabold text-slate-800">
+          <Text className="text-base font-extrabold text-slate-800 dark:text-slate-200">
             {block.subject}
           </Text>
-          <Text className="mt-1 text-sm font-semibold text-slate-700">
+          <Text className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
             {block.start_time} - {block.end_time}
           </Text>
         </TouchableOpacity>
 
         <View className="ml-3 flex-row items-center">
-          <Text className="mr-2 text-xs font-bold text-slate-600">
+          <Text className="mr-2 text-xs font-bold text-slate-600 dark:text-slate-400">
             {(() => {
               const start = parseInt(block.start_time.split(":")[0]);
               const end = parseInt(block.end_time.split(":")[0]);
@@ -127,17 +128,15 @@ function AnimatedStudyCard({
           </Text>
 
           <TouchableOpacity className="mr-2" onPress={() => onEdit(block.id)}>
-            <Ionicons name="create" size={18} color="#7c3aed" />
+            <Ionicons name="create" size={18} color={tc("#7c3aed")} />
           </TouchableOpacity>
 
           <TouchableOpacity className="mr-2" onPress={() => onDelete(block.id)}>
-            <Ionicons name="trash" size={18} color="#7c3aed" />
+            <Ionicons name="trash" size={18} color={tc("#7c3aed")} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push(`/study-timer?blockId=${block.id}`)}
-          >
-            <Ionicons name="play-circle" size={18} color="#7c3aed" />
+          <TouchableOpacity onPress={() => router.push(`/study-timer?blockId=${block.id}`)}>
+            <Ionicons name="play-circle" size={18} color={tc("#7c3aed")} />
           </TouchableOpacity>
         </View>
       </View>
@@ -156,9 +155,7 @@ export function StudySchedule() {
         ? "thinking"
         : "thinking";
 
-  const [selectedDay, setSelectedDay] = useState(
-    dayLettersByGetDay[new Date().getDay()] ?? "X",
-  );
+  const [selectedDay, setSelectedDay] = useState(dayLettersByGetDay[new Date().getDay()] ?? "X");
   const [blocks, setBlocks] = useState<StudyBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -270,7 +267,6 @@ export function StudySchedule() {
                   .eq("user_id", userId);
 
                 if (deleteError) {
-                  console.error("Delete error:", JSON.stringify(deleteError));
                   throw deleteError;
                 }
 
@@ -282,10 +278,7 @@ export function StudySchedule() {
 
                 await loadBlocks();
               } catch (err) {
-                console.error(
-                  "[StudySchedule] error eliminando bloque:",
-                  err instanceof Error ? err.message : String(err),
-                );
+                reportError(err, { scope: "StudySchedule" });
                 setError(getErrorMessage(err, "No se pudo eliminar el bloque"));
               }
             })();
@@ -297,15 +290,15 @@ export function StudySchedule() {
 
   return (
     <>
-      <View className="flex-1 bg-purple-100 px-5 pt-12">
+      <View className="flex-1 bg-purple-100 px-5 pt-12 dark:bg-purple-900">
         <View className="mb-6 flex-row items-center">
-          <Ionicons name="calendar" size={20} color="#6b21a8" />
-          <Text className="ml-2 text-2xl font-extrabold text-purple-900">
+          <Ionicons name="calendar" size={20} color={tc("#6b21a8")} />
+          <Text className="ml-2 text-2xl font-extrabold text-purple-900 dark:text-purple-100">
             Horario de estudio
           </Text>
         </View>
 
-        <View className="mb-4 flex-row justify-between rounded-3xl border-2 border-purple-200 bg-white p-2">
+        <View className="mb-4 flex-row justify-between rounded-3xl border-2 border-purple-200 bg-white p-2 dark:border-purple-800 dark:bg-surface">
           {days.map((day) => {
             const active = day === selectedDay;
 
@@ -317,9 +310,7 @@ export function StudySchedule() {
                   setSelectedDay(day);
                 }}
               >
-                <Text
-                  className={`font-extrabold ${active ? "text-white" : "text-purple-500"}`}
-                >
+                <Text className={`font-extrabold ${active ? "text-white" : "text-purple-500"}`}>
                   {day}
                 </Text>
               </TouchableOpacity>
@@ -342,27 +333,25 @@ export function StudySchedule() {
               <Animated.View style={loadingAnimatedStyle}>
                 <MochiCharacter mood={loadingMood} size={92} />
               </Animated.View>
-              <Text className="mt-4 text-sm font-semibold text-purple-700">
+              <Text className="mt-4 text-sm font-semibold text-purple-700 dark:text-purple-300">
                 Cargando bloques...
               </Text>
             </View>
           ) : error ? (
-            <View className="rounded-3xl border-2 border-red-200 bg-red-50 p-4">
-              <Text className="text-sm font-semibold text-red-700">
-                {error}
-              </Text>
+            <View className="rounded-3xl border-2 border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+              <Text className="text-sm font-semibold text-red-700 dark:text-red-300">{error}</Text>
             </View>
           ) : blocks.length === 0 ? (
-            <View className="rounded-3xl border-2 border-purple-200 bg-white p-6">
+            <View className="rounded-3xl border-2 border-purple-200 bg-white p-6 dark:border-purple-800 dark:bg-surface">
               <View className="items-center">
                 <MochiCharacter mood="sleepy" size={88} />
-                <Text className="mt-3 text-center text-sm font-semibold text-purple-600">
+                <Text className="mt-3 text-center text-sm font-semibold text-purple-600 dark:text-purple-400">
                   No hay bloques para este día
                 </Text>
               </View>
             </View>
           ) : (
-            <View className="rounded-3xl border-2 border-purple-200 bg-white p-4">
+            <View className="rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
               {blocks.map((item, index) => (
                 <AnimatedStudyCard
                   key={item.id}
@@ -370,19 +359,14 @@ export function StudySchedule() {
                   index={index}
                   animationSeed={animationSeed}
                   onDelete={handleDeleteBlock}
-                  onEdit={(blockId) =>
-                    router.push(`/study-edit?blockId=${blockId}`)
-                  }
+                  onEdit={(blockId) => router.push(`/study-edit?blockId=${blockId}`)}
                 />
               ))}
             </View>
           )}
         </ScrollView>
 
-        <Animated.View
-          style={fabAnimatedStyle}
-          className="absolute bottom-5 right-5"
-        >
+        <Animated.View style={fabAnimatedStyle} className="absolute bottom-5 right-5">
           <TouchableOpacity
             className="h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-purple-500"
             onPressIn={() => {

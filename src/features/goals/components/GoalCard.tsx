@@ -1,3 +1,4 @@
+import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
 import type { Goal } from "@/src/shared/types/database";
@@ -8,11 +9,11 @@ type GoalCardProps = {
 };
 
 const colorMap: Record<string, string> = {
-  pink: "#f472b6",
-  purple: "#a855f7",
-  mint: "#34d399",
-  blue: "#60a5fa",
-  yellow: "#facc15",
+  pink: tc("#f472b6"),
+  purple: tc("#a855f7"),
+  mint: tc("#34d399"),
+  blue: tc("#60a5fa"),
+  yellow: tc("#facc15"),
 };
 
 function formatDate(value: string | null): string {
@@ -31,56 +32,51 @@ function formatDate(value: string | null): string {
 }
 
 export function GoalCard({ goal, onPress }: GoalCardProps) {
-  const normalizedProgress = Math.max(
-    0,
-    Math.min(100, Math.round(goal.progress ?? 0)),
-  );
-  const accentColor = colorMap[goal.color ?? ""] ?? "#a855f7";
+  const normalizedProgress = Math.max(0, Math.min(100, Math.round(goal.progress ?? 0)));
+  const accentColor = colorMap[goal.color ?? ""] ?? tc("#a855f7");
 
   return (
     <TouchableOpacity
-      className="mb-3 rounded-3xl border border-purple-200 bg-white p-4"
+      className="mb-3 rounded-3xl border border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface"
       onPress={onPress}
       activeOpacity={0.9}
     >
       <View className="flex-row items-center justify-between">
-        <Text className="flex-1 pr-3 text-base font-extrabold text-purple-900">
+        <Text className="flex-1 pr-3 text-base font-extrabold text-purple-900 dark:text-purple-100">
           {goal.title}
         </Text>
         {goal.is_completed ? (
-          <View className="rounded-full bg-green-100 px-3 py-1">
-            <Text className="text-xs font-bold text-green-700">Completada</Text>
+          <View className="rounded-full bg-green-100 px-3 py-1 dark:bg-green-900">
+            <Text className="text-xs font-bold text-green-700 dark:text-green-300">Completada</Text>
           </View>
         ) : (
-          <View className="rounded-full bg-purple-100 p-2">
-            <Ionicons name="create" size={14} color="#7c3aed" />
+          <View className="rounded-full bg-purple-100 p-2 dark:bg-purple-900">
+            <Ionicons name="create" size={14} color={tc("#7c3aed")} />
           </View>
         )}
       </View>
 
       {goal.description ? (
         <Text
-          className="mt-2 text-sm font-semibold text-slate-600"
+          className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-400"
           numberOfLines={2}
         >
           {goal.description}
         </Text>
       ) : (
-        <Text className="mt-2 text-sm font-semibold text-slate-400">
-          Sin descripción
-        </Text>
+        <Text className="mt-2 text-sm font-semibold text-slate-400">Sin descripción</Text>
       )}
 
       <View className="mt-4">
         <View className="mb-1 flex-row items-center justify-between">
-          <Text className="text-xs font-bold uppercase tracking-wide text-purple-600">
+          <Text className="text-xs font-bold uppercase tracking-wide text-purple-600 dark:text-purple-400">
             Progreso
           </Text>
-          <Text className="text-xs font-extrabold text-purple-800">
+          <Text className="text-xs font-extrabold text-purple-800 dark:text-purple-200">
             {normalizedProgress}%
           </Text>
         </View>
-        <View className="h-3 rounded-full bg-purple-100">
+        <View className="h-3 rounded-full bg-purple-100 dark:bg-purple-900">
           <View
             className="h-3 rounded-full"
             style={{
@@ -92,13 +88,10 @@ export function GoalCard({ goal, onPress }: GoalCardProps) {
       </View>
 
       <View className="mt-4 flex-row items-center justify-between">
-        <Text className="text-xs font-semibold text-purple-600">
+        <Text className="text-xs font-semibold text-purple-600 dark:text-purple-400">
           Objetivo: {formatDate(goal.target_date)}
         </Text>
-        <View
-          className="h-3 w-3 rounded-full"
-          style={{ backgroundColor: accentColor }}
-        />
+        <View className="h-3 w-3 rounded-full" style={{ backgroundColor: accentColor }} />
       </View>
     </TouchableOpacity>
   );

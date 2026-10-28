@@ -1,3 +1,4 @@
+import { tc } from "@/src/shared/theme/colors";
 import { Ionicons, Entypo } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
 import Animated, {
@@ -20,59 +21,59 @@ type HabitCardProps = {
 };
 
 const colorBorderMap: Record<string, string> = {
-  pink: "border-pink-200",
-  yellow: "border-yellow-200",
-  blue: "border-blue-200",
-  teal: "border-teal-200",
-  purple: "border-purple-200",
+  pink: "border-pink-200 dark:border-pink-800",
+  yellow: "border-yellow-200 dark:border-yellow-800",
+  blue: "border-blue-200 dark:border-blue-800",
+  teal: "border-teal-200 dark:border-teal-800",
+  purple: "border-purple-200 dark:border-purple-800",
 };
 
 const colorBgMap: Record<string, string> = {
-  pink: "bg-pink-100",
-  yellow: "bg-yellow-100",
-  blue: "bg-blue-100",
-  teal: "bg-teal-100",
-  purple: "bg-purple-100",
+  pink: "bg-pink-100 dark:bg-pink-900",
+  yellow: "bg-yellow-100 dark:bg-yellow-900",
+  blue: "bg-blue-100 dark:bg-blue-900",
+  teal: "bg-teal-100 dark:bg-teal-900",
+  purple: "bg-purple-100 dark:bg-purple-900",
 };
 
 const colorIconBgMap: Record<string, string> = {
-  pink: "bg-pink-200",
-  yellow: "bg-yellow-200",
-  blue: "bg-blue-200",
-  teal: "bg-teal-200",
-  purple: "bg-purple-200",
+  pink: "bg-pink-200 dark:bg-pink-800",
+  yellow: "bg-yellow-200 dark:bg-yellow-800",
+  blue: "bg-blue-200 dark:bg-blue-800",
+  teal: "bg-teal-200 dark:bg-teal-800",
+  purple: "bg-purple-200 dark:bg-purple-800",
 };
 
 const colorIconMap: Record<string, string> = {
-  pink: "#9d174d",
-  yellow: "#92400e",
-  blue: "#1e3a8a",
-  teal: "#134e4a",
-  purple: "#4c1d95",
+  pink: tc("#9d174d"),
+  yellow: tc("#92400e"),
+  blue: tc("#1e3a8a"),
+  teal: tc("#134e4a"),
+  purple: tc("#4c1d95"),
 };
 
 const colorDotMap: Record<string, string> = {
-  pink: "#9d174d",
-  yellow: "#92400e",
-  blue: "#1e3a8a",
-  teal: "#134e4a",
-  purple: "#4c1d95",
+  pink: tc("#9d174d"),
+  yellow: tc("#92400e"),
+  blue: tc("#1e3a8a"),
+  teal: tc("#134e4a"),
+  purple: tc("#4c1d95"),
 };
 
 const colorDotInactiveMap: Record<string, string> = {
-  pink: "#fbcfe8",
-  yellow: "#fde68a",
-  blue: "#bfdbfe",
-  teal: "#99f6e4",
-  purple: "#ddd6fe",
+  pink: tc("#fbcfe8"),
+  yellow: tc("#fde68a"),
+  blue: tc("#bfdbfe"),
+  teal: tc("#99f6e4"),
+  purple: tc("#ddd6fe"),
 };
 
 const colorMutedIconMap: Record<string, string> = {
-  pink: "#be185d",
-  yellow: "#b45309",
-  blue: "#1d4ed8",
-  teal: "#0f766e",
-  purple: "#6d28d9",
+  pink: tc("#be185d"),
+  yellow: tc("#b45309"),
+  blue: tc("#1d4ed8"),
+  teal: tc("#0f766e"),
+  purple: tc("#6d28d9"),
 };
 
 export function HabitCard({
@@ -101,26 +102,22 @@ export function HabitCard({
   }
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      onLongPress={onLongPress}
-      activeOpacity={0.8}
-    >
+    <TouchableOpacity onPress={handlePress} onLongPress={onLongPress} activeOpacity={0.8}>
       <Animated.View
         style={animatedStyle}
-        className={`mb-3 flex-row items-center rounded-2xl border-2 p-4 ${colorBorderMap[habit.color] ?? "border-purple-200"} ${colorBgMap[habit.color] ?? "bg-purple-100"}`}
+        className={`mb-3 flex-row items-center rounded-2xl border-2 p-4 ${colorBorderMap[habit.color] ?? "border-purple-200 dark:border-purple-800"} ${colorBgMap[habit.color] ?? "bg-purple-100 dark:bg-purple-900"}`}
       >
         <View
-          className={`h-10 w-10 items-center justify-center rounded-xl ${colorIconBgMap[habit.color] ?? "bg-purple-200"}`}
+          className={`h-10 w-10 items-center justify-center rounded-xl ${colorIconBgMap[habit.color] ?? "bg-purple-200 dark:bg-purple-800"}`}
         >
           <Ionicons
             name={habit.icon as keyof typeof Ionicons.glyphMap}
             size={20}
-            color={colorIconMap[habit.color] ?? "#4c1d95"}
+            color={colorIconMap[habit.color] ?? tc("#4c1d95")}
           />
         </View>
         <View className="ml-3 flex-1">
-          <Text className="text-sm font-bold text-slate-800">{habit.name}</Text>
+          <Text className="text-sm font-bold text-slate-800 dark:text-slate-200">{habit.name}</Text>
           {weeklyDots && weeklyDots.length === 7 && (
             <View className="mt-1.5 flex-row items-center gap-1">
               {weeklyDots.map((done, i) => (
@@ -153,7 +150,7 @@ export function HabitCard({
                 : (colorDotInactiveMap[habit.color] ?? "#ddd6fe"),
               backgroundColor: isReminderEnabled
                 ? (colorDotInactiveMap[habit.color] ?? "#ddd6fe")
-                : "#ffffff",
+                : tc("#ffffff"),
             }}
             onPress={(event) => {
               event.stopPropagation();
@@ -161,11 +158,7 @@ export function HabitCard({
             }}
           >
             <Ionicons
-              name={
-                isReminderEnabled
-                  ? "notifications"
-                  : "notifications-off"
-              }
+              name={isReminderEnabled ? "notifications" : "notifications-off"}
               size={14}
               color={
                 isReminderEnabled
@@ -176,16 +169,14 @@ export function HabitCard({
           </TouchableOpacity>
 
           <View
-            className={`h-8 w-8 items-center justify-center rounded-full ${isCompleted ? "" : "border-2 border-slate-300 bg-white"}`}
+            className={`h-8 w-8 items-center justify-center rounded-full ${isCompleted ? "" : "border-2 border-slate-300 bg-white dark:border-slate-700 dark:bg-surface"}`}
             style={
               isCompleted
-                ? { backgroundColor: colorIconMap[habit.color] ?? "#4c1d95" }
+                ? { backgroundColor: colorIconMap[habit.color] ?? tc("#4c1d95") }
                 : undefined
             }
           >
-            {isCompleted && (
-              <Entypo name="check" size={16} color="white" />
-            )}
+            {isCompleted && <Entypo name="check" size={16} color="white" />}
           </View>
         </View>
       </Animated.View>

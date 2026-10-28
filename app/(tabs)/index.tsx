@@ -1,8 +1,9 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
 
-import HomeDashboard from "@/src/features/home/components/HomeDashboard";
+import { HomeDashboard } from "@/src/features/home/components/HomeDashboard";
 import { QuickCaptureModal } from "@/src/shared/components/QuickCaptureModal";
 import { RecoveryPlanModal } from "@/src/shared/components/RecoveryPlanModal";
 import { useStreakRecovery } from "@/src/shared/hooks/useStreakRecovery";
@@ -28,8 +29,9 @@ export default function Home() {
   const [recoveryDismissed, setRecoveryDismissed] = useState(false);
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
 
-  const { activeRecoveryPlan, createRecoveryPlan, dismissRecoveryPlan } =
-    useStreakRecovery(session?.user.id);
+  const { activeRecoveryPlan, createRecoveryPlan, dismissRecoveryPlan } = useStreakRecovery(
+    session?.user.id,
+  );
 
   const handleRecoveryStart = () => {
     if (!session?.user.id) return;
@@ -67,11 +69,28 @@ export default function Home() {
   };
 
   const handleActionCreated = useCallback(
-    async (action: ActionConversionResult) => {
+    async (action: ActionConversionResult, originalNote: string) => {
       const userId = session?.user.id;
       if (!userId) return;
 
       try {
+        // Registro de la conversión (nota original, acción elegida y confianza).
+        const { error: conversionError } = await supabase.from("action_conversions").insert({
+          user_id: userId,
+          original_note: originalNote || action.data.title || "nota",
+          converted_action_type:
+            action.type === "study_block"
+              ? "study"
+              : action.type === "exercise"
+                ? "routine"
+                : action.type,
+          converted_data: action.data,
+          confidence_score: Math.min(1, Math.max(0, action.confidence)),
+          ai_reasoning: action.reasoning || null,
+        });
+        if (conversionError)
+          reportError(conversionError, { scope: "quick-capture/log-conversion" });
+
         switch (action.type) {
           case "study_block": {
             const { error } = await supabase.from("study_blocks").insert({
@@ -130,18 +149,34 @@ export default function Home() {
 
         showAchievement({
           title: `${label} creado`,
-          description:
-            action.data.title ??
-            "Acción guardada desde captura rápida",
+          description: action.data.title ?? "Acción guardada desde captura rápida",
           points: 0,
           icon: "flash",
         });
       } catch (err) {
-        console.error(
-          "[QuickCapture] error persistiendo acción:",
-          err instanceof Error ? err.message : String(err),
-        );
+        reportError(err, { scope: "quick-capture/persist" });
       }
+    },
+    [session?.user.id, showAchievement],
+  );
+
+  const handleNoteSaved = useCallback(
+    async (note: string) => {
+      const userId = session?.user.id;
+      if (!userId) return;
+      const { error } = await supabase
+        .from("quick_notes")
+        .insert({ user_id: userId, content: note });
+      if (error) {
+        reportError(error, { scope: "quick-capture/save-note" });
+        return;
+      }
+      showAchievement({
+        title: "Nota guardada",
+        description: note.slice(0, 60),
+        points: 0,
+        icon: "document-text",
+      });
     },
     [session?.user.id, showAchievement],
   );
@@ -163,8 +198,7 @@ export default function Home() {
       }
 
       const metadataName = pickDisplayName(
-        (session.user.user_metadata as { full_name?: string } | null)
-          ?.full_name,
+        (session.user.user_metadata as { full_name?: string } | null)?.full_name,
       );
 
       if (metadataName && mounted) {
@@ -179,9 +213,7 @@ export default function Home() {
 
       if (!mounted) return;
 
-      const profileName = pickDisplayName(
-        (data as { full_name?: string } | null)?.full_name,
-      );
+      const profileName = pickDisplayName((data as { full_name?: string } | null)?.full_name);
       if (profileName) {
         setDisplayName(profileName);
         return;
@@ -229,8 +261,11 @@ export default function Home() {
       <QuickCaptureModal
         visible={moduleVisibility.quick_capture_enabled && quickCaptureOpen}
         onClose={() => setQuickCaptureOpen(false)}
-        onActionCreated={(action) => {
-          void handleActionCreated(action);
+        onActionCreated={(action, note) => {
+          void handleActionCreated(action, note);
+        }}
+        onNoteSaved={(note) => {
+          void handleNoteSaved(note);
         }}
       />
     </View>

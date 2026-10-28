@@ -1,3 +1,4 @@
+import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -12,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useKeepAwake } from "expo-keep-awake";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   Easing,
@@ -33,11 +35,7 @@ import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { searchUnsplashImage } from "@/src/shared/lib/unsplash";
-import type {
-  Recipe,
-  RecipeStep,
-  RecipeCookSession,
-} from "@/src/shared/types/database";
+import type { Recipe, RecipeStep, RecipeCookSession } from "@/src/shared/types/database";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -46,6 +44,8 @@ function formatTime(seconds: number): string {
 }
 
 export function RecipePlayerScreen() {
+  // Modo cocina: manos con harina, la pantalla no debe apagarse.
+  useKeepAwake();
   const { recipeId, sessionId, fresh } = useLocalSearchParams<{
     recipeId: string;
     sessionId?: string;
@@ -57,9 +57,7 @@ export function RecipePlayerScreen() {
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
-  const [cookSession, setCookSession] = useState<RecipeCookSession | null>(
-    null,
-  );
+  const [cookSession, setCookSession] = useState<RecipeCookSession | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,12 +95,7 @@ export function RecipePlayerScreen() {
       }
       try {
         const [recipeRes, stepsRes] = await Promise.all([
-          supabase
-            .from("recipes")
-            .select("*")
-            .eq("id", recipeId)
-            .eq("user_id", userId)
-            .single(),
+          supabase.from("recipes").select("*").eq("id", recipeId).eq("user_id", userId).single(),
           supabase
             .from("recipe_steps")
             .select("*")
@@ -173,14 +166,13 @@ export function RecipePlayerScreen() {
           setTimerSeconds(firstStep.duration_seconds);
         }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Error cargando la receta",
-        );
+        setError(err instanceof Error ? err.message : "Error cargando la receta");
       } finally {
         setLoading(false);
       }
     }
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- las dependencias omitidas son estables o se excluyen a propósito para no reiniciar el efecto
   }, [recipeId, sessionId, userId]);
 
   // Actualizar progreso en la barra
@@ -302,7 +294,7 @@ export function RecipePlayerScreen() {
       .eq("id", cookSession.id);
 
     // Puntos y logros de cocina
-    await addPoints(userId, 15, showAchievement);
+    await addPoints(userId, "recipe_completed", showAchievement);
     await checkCookingSessionAchievements(userId, showAchievement);
 
     setCompleted(true);
@@ -311,13 +303,9 @@ export function RecipePlayerScreen() {
   const handleSaveRating = async (stars: number) => {
     if (!cookSession) return;
     setRating(stars);
-    await supabase
-      .from("recipe_cook_sessions")
-      .update({ rating: stars })
-      .eq("id", cookSession.id);
+    await supabase.from("recipe_cook_sessions").update({ rating: stars }).eq("id", cookSession.id);
     // Logro: 5 estrellas
-    if (stars === 5 && userId)
-      await checkPerfectRecipeAchievement(userId, showAchievement);
+    if (stars === 5 && userId) await checkPerfectRecipeAchievement(userId, showAchievement);
   };
 
   const handleAskMochi = async () => {
@@ -338,11 +326,7 @@ export function RecipePlayerScreen() {
       }
 
       setAsking(true);
-      const answer = await askMochiWhileCooking(
-        recipe.title,
-        currentStep.title,
-        question.trim(),
-      );
+      const answer = await askMochiWhileCooking(recipe.title, currentStep.title, question.trim());
       setMochiAnswer(answer);
       setQuestion("");
     } finally {
@@ -354,9 +338,9 @@ export function RecipePlayerScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50">
+      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 dark:bg-orange-950">
         <MochiCharacter mood="thinking" size={90} />
-        <Text className="mt-3 text-sm font-semibold text-orange-700">
+        <Text className="mt-3 text-sm font-semibold text-orange-700 dark:text-orange-300">
           Preparando tu cocina...
         </Text>
       </SafeAreaView>
@@ -365,9 +349,9 @@ export function RecipePlayerScreen() {
 
   if (error || !recipe) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 px-6">
+      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 px-6 dark:bg-orange-950">
         <MochiCharacter mood="sleepy" size={80} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600">
+        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
           {error}
         </Text>
         <TouchableOpacity
@@ -384,30 +368,23 @@ export function RecipePlayerScreen() {
 
   if (completed) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 px-6">
+      <SafeAreaView className="flex-1 items-center justify-center bg-orange-50 px-6 dark:bg-orange-950">
         <MochiCharacter mood="excited" size={110} />
-        <Text className="mt-6 text-2xl font-extrabold text-orange-900">
+        <Text className="mt-6 text-2xl font-extrabold text-orange-900 dark:text-orange-100">
           ¡Buen provecho!
         </Text>
-        <Text className="mt-2 text-center text-sm font-semibold text-orange-600">
+        <Text className="mt-2 text-center text-sm font-semibold text-orange-600 dark:text-orange-400">
           Terminaste "{recipe.title}"
         </Text>
 
-        <View className="mt-8 rounded-3xl border-2 border-orange-200 bg-white p-5">
-          <Text className="text-center text-sm font-extrabold text-orange-900">
+        <View className="mt-8 rounded-3xl border-2 border-orange-200 bg-white p-5 dark:border-orange-800 dark:bg-surface">
+          <Text className="text-center text-sm font-extrabold text-orange-900 dark:text-orange-100">
             ¿Cómo quedó?
           </Text>
           <View className="mt-3 flex-row justify-center gap-2">
             {[1, 2, 3, 4, 5].map((star) => (
-              <TouchableOpacity
-                key={star}
-                onPress={() => void handleSaveRating(star)}
-              >
-                <Ionicons
-                  name={rating >= star ? "star" : "star"}
-                  size={32}
-                  color="#f97316"
-                />
+              <TouchableOpacity key={star} onPress={() => void handleSaveRating(star)}>
+                <Ionicons name={rating >= star ? "star" : "star"} size={32} color={tc("#f97316")} />
               </TouchableOpacity>
             ))}
           </View>
@@ -440,7 +417,7 @@ export function RecipePlayerScreen() {
 
   return (
     <>
-      <View className="flex-1 bg-orange-50">
+      <View className="flex-1 bg-orange-50 dark:bg-orange-950">
         <SafeAreaView className="flex-1">
           {/* Header */}
           <View className="px-5 pt-4">
@@ -450,8 +427,7 @@ export function RecipePlayerScreen() {
                 onPress={() => {
                   showAlert({
                     title: "Salir de la receta",
-                    message:
-                      "Tu progreso se guardará. Podrás continuar desde aquí cuando quieras.",
+                    message: "Tu progreso se guardará. Podrás continuar desde aquí cuando quieras.",
                     buttons: [
                       { text: "Cancelar", style: "cancel" },
                       { text: "Salir", onPress: () => router.back() },
@@ -459,57 +435,48 @@ export function RecipePlayerScreen() {
                   });
                 }}
               >
-                <Ionicons name="chevron-back" size={22} color="#c2410c" />
-                <Text className="ml-1 font-bold text-orange-900">Salir</Text>
+                <Ionicons name="chevron-back" size={22} color={tc("#c2410c")} />
+                <Text className="ml-1 font-bold text-orange-900 dark:text-orange-100">Salir</Text>
               </TouchableOpacity>
-              <Text className="text-sm font-extrabold text-orange-700">
+              <Text className="text-sm font-extrabold text-orange-700 dark:text-orange-300">
                 {currentIndex + 1} / {steps.length}
               </Text>
               <TouchableOpacity
-                className="h-9 w-9 items-center justify-center rounded-full bg-orange-200"
+                className="h-9 w-9 items-center justify-center rounded-full bg-orange-200 dark:bg-orange-800"
                 onPress={() => {
                   setShowAsk(true);
                   setMochiAnswer("");
                 }}
               >
-                <Ionicons name="help" size={18} color="#c2410c" />
+                <Ionicons name="help" size={18} color={tc("#c2410c")} />
               </TouchableOpacity>
             </View>
 
             {/* Barra de progreso */}
-            <View className="mt-3 h-2 w-full overflow-hidden rounded-full bg-orange-100">
-              <Animated.View
-                style={progressStyle}
-                className="h-2 rounded-full bg-orange-500"
-              />
+            <View className="mt-3 h-2 w-full overflow-hidden rounded-full bg-orange-100 dark:bg-orange-900">
+              <Animated.View style={progressStyle} className="h-2 rounded-full bg-orange-500" />
             </View>
 
-            <Text
-              className="mt-1.5 text-xs font-semibold text-orange-500"
-              numberOfLines={1}
-            >
+            <Text className="mt-1.5 text-xs font-semibold text-orange-500" numberOfLines={1}>
               {recipe.title}
             </Text>
           </View>
 
-          <ScrollView
-            className="flex-1 px-5 pt-4"
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
             {currentStep && (
               <>
                 {/* Número y título del paso */}
-                <View className="rounded-3xl border-2 border-orange-200 bg-white p-5">
+                <View className="rounded-3xl border-2 border-orange-200 bg-white p-5 dark:border-orange-800 dark:bg-surface">
                   <View className="flex-row items-center">
                     <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-orange-500">
                       <Text className="text-base font-extrabold text-white">
                         {currentStep.step_number}
                       </Text>
                     </View>
-                    <Text className="flex-1 text-lg font-extrabold text-orange-950">
+                    <Text className="flex-1 text-lg font-extrabold text-orange-950 dark:text-orange-50">
                       {currentStep.title}
                     </Text>
-                    <View className="ml-3 h-20 w-20 overflow-hidden rounded-2xl bg-orange-100">
+                    <View className="ml-3 h-20 w-20 overflow-hidden rounded-2xl bg-orange-100 dark:bg-orange-900">
                       {stepImageUrl ? (
                         <Image
                           source={{ uri: stepImageUrl }}
@@ -520,7 +487,7 @@ export function RecipePlayerScreen() {
                         <View className="h-full items-center justify-center">
                           <MochiCharacter mood="thinking" size={30} />
                           {stepImageLoading ? (
-                            <Text className="mt-1 text-[10px] font-semibold text-orange-700">
+                            <Text className="mt-1 text-[10px] font-semibold text-orange-700 dark:text-orange-300">
                               Cargando...
                             </Text>
                           ) : null}
@@ -530,29 +497,20 @@ export function RecipePlayerScreen() {
                   </View>
 
                   {/* Meta del paso */}
-                  {(currentStep.duration_seconds ||
-                    currentStep.temperature) && (
+                  {(currentStep.duration_seconds || currentStep.temperature) && (
                     <View className="mt-3 flex-row flex-wrap gap-2">
                       {currentStep.duration_seconds ? (
-                        <View className="flex-row items-center rounded-full bg-orange-100 px-3 py-1">
-                          <Ionicons
-                            name="timer"
-                            size={13}
-                            color="#c2410c"
-                          />
-                          <Text className="ml-1 text-xs font-bold text-orange-800">
+                        <View className="flex-row items-center rounded-full bg-orange-100 px-3 py-1 dark:bg-orange-900">
+                          <Ionicons name="timer" size={13} color={tc("#c2410c")} />
+                          <Text className="ml-1 text-xs font-bold text-orange-800 dark:text-orange-200">
                             {formatTime(currentStep.duration_seconds)}
                           </Text>
                         </View>
                       ) : null}
                       {currentStep.temperature ? (
-                        <View className="flex-row items-center rounded-full bg-red-100 px-3 py-1">
-                          <Ionicons
-                            name="thermometer"
-                            size={13}
-                            color="#b91c1c"
-                          />
-                          <Text className="ml-1 text-xs font-bold text-red-700">
+                        <View className="flex-row items-center rounded-full bg-red-100 px-3 py-1 dark:bg-red-900">
+                          <Ionicons name="thermometer" size={13} color={tc("#b91c1c")} />
+                          <Text className="ml-1 text-xs font-bold text-red-700 dark:text-red-300">
                             {currentStep.temperature}
                           </Text>
                         </View>
@@ -561,20 +519,20 @@ export function RecipePlayerScreen() {
                   )}
 
                   {/* Instrucciones */}
-                  <Text className="mt-4 text-base font-semibold leading-6 text-slate-700">
+                  <Text className="mt-4 text-base font-semibold leading-6 text-slate-700 dark:text-slate-300">
                     {currentStep.instructions}
                   </Text>
 
                   {/* Tip */}
                   {currentStep.tip ? (
-                    <View className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <View className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
                       <View className="flex-row items-center">
-                        <Ionicons name="bulb" size={15} color="#d97706" />
-                        <Text className="ml-1.5 text-xs font-extrabold text-amber-800">
+                        <Ionicons name="bulb" size={15} color={tc("#d97706")} />
+                        <Text className="ml-1.5 text-xs font-extrabold text-amber-800 dark:text-amber-200">
                           Consejo de Mochi
                         </Text>
                       </View>
-                      <Text className="mt-1 text-sm font-semibold text-amber-700">
+                      <Text className="mt-1 text-sm font-semibold text-amber-700 dark:text-amber-300">
                         {currentStep.tip}
                       </Text>
                     </View>
@@ -583,42 +541,40 @@ export function RecipePlayerScreen() {
 
                 {/* Timer */}
                 {currentStep.duration_seconds ? (
-                  <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-5">
-                    <Text className="text-center text-sm font-bold text-orange-700">
+                  <View className="mt-4 rounded-3xl border-2 border-orange-200 bg-white p-5 dark:border-orange-800 dark:bg-surface">
+                    <Text className="text-center text-sm font-bold text-orange-700 dark:text-orange-300">
                       Temporizador
                     </Text>
-                    <Text className="mt-2 text-center text-5xl font-extrabold text-orange-900">
+                    <Text className="mt-2 text-center text-5xl font-extrabold text-orange-900 dark:text-orange-100">
                       {formatTime(timerSeconds)}
                     </Text>
                     {timerSeconds === 0 && (
-                      <Text className="mt-1 text-center text-sm font-extrabold text-green-600">
+                      <Text className="mt-1 text-center text-sm font-extrabold text-green-600 dark:text-green-400">
                         ¡Tiempo!
                       </Text>
                     )}
                     <View className="mt-4 flex-row justify-center gap-3">
                       <TouchableOpacity
-                        className="rounded-2xl border-2 border-orange-200 px-5 py-3"
+                        className="rounded-2xl border-2 border-orange-200 px-5 py-3 dark:border-orange-800"
                         onPress={() => {
                           setTimerRunning(false);
                           setTimerSeconds(currentStep.duration_seconds!);
                         }}
                       >
-                        <Ionicons name="refresh" size={18} color="#c2410c" />
+                        <Ionicons name="refresh" size={18} color={tc("#c2410c")} />
                       </TouchableOpacity>
                       <IconCtaButton
                         label={
-                          timerRunning
-                            ? "Pausar"
-                            : timerSeconds === 0
-                              ? "Reiniciar"
-                              : "Iniciar"
+                          timerRunning ? "Pausar" : timerSeconds === 0 ? "Reiniciar" : "Iniciar"
                         }
                         onPress={() => setTimerRunning((r) => !r)}
                         iconName={timerRunning ? "pause" : "play"}
-                        iconColor={timerRunning ? "#c2410c" : "#ffffff"}
+                        iconColor={timerRunning ? tc("#c2410c") : tc("#ffffff")}
                         iconSize={18}
-                        containerClassName={`flex-1 rounded-2xl py-3 ${timerRunning ? "bg-orange-200" : "bg-orange-500"}`}
-                        textClassName={timerRunning ? "text-orange-800" : "text-white"}
+                        containerClassName={`flex-1 rounded-2xl py-3 ${timerRunning ? "bg-orange-200 dark:bg-orange-800" : "bg-orange-500"}`}
+                        textClassName={
+                          timerRunning ? "text-orange-800 dark:text-orange-200" : "text-white"
+                        }
                       />
                     </View>
                   </View>
@@ -626,18 +582,15 @@ export function RecipePlayerScreen() {
 
                 {/* Respuesta de Mochi si la hay */}
                 {mochiAnswer ? (
-                  <View className="mt-4 rounded-3xl border-2 border-yellow-200 bg-yellow-50 p-4">
+                  <View className="mt-4 rounded-3xl border-2 border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-950">
                     <View className="flex-row items-center">
                       <MochiCharacter mood="happy" size={40} />
-                      <Text className="ml-3 flex-1 text-sm font-semibold text-yellow-900 leading-5">
+                      <Text className="ml-3 flex-1 text-sm font-semibold leading-5 text-yellow-900 dark:text-yellow-100">
                         {mochiAnswer}
                       </Text>
                     </View>
-                    <TouchableOpacity
-                      className="mt-3 self-end"
-                      onPress={() => setMochiAnswer("")}
-                    >
-                      <Text className="text-xs font-bold text-yellow-600">
+                    <TouchableOpacity className="mt-3 self-end" onPress={() => setMochiAnswer("")}>
+                      <Text className="text-xs font-bold text-yellow-600 dark:text-yellow-400">
                         Cerrar
                       </Text>
                     </TouchableOpacity>
@@ -650,14 +603,14 @@ export function RecipePlayerScreen() {
           </ScrollView>
 
           {/* Navegación entre pasos */}
-          <View className="border-t border-orange-200 bg-orange-50 px-5 pb-8 pt-3">
+          <View className="border-t border-orange-200 bg-orange-50 px-5 pb-8 pt-3 dark:border-orange-800 dark:bg-orange-950">
             <View className="flex-row gap-3">
               <TouchableOpacity
-                className={`h-14 w-14 items-center justify-center rounded-2xl border-2 border-orange-200 ${currentIndex === 0 ? "opacity-40" : ""}`}
+                className={`h-14 w-14 items-center justify-center rounded-2xl border-2 border-orange-200 dark:border-orange-800 ${currentIndex === 0 ? "opacity-40" : ""}`}
                 onPress={() => void handlePrev()}
                 disabled={currentIndex === 0}
               >
-                <Ionicons name="chevron-back" size={22} color="#c2410c" />
+                <Ionicons name="chevron-back" size={22} color={tc("#c2410c")} />
               </TouchableOpacity>
               <TouchableOpacity
                 className="flex-1 items-center justify-center rounded-2xl bg-orange-500 py-3"
@@ -665,9 +618,7 @@ export function RecipePlayerScreen() {
                 activeOpacity={0.85}
               >
                 <Text className="text-base font-extrabold text-white">
-                  {currentIndex + 1 >= steps.length
-                    ? "¡Listo, a comer!"
-                    : "Siguiente paso"}
+                  {currentIndex + 1 >= steps.length ? "¡Listo, a comer!" : "Siguiente paso"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -682,45 +633,39 @@ export function RecipePlayerScreen() {
         animationType="slide"
         onRequestClose={() => setShowAsk(false)}
       >
-        <View
-          className="flex-1 justify-end"
-          style={{ paddingBottom: keyboardInset }}
-        >
+        <View className="flex-1 justify-end" style={{ paddingBottom: keyboardInset }}>
           <View className="flex-1 justify-end bg-black/40">
-            <View className="max-h-[90%] rounded-t-3xl bg-white px-5 pb-10 pt-5">
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-              >
-                <View className="mb-4 h-1.5 w-16 self-center rounded-full bg-slate-200" />
+            <View className="max-h-[90%] rounded-t-3xl bg-white px-5 pb-10 pt-5 dark:bg-surface">
+              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <View className="mb-4 h-1.5 w-16 self-center rounded-full bg-slate-200 dark:bg-slate-800" />
 
                 <View className="flex-row items-center">
                   <MochiCharacter mood="thinking" size={50} />
                   <View className="ml-3 flex-1">
-                    <Text className="text-base font-extrabold text-orange-900">
+                    <Text className="text-base font-extrabold text-orange-900 dark:text-orange-100">
                       Pregúntale a Mochi
                     </Text>
-                    <Text className="text-xs font-semibold text-orange-600">
+                    <Text className="text-xs font-semibold text-orange-600 dark:text-orange-400">
                       Paso actual: {currentStep?.title}
                     </Text>
                   </View>
                   <TouchableOpacity onPress={() => setShowAsk(false)}>
-                    <Ionicons name="close" size={22} color="#64748b" />
+                    <Ionicons name="close" size={22} color={tc("#64748b")} />
                   </TouchableOpacity>
                 </View>
 
                 {mochiAnswer ? (
-                  <View className="mt-4 rounded-2xl border-2 border-yellow-200 bg-yellow-50 p-4">
-                    <Text className="text-sm font-semibold text-yellow-900 leading-5">
+                  <View className="mt-4 rounded-2xl border-2 border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-950">
+                    <Text className="text-sm font-semibold leading-5 text-yellow-900 dark:text-yellow-100">
                       {mochiAnswer}
                     </Text>
                   </View>
                 ) : null}
 
                 <TextInput
-                  className="mt-4 rounded-2xl border-2 border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-slate-800"
+                  className="mt-4 rounded-2xl border-2 border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-orange-800 dark:bg-orange-950 dark:text-slate-200"
                   placeholder="¿Puedo usar aceite de oliva? ¿A qué temperatura...?"
-                  placeholderTextColor="#fdba74"
+                  placeholderTextColor={tc("#fdba74")}
                   value={question}
                   onChangeText={setQuestion}
                   multiline
@@ -733,12 +678,12 @@ export function RecipePlayerScreen() {
                     void handleAskMochi();
                   }}
                   iconName="sparkles"
-                  iconColor="#ffffff"
+                  iconColor={tc("#ffffff")}
                   iconSize={16}
                   loading={asking}
-                  loadingColor="#ffffff"
+                  loadingColor={tc("#ffffff")}
                   disabled={!question.trim()}
-                  containerClassName={`mt-4 w-full rounded-2xl py-4 ${question.trim() && !asking ? "bg-orange-500" : "bg-orange-200"}`}
+                  containerClassName={`mt-4 w-full rounded-2xl py-4 ${question.trim() && !asking ? "bg-orange-500" : "bg-orange-200 dark:bg-orange-800"}`}
                   textClassName="text-white"
                 />
               </ScrollView>

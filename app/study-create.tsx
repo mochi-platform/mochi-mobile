@@ -1,3 +1,5 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { tc } from "@/src/shared/theme/colors";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,15 +13,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import * as Calendar from "expo-calendar";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Calendar from "expo-calendar/legacy";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useCycle } from "@/src/core/providers/CycleContext";
-import TimePickerModal from "@/src/shared/components/TimePickerModal";
+import { TimePickerModal } from "@/src/shared/components/TimePickerModal";
 import { suggestStudyDuration } from "@/src/shared/lib/ai";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
@@ -28,6 +27,7 @@ import {
   getDateFromISOAndTime,
   getNextDateForWeekday,
 } from "@/src/shared/lib/deviceCalendar";
+import { toLocalISODate } from "@/src/shared/lib/dates";
 
 const daysOfWeek = [
   { value: 0, label: "Domingo" },
@@ -62,12 +62,8 @@ function normalizeTimeValue(value: string): string {
   const hours = Number.parseInt(hoursRaw, 10);
   const minutes = Number.parseInt(minutesRaw, 10);
 
-  const safeHours = Number.isFinite(hours)
-    ? Math.max(0, Math.min(23, hours))
-    : 0;
-  const safeMinutes = Number.isFinite(minutes)
-    ? Math.max(0, Math.min(59, minutes))
-    : 0;
+  const safeHours = Number.isFinite(hours) ? Math.max(0, Math.min(23, hours)) : 0;
+  const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.min(59, minutes)) : 0;
 
   return `${String(safeHours).padStart(2, "0")}:${String(safeMinutes).padStart(2, "0")}`;
 }
@@ -78,10 +74,8 @@ function addMinutesToTime(baseTime: string, minutesToAdd: number): string {
   const minutes = Number.parseInt(minutesRaw, 10);
 
   const totalMinutes =
-    (Number.isFinite(hours) ? hours : 0) * 60 +
-    (Number.isFinite(minutes) ? minutes : 0);
-  const wrapped =
-    (((totalMinutes + minutesToAdd) % (24 * 60)) + 24 * 60) % (24 * 60);
+    (Number.isFinite(hours) ? hours : 0) * 60 + (Number.isFinite(minutes) ? minutes : 0);
+  const wrapped = (((totalMinutes + minutesToAdd) % (24 * 60)) + 24 * 60) % (24 * 60);
 
   return `${String(Math.floor(wrapped / 60)).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}`;
 }
@@ -146,9 +140,7 @@ export function CreateStudyBlockScreen() {
       } catch (error) {
         setMoodValue(null);
         setEnergyError(
-          error instanceof Error
-            ? error.message
-            : "No se pudieron cargar tus datos de energía",
+          error instanceof Error ? error.message : "No se pudieron cargar tus datos de energía",
         );
       } finally {
         setEnergyLoading(false);
@@ -166,15 +158,11 @@ export function CreateStudyBlockScreen() {
 
     if (cycleData?.phase === "menstrual") {
       score -= 1;
-    } else if (
-      cycleData?.phase === "folicular" ||
-      cycleData?.phase === "ovulatoria"
-    ) {
+    } else if (cycleData?.phase === "folicular" || cycleData?.phase === "ovulatoria") {
       score += 1;
     }
 
-    const mode: EnergyMode =
-      score <= 1 ? "baja" : score >= 4 ? "alta" : "media";
+    const mode: EnergyMode = score <= 1 ? "baja" : score >= 4 ? "alta" : "media";
     const template = getEnergyTemplate(mode);
 
     const moodText =
@@ -195,10 +183,7 @@ export function CreateStudyBlockScreen() {
   }, [cycleData?.phase, moodValue]);
 
   const applyEnergyPlan = () => {
-    const nextEndTime = addMinutesToTime(
-      normalizeTimeValue(startTime),
-      energySuggestion.minutes,
-    );
+    const nextEndTime = addMinutesToTime(normalizeTimeValue(startTime), energySuggestion.minutes);
     setEndTime(nextEndTime);
   };
 
@@ -215,20 +200,13 @@ export function CreateStudyBlockScreen() {
     setAiLoading(true);
     try {
       const minutes = await suggestStudyDuration(subject);
-      const nextEndTime = addMinutesToTime(
-        normalizeTimeValue(startTime),
-        minutes,
-      );
+      const nextEndTime = addMinutesToTime(normalizeTimeValue(startTime), minutes);
       setEndTime(nextEndTime);
     } catch (error) {
-      console.error(
-        "[StudyCreate] error solicitando sugerencia IA:",
-        error instanceof Error ? error.message : String(error),
-      );
+      reportError(error, { scope: "StudyCreate" });
       showAlert({
         title: "No se pudo generar sugerencia",
-        message:
-          "No logramos calcular una duración con IA en este momento. Intenta nuevamente.",
+        message: "No logramos calcular una duración con IA en este momento. Intenta nuevamente.",
         buttons: [{ text: "Aceptar", style: "cancel" }],
       });
     } finally {
@@ -273,7 +251,7 @@ export function CreateStudyBlockScreen() {
       if (addToCalendar) {
         try {
           const nextStartDate = getNextDateForWeekday(dayOfWeek, startTime);
-          const nextDateISO = nextStartDate.toISOString().slice(0, 10);
+          const nextDateISO = toLocalISODate(nextStartDate);
           const nextEndDate = getDateFromISOAndTime(nextDateISO, endTime);
 
           if (nextEndDate.getTime() <= nextStartDate.getTime()) {
@@ -302,8 +280,7 @@ export function CreateStudyBlockScreen() {
             alarmsMinutesBefore: [10],
           });
         } catch {
-          calendarWarning =
-            "El bloque se guardo, pero no pudimos exportarlo al calendario.";
+          calendarWarning = "El bloque se guardo, pero no pudimos exportarlo al calendario.";
         }
       }
 
@@ -324,8 +301,7 @@ export function CreateStudyBlockScreen() {
     } catch (error) {
       showAlert({
         title: "Error",
-        message:
-          error instanceof Error ? error.message : "No se pudo crear el bloque",
+        message: error instanceof Error ? error.message : "No se pudo crear el bloque",
         buttons: [{ text: "Entendido", style: "destructive" }],
       });
     } finally {
@@ -335,13 +311,13 @@ export function CreateStudyBlockScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-purple-100">
+      <SafeAreaView className="flex-1 bg-purple-100 dark:bg-purple-900">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <ScrollView
-            className="flex-1 bg-purple-100"
+            className="flex-1 bg-purple-100 dark:bg-purple-900"
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
@@ -352,54 +328,54 @@ export function CreateStudyBlockScreen() {
                 onPress={() => router.back()}
                 className="mb-4 flex-row items-center"
               >
-                <Ionicons name="chevron-back" size={24} color="#7c3aed" />
-                <Text className="ml-2 text-lg font-bold text-purple-700">
+                <Ionicons name="chevron-back" size={24} color={tc("#7c3aed")} />
+                <Text className="ml-2 text-lg font-bold text-purple-700 dark:text-purple-300">
                   Volver
                 </Text>
               </TouchableOpacity>
 
-              <Text className="text-3xl font-extrabold text-purple-900">
+              <Text className="text-3xl font-extrabold text-purple-900 dark:text-purple-100">
                 Nuevo bloque de estudio
               </Text>
-              <Text className="mt-1 text-sm font-semibold text-purple-600">
+              <Text className="mt-1 text-sm font-semibold text-purple-600 dark:text-purple-400">
                 Crea un bloque personalizado para tu horario
               </Text>
 
               {/* Subject input */}
-              <View className="mt-6 rounded-3xl border-2 border-purple-200 bg-white p-4">
-                <Text className="text-sm font-bold text-purple-900">
+              <View className="mt-6 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
+                <Text className="text-sm font-bold text-purple-900 dark:text-purple-100">
                   Materia
                 </Text>
                 <TextInput
-                  className="mt-2 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-base text-purple-900"
+                  className="mt-2 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-base text-purple-900 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-100"
                   placeholder="Ejemplo: Matemáticas"
                   value={subject}
                   onChangeText={setSubject}
                   editable={!loading}
                 />
-                <Text className="mt-2 text-xs font-semibold text-purple-600">
+                <Text className="mt-2 text-xs font-semibold text-purple-600 dark:text-purple-400">
                   Sé específica: "Cálculo" es mejor que "Matemáticas"
                 </Text>
               </View>
 
               {/* Day selector */}
-              <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4">
-                <Text className="text-sm font-bold text-purple-900">
+              <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
+                <Text className="text-sm font-bold text-purple-900 dark:text-purple-100">
                   Día de la semana
                 </Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  className="mt-3 -mx-2"
+                  className="-mx-2 mt-3"
                 >
                   {daysOfWeek.map((day) => (
                     <TouchableOpacity
                       key={day.value}
-                      className={`mx-2 rounded-2xl px-4 py-2 ${dayOfWeek === day.value ? "bg-purple-600" : "bg-purple-100"}`}
+                      className={`mx-2 rounded-2xl px-4 py-2 ${dayOfWeek === day.value ? "bg-purple-600" : "bg-purple-100 dark:bg-purple-900"}`}
                       onPress={() => setDayOfWeek(day.value)}
                     >
                       <Text
-                        className={`font-bold ${dayOfWeek === day.value ? "text-white" : "text-purple-700"}`}
+                        className={`font-bold ${dayOfWeek === day.value ? "text-white" : "text-purple-700 dark:text-purple-300"}`}
                       >
                         {day.label}
                       </Text>
@@ -409,39 +385,39 @@ export function CreateStudyBlockScreen() {
               </View>
 
               {/* Time selectors */}
-              <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4">
-                <Text className="text-sm font-bold text-purple-900">
+              <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
+                <Text className="text-sm font-bold text-purple-900 dark:text-purple-100">
                   Horario
                 </Text>
 
                 <View className="mt-3 flex-row gap-3">
                   <View className="flex-1">
-                    <Text className="text-xs font-semibold text-purple-600">
+                    <Text className="text-xs font-semibold text-purple-600 dark:text-purple-400">
                       Inicio
                     </Text>
                     <TouchableOpacity
-                      className="mt-2 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3"
+                      className="mt-2 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 dark:border-purple-800 dark:bg-purple-950"
                       onPress={() => setShowStartPicker(true)}
                     >
-                      <Text className="text-center text-lg font-extrabold text-purple-900">
+                      <Text className="text-center text-lg font-extrabold text-purple-900 dark:text-purple-100">
                         {startTime}
                       </Text>
                     </TouchableOpacity>
                   </View>
 
                   <View className="items-center justify-center">
-                    <Ionicons name="arrow-forward" size={20} color="#a855f7" />
+                    <Ionicons name="arrow-forward" size={20} color={tc("#a855f7")} />
                   </View>
 
                   <View className="flex-1">
-                    <Text className="text-xs font-semibold text-purple-600">
+                    <Text className="text-xs font-semibold text-purple-600 dark:text-purple-400">
                       Fin
                     </Text>
                     <TouchableOpacity
-                      className="mt-2 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3"
+                      className="mt-2 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 dark:border-purple-800 dark:bg-purple-950"
                       onPress={() => setShowEndPicker(true)}
                     >
-                      <Text className="text-center text-lg font-extrabold text-purple-900">
+                      <Text className="text-center text-lg font-extrabold text-purple-900 dark:text-purple-100">
                         {endTime}
                       </Text>
                     </TouchableOpacity>
@@ -453,47 +429,47 @@ export function CreateStudyBlockScreen() {
                   label="Sugerir duración con IA"
                   onPress={handleAISuggestDuration}
                   iconName="sparkles"
-                  iconColor="#a855f7"
+                  iconColor={tc("#a855f7")}
                   iconSize={16}
                   loading={aiLoading}
-                  loadingColor="#a855f7"
+                  loadingColor={tc("#a855f7")}
                   disabled={!subject.trim()}
-                  containerClassName="mt-4 w-full rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 py-3"
-                  textClassName="text-purple-700"
+                  containerClassName="mt-4 w-full rounded-2xl bg-gradient-to-r from-yellow-100 dark:from-yellow-900 to-yellow-50 dark:to-yellow-950 py-3"
+                  textClassName="text-purple-700 dark:text-purple-300"
                 />
               </View>
 
               {/* Energy lab */}
-              <View className="mt-4 rounded-3xl border-2 border-violet-200 bg-white p-4">
+              <View className="mt-4 rounded-3xl border-2 border-violet-200 bg-white p-4 dark:border-violet-800 dark:bg-surface">
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-sm font-bold text-violet-900">
+                  <Text className="text-sm font-bold text-violet-900 dark:text-violet-100">
                     Laboratorio de energía
                   </Text>
                   {energyLoading || cycleLoading ? (
-                    <ActivityIndicator size="small" color="#7c3aed" />
+                    <ActivityIndicator size="small" color={tc("#7c3aed")} />
                   ) : null}
                 </View>
 
-                <Text className="mt-2 text-base font-extrabold text-violet-900">
+                <Text className="mt-2 text-base font-extrabold text-violet-900 dark:text-violet-100">
                   Modo recomendado: {energySuggestion.title}
                 </Text>
-                <Text className="mt-1 text-xs font-semibold text-violet-700">
+                <Text className="mt-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
                   {energySuggestion.subtitle}
                 </Text>
 
                 {energyError ? (
-                  <View className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3">
-                    <Text className="text-xs font-semibold text-red-700">
+                  <View className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+                    <Text className="text-xs font-semibold text-red-700 dark:text-red-300">
                       {energyError}
                     </Text>
                   </View>
                 ) : null}
 
-                <View className="mt-3 rounded-2xl bg-violet-50 p-3">
-                  <Text className="text-xs font-bold text-violet-700">
+                <View className="mt-3 rounded-2xl bg-violet-50 p-3 dark:bg-violet-950">
+                  <Text className="text-xs font-bold text-violet-700 dark:text-violet-300">
                     Plantilla aplicada
                   </Text>
-                  <Text className="mt-1 text-sm font-semibold text-violet-900">
+                  <Text className="mt-1 text-sm font-semibold text-violet-900 dark:text-violet-100">
                     {energySuggestion.minutes} minutos ({energySuggestion.mode})
                   </Text>
                 </View>
@@ -502,50 +478,50 @@ export function CreateStudyBlockScreen() {
                   className="mt-3 items-center rounded-2xl bg-violet-600 py-3 active:opacity-90"
                   onPress={applyEnergyPlan}
                 >
-                  <Text className="font-extrabold text-white">
-                    Aplicar plan recomendado
-                  </Text>
+                  <Text className="font-extrabold text-white">Aplicar plan recomendado</Text>
                 </TouchableOpacity>
               </View>
 
-              <View className="mt-4 rounded-3xl border-2 border-indigo-200 bg-white p-4">
+              <View className="mt-4 rounded-3xl border-2 border-indigo-200 bg-white p-4 dark:border-indigo-800 dark:bg-surface">
                 <TouchableOpacity
                   className="flex-row items-center justify-between"
                   onPress={() => setAddToCalendar((prev) => !prev)}
                   activeOpacity={0.85}
                 >
                   <View className="flex-1 pr-3">
-                    <Text className="text-sm font-bold text-indigo-900">
+                    <Text className="text-sm font-bold text-indigo-900 dark:text-indigo-100">
                       Exportar al calendario
                     </Text>
-                    <Text className="mt-1 text-xs font-semibold text-indigo-700">
+                    <Text className="mt-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                       Crea un evento semanal en tu calendario del dispositivo.
                     </Text>
                   </View>
                   <View
-                    className={`h-7 w-7 items-center justify-center rounded-full ${addToCalendar ? "bg-indigo-600" : "bg-indigo-100"}`}
+                    className={`h-7 w-7 items-center justify-center rounded-full ${addToCalendar ? "bg-indigo-600" : "bg-indigo-100 dark:bg-indigo-900"}`}
                   >
                     <Ionicons
                       name={addToCalendar ? "checkmark" : "remove"}
                       size={16}
-                      color={addToCalendar ? "white" : "#4338ca"}
+                      color={addToCalendar ? "white" : tc("#4338ca")}
                     />
                   </View>
                 </TouchableOpacity>
               </View>
 
               {/* Color selector */}
-              <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4">
-                <Text className="text-sm font-bold text-purple-900">Color</Text>
+              <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
+                <Text className="text-sm font-bold text-purple-900 dark:text-purple-100">
+                  Color
+                </Text>
                 <View className="mt-3 flex-row flex-wrap gap-2">
                   {colors.map((col) => (
                     <TouchableOpacity
                       key={col.value}
-                      className={`flex-1 min-w-[28%] rounded-2xl border-4 py-3 ${color === col.value ? "border-purple-700" : "border-transparent"}`}
+                      className={`min-w-[28%] flex-1 rounded-2xl border-4 py-3 ${color === col.value ? "border-purple-700" : "border-transparent"}`}
                       style={{ backgroundColor: col.hex }}
                       onPress={() => setColor(col.value)}
                     >
-                      <Text className="text-center text-xs font-bold text-purple-900">
+                      <Text className="text-center text-xs font-bold text-purple-900 dark:text-purple-100">
                         {col.label}
                       </Text>
                     </TouchableOpacity>

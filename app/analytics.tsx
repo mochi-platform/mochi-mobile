@@ -1,3 +1,7 @@
+import { tc } from "@/src/shared/theme/colors";
+import { EnergyStudyCorrelationCard } from "@/src/features/analytics/components/EnergyStudyCorrelationCard";
+import { usePlan } from "@/src/shared/hooks/usePlan";
+import { toLocalISODate } from "@/src/shared/lib/dates";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -8,14 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { router, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  Bar,
-  CartesianChart,
-  Line,
-} from "victory-native";
+import { Bar, CartesianChart, Line } from "victory-native";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { supabase } from "@/src/shared/lib/supabase";
@@ -55,7 +54,7 @@ function createEmptyAnalyticsData(): AnalyticsData {
 }
 
 function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  return toLocalISODate(date);
 }
 
 function getMonday(date: Date): Date {
@@ -130,14 +129,9 @@ export function AnalyticsScreen() {
   const { session } = useSession();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>(
-    createEmptyAnalyticsData,
-  );
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>(createEmptyAnalyticsData);
 
-  const chartWidth = useMemo(
-    () => Math.max(320, Dimensions.get("window").width - 48),
-    [],
-  );
+  const chartWidth = useMemo(() => Math.max(320, Dimensions.get("window").width - 48), []);
 
   const loadAnalytics = useCallback(async () => {
     const userId = session?.user.id;
@@ -234,9 +228,8 @@ export function AnalyticsScreen() {
       }
 
       const studyRows =
-        (studySessionsRes.data as
-          | Array<{ duration_seconds: number; completed_at: string }>
-          | null) ?? [];
+        (studySessionsRes.data as { duration_seconds: number; completed_at: string }[] | null) ??
+        [];
 
       studyRows.forEach((row) => {
         const completedDate = new Date(row.completed_at);
@@ -267,8 +260,7 @@ export function AnalyticsScreen() {
         monthlyOrder.push(key);
       }
 
-      const habitRows =
-        (habitLogsRes.data as Array<{ log_date: string }> | null) ?? [];
+      const habitRows = (habitLogsRes.data as { log_date: string }[] | null) ?? [];
 
       habitRows.forEach((row) => {
         const monthKey = `${row.log_date.slice(0, 7)}-01`;
@@ -286,24 +278,16 @@ export function AnalyticsScreen() {
       }));
 
       const activeDays = new Set<string>();
-      (
-        (studyActivityRes.data as Array<{ completed_at: string }> | null) ?? []
-      ).forEach((row) => {
+      ((studyActivityRes.data as { completed_at: string }[] | null) ?? []).forEach((row) => {
         activeDays.add(row.completed_at.slice(0, 10));
       });
-      (
-        (routineActivityRes.data as Array<{ completed_at: string }> | null) ?? []
-      ).forEach((row) => {
+      ((routineActivityRes.data as { completed_at: string }[] | null) ?? []).forEach((row) => {
         activeDays.add(row.completed_at.slice(0, 10));
       });
-      ((habitActivityRes.data as Array<{ log_date: string }> | null) ?? []).forEach(
-        (row) => {
-          activeDays.add(row.log_date);
-        },
-      );
-      (
-        (gratitudeActivityRes.data as Array<{ logged_date: string }> | null) ?? []
-      ).forEach((row) => {
+      ((habitActivityRes.data as { log_date: string }[] | null) ?? []).forEach((row) => {
+        activeDays.add(row.log_date);
+      });
+      ((gratitudeActivityRes.data as { logged_date: string }[] | null) ?? []).forEach((row) => {
         activeDays.add(row.logged_date);
       });
 
@@ -317,11 +301,7 @@ export function AnalyticsScreen() {
       });
     } catch (err) {
       setAnalyticsData(createEmptyAnalyticsData());
-      setError(
-        err instanceof Error
-          ? err.message
-          : "No se pudieron cargar tus analiticas",
-      );
+      setError(err instanceof Error ? err.message : "No se pudieron cargar tus analiticas");
     } finally {
       setLoading(false);
     }
@@ -333,20 +313,28 @@ export function AnalyticsScreen() {
     }, [loadAnalytics]),
   );
 
-  const totalWeeklyHours = useMemo(
+  const { plan } = usePlan();
+  const visibleWeekly = useMemo(
     () =>
-      analyticsData.weeklyStudy.reduce((sum, point) => sum + point.hours, 0),
-    [analyticsData.weeklyStudy],
+      plan.features.analytics_history
+        ? analyticsData.weeklyStudy
+        : analyticsData.weeklyStudy.slice(-1),
+    [plan.features.analytics_history, analyticsData.weeklyStudy],
+  );
+
+  const totalWeeklyHours = useMemo(
+    () => visibleWeekly.reduce((sum, point) => sum + point.hours, 0),
+    [visibleWeekly],
   );
 
   const weeklyChartData = useMemo(
     () =>
-      analyticsData.weeklyStudy.map((point, index) => ({
+      visibleWeekly.map((point, index) => ({
         x: index + 1,
         label: point.label,
         hours: point.hours,
       })),
-    [analyticsData.weeklyStudy],
+    [visibleWeekly],
   );
 
   const monthlyChartData = useMemo(
@@ -371,9 +359,9 @@ export function AnalyticsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-sky-50">
-        <ActivityIndicator size="small" color="#0369a1" />
-        <Text className="mt-3 text-sm font-semibold text-sky-700">
+      <SafeAreaView className="flex-1 items-center justify-center bg-sky-50 dark:bg-sky-950">
+        <ActivityIndicator size="small" color={tc("#0369a1")} />
+        <Text className="mt-3 text-sm font-semibold text-sky-700 dark:text-sky-300">
           Cargando analiticas...
         </Text>
       </SafeAreaView>
@@ -382,9 +370,9 @@ export function AnalyticsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-sky-50 px-6">
+      <SafeAreaView className="flex-1 items-center justify-center bg-sky-50 px-6 dark:bg-sky-950">
         <MochiCharacter mood="sleepy" size={78} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600">
+        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
           {error}
         </Text>
         <TouchableOpacity
@@ -400,50 +388,60 @@ export function AnalyticsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-sky-50">
+    <SafeAreaView className="flex-1 bg-sky-50 dark:bg-sky-950">
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <TouchableOpacity
-          className="mt-4 flex-row items-center"
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={22} color="#0369a1" />
-          <Text className="ml-1 font-bold text-sky-800">Volver</Text>
+        <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color={tc("#0369a1")} />
+          <Text className="ml-1 font-bold text-sky-800 dark:text-sky-200">Volver</Text>
         </TouchableOpacity>
 
-        <View className="mt-6 rounded-3xl border-2 border-sky-200 bg-white p-5">
-          <Text className="text-2xl font-extrabold text-sky-900">
+        <View className="mt-6 rounded-3xl border-2 border-sky-200 bg-white p-5 dark:border-sky-800 dark:bg-surface">
+          <Text className="text-2xl font-extrabold text-sky-900 dark:text-sky-100">
             Analiticas personales
           </Text>
-          <Text className="mt-1 text-sm font-semibold text-sky-700">
+          <Text className="mt-1 text-sm font-semibold text-sky-700 dark:text-sky-300">
             Visualiza tu avance real y ajusta tu plan semanal.
           </Text>
 
           <View className="mt-4 flex-row gap-3">
-            <View className="flex-1 rounded-2xl bg-sky-100 px-3 py-3">
-              <Text className="text-xs font-bold uppercase text-sky-700">
+            <View className="flex-1 rounded-2xl bg-sky-100 px-3 py-3 dark:bg-sky-900">
+              <Text className="text-xs font-bold uppercase text-sky-700 dark:text-sky-300">
                 Horas (8 sem)
               </Text>
-              <Text className="mt-1 text-xl font-extrabold text-sky-900">
+              <Text className="mt-1 text-xl font-extrabold text-sky-900 dark:text-sky-100">
                 {totalWeeklyHours.toFixed(1)}h
               </Text>
             </View>
-            <View className="flex-1 rounded-2xl bg-indigo-100 px-3 py-3">
-              <Text className="text-xs font-bold uppercase text-indigo-700">
+            <View className="flex-1 rounded-2xl bg-indigo-100 px-3 py-3 dark:bg-indigo-900">
+              <Text className="text-xs font-bold uppercase text-indigo-700 dark:text-indigo-300">
                 Racha actual
               </Text>
-              <Text className="mt-1 text-xl font-extrabold text-indigo-900">
+              <Text className="mt-1 text-xl font-extrabold text-indigo-900 dark:text-indigo-100">
                 {analyticsData.currentStreak} dias
               </Text>
             </View>
           </View>
         </View>
 
-        <View className="mt-4 rounded-3xl border-2 border-sky-200 bg-white p-4">
-          <Text className="text-base font-extrabold text-sky-900">
+        <EnergyStudyCorrelationCard allowed={plan.features.analytics_correlation} />
+
+        <View className="mt-4 rounded-3xl border-2 border-sky-200 bg-white p-4 dark:border-sky-800 dark:bg-surface">
+          <Text className="text-base font-extrabold text-sky-900 dark:text-sky-100">
             Horas de estudio por semana
           </Text>
+          {!plan.features.analytics_history ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              className="mt-2 min-h-[44px] justify-center rounded-2xl bg-amber-100 px-3 dark:bg-amber-900"
+              onPress={() => router.push("/premium")}
+            >
+              <Text className="text-xs font-extrabold text-amber-900 dark:text-amber-100">
+                Con Premium ves el histórico de 8 semanas. Conoce Premium
+              </Text>
+            </TouchableOpacity>
+          ) : null}
           {weeklyChartData.length === 0 ? (
-            <Text className="mt-2 text-xs font-semibold text-sky-700">
+            <Text className="mt-2 text-xs font-semibold text-sky-700 dark:text-sky-300">
               Aun no hay datos de estudio para mostrar.
             </Text>
           ) : (
@@ -461,7 +459,7 @@ export function AnalyticsScreen() {
                       <Bar
                         points={points.hours}
                         chartBounds={chartBounds}
-                        color="#0284c7"
+                        color={tc("#0284c7")}
                         roundedCorners={{ topLeft: 6, topRight: 6 }}
                       />
                     )}
@@ -470,7 +468,10 @@ export function AnalyticsScreen() {
               </ScrollView>
               <View className="mt-2 flex-row justify-between px-1">
                 {weeklyChartData.map((point) => (
-                  <Text key={`week-label-${point.x}`} className="text-[10px] font-bold text-sky-700">
+                  <Text
+                    key={`week-label-${point.x}`}
+                    className="text-[10px] font-bold text-sky-700 dark:text-sky-300"
+                  >
                     {point.label}
                   </Text>
                 ))}
@@ -479,12 +480,12 @@ export function AnalyticsScreen() {
           )}
         </View>
 
-        <View className="mt-4 rounded-3xl border-2 border-emerald-200 bg-white p-4">
-          <Text className="text-base font-extrabold text-emerald-900">
+        <View className="mt-4 rounded-3xl border-2 border-emerald-200 bg-white p-4 dark:border-emerald-800 dark:bg-surface">
+          <Text className="text-base font-extrabold text-emerald-900 dark:text-emerald-100">
             Habitos completados por mes
           </Text>
           {monthlyChartData.length === 0 ? (
-            <Text className="mt-2 text-xs font-semibold text-emerald-700">
+            <Text className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
               Aun no hay registros de habitos para mostrar.
             </Text>
           ) : (
@@ -502,7 +503,7 @@ export function AnalyticsScreen() {
                       <Bar
                         points={points.completed}
                         chartBounds={chartBounds}
-                        color="#10b981"
+                        color={tc("#10b981")}
                         roundedCorners={{ topLeft: 6, topRight: 6 }}
                       />
                     )}
@@ -511,7 +512,10 @@ export function AnalyticsScreen() {
               </ScrollView>
               <View className="mt-2 flex-row justify-between px-2">
                 {monthlyChartData.map((point) => (
-                  <Text key={`month-label-${point.x}`} className="text-[10px] font-bold text-emerald-700">
+                  <Text
+                    key={`month-label-${point.x}`}
+                    className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300"
+                  >
                     {point.label}
                   </Text>
                 ))}
@@ -520,12 +524,12 @@ export function AnalyticsScreen() {
           )}
         </View>
 
-        <View className="mb-8 mt-4 rounded-3xl border-2 border-violet-200 bg-white p-4">
-          <Text className="text-base font-extrabold text-violet-900">
+        <View className="mb-8 mt-4 rounded-3xl border-2 border-violet-200 bg-white p-4 dark:border-violet-800 dark:bg-surface">
+          <Text className="text-base font-extrabold text-violet-900 dark:text-violet-100">
             Evolucion de racha (30 dias)
           </Text>
           {streakChartData.length === 0 ? (
-            <Text className="mt-2 text-xs font-semibold text-violet-700">
+            <Text className="mt-2 text-xs font-semibold text-violet-700 dark:text-violet-300">
               Aun no hay actividad suficiente para ver la evolucion de racha.
             </Text>
           ) : (
@@ -542,7 +546,7 @@ export function AnalyticsScreen() {
                     {({ points }) => (
                       <Line
                         points={points.streak}
-                        color="#8b5cf6"
+                        color={tc("#8b5cf6")}
                         strokeWidth={2.6}
                         curveType="monotoneX"
                       />
@@ -551,13 +555,13 @@ export function AnalyticsScreen() {
                 </View>
               </ScrollView>
               <View className="mt-2 flex-row items-center justify-between px-1">
-                <Text className="text-[10px] font-bold text-violet-700">
+                <Text className="text-[10px] font-bold text-violet-700 dark:text-violet-300">
                   {streakChartData[0]?.label ?? ""}
                 </Text>
-                <Text className="text-[10px] font-bold text-violet-700">
+                <Text className="text-[10px] font-bold text-violet-700 dark:text-violet-300">
                   {streakChartData[Math.floor(streakChartData.length / 2)]?.label ?? ""}
                 </Text>
-                <Text className="text-[10px] font-bold text-violet-700">
+                <Text className="text-[10px] font-bold text-violet-700 dark:text-violet-300">
                   {streakChartData[streakChartData.length - 1]?.label ?? ""}
                 </Text>
               </View>

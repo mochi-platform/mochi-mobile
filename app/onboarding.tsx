@@ -1,245 +1,297 @@
-import { useEffect, useMemo, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
+import Animated, { FadeInRight } from "react-native-reanimated";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import { supabase } from "@/src/shared/lib/supabase";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import TimePickerModal from "@/src/shared/components/TimePickerModal";
+import { TimePickerModal } from "@/src/shared/components/TimePickerModal";
+import { Button, Card, Chip, Input, Toggle } from "@/src/shared/ui";
+import { EASE_OUT, REDUCE } from "@/src/shared/ui/motion";
+import { StepProgress } from "@/src/features/onboarding/StepProgress";
+import { clearOnboardingDraft, draftKey } from "@/src/features/onboarding/draft";
+import { useCycle } from "@/src/core/providers/CycleContext";
+import { useSession } from "@/src/core/providers/SessionContext";
 import {
+  GOALS,
+  MODULES,
+  ageGroupFromBirth,
+  firstPlanFor,
+  modulesForGoals,
+  type GoalKey,
+  type ModuleKey,
+} from "@/src/features/onboarding/modules";
+import { setConsent } from "@/src/shared/lib/consents";
+import {
+  getNotificationPermissionStatus,
   requestNotificationPermissions,
   saveNotificationPrefs,
   scheduleMorningReminder,
 } from "@/src/shared/lib/notifications";
-import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
-import { TourProvider, TourZone, useTour } from "react-native-lumen";
+import { track } from "@/src/shared/lib/observability/analytics";
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { supabase } from "@/src/shared/lib/supabase";
 
-type Step = "profile" | "modules";
-
-type ModuleOption = {
-  key: string;
-  label: string;
-  description: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  iconColor: string;
-  borderColor: string;
-  selectedBg: string;
-  defaultEnabled: boolean;
-  editable?: boolean;
-};
-
-const moduleOptions: ModuleOption[] = [
-  {
-    key: "study_enabled",
-    label: "Estudio",
-    description: "Horario semanal, bloques de estudio y timer",
-    icon: "book",
-    color: "bg-indigo-100",
-    iconColor: "#4338ca",
-    borderColor: "border-indigo-300",
-    selectedBg: "bg-indigo-100",
-    defaultEnabled: true,
-  },
-  {
-    key: "exercise_enabled",
-    label: "Ejercicio",
-    description: "Rutinas personalizadas y seguimiento de entrenos",
-    icon: "barbell",
-    color: "bg-teal-100",
-    iconColor: "#0d9488",
-    borderColor: "border-teal-300",
-    selectedBg: "bg-teal-100",
-    defaultEnabled: true,
-  },
-  {
-    key: "habits_enabled",
-    label: "Hábitos",
-    description: "Seguimiento diario de tus hábitos y rachas",
-    icon: "leaf",
-    color: "bg-emerald-100",
-    iconColor: "#047857",
-    borderColor: "border-emerald-300",
-    selectedBg: "bg-emerald-100",
-    defaultEnabled: true,
-  },
-  {
-    key: "cooking_enabled",
-    label: "Cocina",
-    description: "Recetas con IA y modo cocina paso a paso",
-    icon: "restaurant",
-    color: "bg-orange-100",
-    iconColor: "#c2410c",
-    borderColor: "border-orange-300",
-    selectedBg: "bg-orange-100",
-    defaultEnabled: true,
-  },
-  {
-    key: "goals_enabled",
-    label: "Metas",
-    description: "Define objetivos y visualiza tu progreso",
-    icon: "flag",
-    color: "bg-pink-100",
-    iconColor: "#be185d",
-    borderColor: "border-pink-300",
-    selectedBg: "bg-pink-100",
-    defaultEnabled: true,
-  },
-  {
-    key: "mood_enabled",
-    label: "Estado de ánimo",
-    description: "Check-in emocional diario en segundos",
-    icon: "heart",
-    color: "bg-rose-100",
-    iconColor: "#e11d48",
-    borderColor: "border-rose-300",
-    selectedBg: "bg-rose-100",
-    defaultEnabled: false,
-  },
-  {
-    key: "gratitude_enabled",
-    label: "Gratitud",
-    description: "Diario de gratitud para cerrar el día",
-    icon: "flower",
-    color: "bg-purple-100",
-    iconColor: "#7c3aed",
-    borderColor: "border-purple-300",
-    selectedBg: "bg-purple-100",
-    defaultEnabled: false,
-  },
-  {
-    key: "vouchers_enabled",
-    label: "Vales",
-    description:
-      "Disponible cuando funciones de pareja esté habilitado por administración",
-    icon: "ticket",
-    color: "bg-yellow-100",
-    iconColor: "#92400e",
-    borderColor: "border-yellow-300",
-    selectedBg: "bg-yellow-100",
-    defaultEnabled: false,
-    editable: false,
-  },
+type Step =
+  | "welcome"
+  | "age"
+  | "profile"
+  | "goals"
+  | "modules"
+  | "consents"
+  | "connect"
+  | "plan"
+  | "blocked";
+const FLOW: Step[] = [
+  "welcome",
+  "age",
+  "profile",
+  "goals",
+  "modules",
+  "consents",
+  "connect",
+  "plan",
 ];
 
-const moduleTourOrder = moduleOptions.map((module) => `module-${module.key}`);
+type AgeGroup = NonNullable<ReturnType<typeof ageGroupFromBirth>>;
 
-function OnboardingScreenContent() {
+/** Borrador local: sobrevive a que Android cierre la app mientras se concede un permiso.
+ * No incluye la fecha de nacimiento, solo el grupo de edad ya validado. */
+type Draft = {
+  step: Step;
+  ageGroup: AgeGroup | null;
+  guardianOk: boolean;
+  fullName: string;
+  wakeUpTime: string;
+  goals: GoalKey[];
+  modules: ModuleKey[];
+  memoryConsent: boolean;
+  analyticsConsent: boolean;
+  cycleConsent: boolean;
+};
+
+export function OnboardingScreen() {
   const insets = useSafeAreaInsets();
-  const { start: startTour } = useTour();
-  const [step, setStep] = useState<Step>("profile");
+  const { session, refreshProfile } = useSession();
+  const userId = session?.user.id;
+  const { requestPermission: requestHealthPermission, isAvailable: healthAvailable } = useCycle();
+
+  const [step, setStep] = useState<Step>("welcome");
+  const [birthYear, setBirthYear] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [guardianOk, setGuardianOk] = useState(false);
   const [fullName, setFullName] = useState("");
   const [wakeUpTime, setWakeUpTime] = useState("05:20");
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedModules, setSelectedModules] = useState<Set<string>>(
-    new Set(moduleOptions.filter((m) => m.defaultEnabled).map((m) => m.key)),
-  );
-  const [loading, setLoading] = useState(false);
+  const [goals, setGoals] = useState<GoalKey[]>([]);
+  const [modules, setModules] = useState<Set<ModuleKey>>(new Set(["study_enabled"]));
+  const [memoryConsent, setMemoryConsent] = useState(false);
+  const [analyticsConsent, setAnalyticsConsent] = useState(false);
+  const [cycleConsent, setCycleConsent] = useState(false);
+  const [notificationsGranted, setNotificationsGranted] = useState(false);
+  const [healthRequested, setHealthRequested] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasStartedModuleTour, setHasStartedModuleTour] = useState(false);
 
-  const formIsValid = useMemo(() => fullName.trim().length > 1, [fullName]);
+  const [savedAgeGroup, setSavedAgeGroup] = useState<AgeGroup | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const computedAge = useMemo(
+    () => ageGroupFromBirth(Number(birthYear), Number(birthMonth)),
+    [birthYear, birthMonth],
+  );
+  const ageGroup = computedAge ?? savedAgeGroup;
+  const plan = useMemo(() => firstPlanFor(modules), [modules]);
+  const stepIndex = FLOW.indexOf(step);
 
-  const toggleModule = (key: string) => {
-    const module = moduleOptions.find((item) => item.key === key);
-    if (!module || module.editable === false) {
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    void AsyncStorage.getItem(draftKey(userId))
+      .then((raw) => {
+        if (cancelled || !raw) return;
+        const d = JSON.parse(raw) as Draft;
+        // Solo se restaura un borrador con la edad ya confirmada en "Continuar".
+        const unsafe =
+          !d.ageGroup ||
+          d.ageGroup === "under_16" ||
+          (d.ageGroup === "16_17" && !d.guardianOk) ||
+          d.step === "blocked" ||
+          d.step === "plan" ||
+          d.step === "welcome" ||
+          d.step === "age";
+        if (unsafe) {
+          void clearOnboardingDraft(userId);
+          return;
+        }
+        setSavedAgeGroup(d.ageGroup);
+        setGuardianOk(d.guardianOk);
+        setFullName(d.fullName);
+        setWakeUpTime(d.wakeUpTime);
+        setGoals(d.goals);
+        setModules(new Set(d.modules));
+        setMemoryConsent(d.memoryConsent);
+        setAnalyticsConsent(d.analyticsConsent);
+        setCycleConsent(d.cycleConsent);
+        setStep(d.step);
+      })
+      .catch((error) => reportError(error, { scope: "onboarding/draft-load" }))
+      .finally(() => {
+        if (!cancelled) setDraftLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const finished = useRef(false);
+  useEffect(() => {
+    if (!userId || !draftLoaded || finished.current) return;
+    if (!savedAgeGroup || savedAgeGroup === "under_16" || stepIndex < FLOW.indexOf("profile"))
+      return;
+    const draft: Draft = {
+      step,
+      ageGroup: savedAgeGroup,
+      guardianOk,
+      fullName,
+      wakeUpTime,
+      goals,
+      modules: [...modules],
+      memoryConsent,
+      analyticsConsent,
+      cycleConsent,
+    };
+    void AsyncStorage.setItem(draftKey(userId), JSON.stringify(draft)).catch(() => {});
+  }, [
+    userId,
+    draftLoaded,
+    step,
+    stepIndex,
+    savedAgeGroup,
+    guardianOk,
+    fullName,
+    wakeUpTime,
+    goals,
+    modules,
+    memoryConsent,
+    analyticsConsent,
+    cycleConsent,
+  ]);
+
+  // El permiso puede haberse concedido antes de que Android cerrara la app: se lee del sistema.
+  useEffect(() => {
+    if (step !== "connect") return;
+    void getNotificationPermissionStatus().then((status) => {
+      if (status === "granted") setNotificationsGranted(true);
+    });
+  }, [step]);
+
+  const go = (next: Step) => {
+    setError(null);
+    setStep(next);
+  };
+
+  const handleAge = () => {
+    if (!ageGroup) {
+      setError("Escribe un año (por ejemplo 2004) y un mes (1 a 12) válidos.");
       return;
     }
+    if (ageGroup === "under_16") {
+      setSavedAgeGroup(null);
+      if (userId) void clearOnboardingDraft(userId);
+      setStep("blocked");
+      return;
+    }
+    if (ageGroup === "16_17" && !guardianOk) {
+      setError("Necesitamos que confirmes que tu madre, padre o tutor está de acuerdo.");
+      return;
+    }
+    if (computedAge) setSavedAgeGroup(computedAge);
+    go("profile");
+  };
 
-    setSelectedModules((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
+  const toggleGoal = (key: GoalKey) => {
+    setGoals((prev) => {
+      const next = prev.includes(key) ? prev.filter((g) => g !== key) : [...prev, key];
+      setModules(modulesForGoals(next));
       return next;
     });
   };
 
-  const handleProfileNext = () => {
-    if (fullName.trim().length < 2) {
-      setError("Escribe tu nombre completo para continuar");
-      return;
-    }
-    setError(null);
-    setStep("modules");
+  const toggleModule = (key: ModuleKey) => {
+    setModules((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
 
-  useEffect(() => {
-    if (step !== "modules" || hasStartedModuleTour || loading) {
-      return;
-    }
+  const askNotifications = async () => {
+    const status = await requestNotificationPermissions();
+    setNotificationsGranted(status === "granted");
+  };
 
-    setHasStartedModuleTour(true);
-    const timeoutId = setTimeout(() => {
-      startTour("module-study_enabled");
-    }, 260);
+  const askHealth = async () => {
+    setHealthRequested(true);
+    await requestHealthPermission();
+  };
 
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [hasStartedModuleTour, loading, startTour, step]);
-
-  const handleConfirm = async () => {
-    setLoading(true);
+  /** Guarda todo al final del flujo: edad, perfil, módulos y consentimientos. */
+  const finish = async () => {
+    if (!ageGroup || ageGroup === "under_16") return;
+    setSaving(true);
     setError(null);
-
     try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) throw new Error("No se encontró tu sesión.");
+      const userId = userData.user.id;
 
-      if (userError || !user) {
-        throw new Error(userError?.message ?? "No se encontró sesión activa");
-      }
+      const { error: ageError } = await supabase.rpc("set_age_group", {
+        p_group: ageGroup,
+        p_guardian_ok: guardianOk,
+      });
+      if (ageError) throw ageError;
 
-      // Guardar perfil
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({
-          full_name: fullName.trim(),
-          mochi_name: "Mochi",
-          wake_up_time: wakeUpTime,
-        })
-        .eq("id", user.id);
-
+        .update({ full_name: fullName.trim(), mochi_name: "Mochi", wake_up_time: wakeUpTime })
+        .eq("id", userId);
       if (profileError) throw profileError;
 
-      // Guardar ajustes de módulos
-      const modulePayload = {
-        user_id: user.id,
-        study_enabled: selectedModules.has("study_enabled"),
-        exercise_enabled: selectedModules.has("exercise_enabled"),
-        habits_enabled: selectedModules.has("habits_enabled"),
-        cooking_enabled: selectedModules.has("cooking_enabled"),
-        goals_enabled: selectedModules.has("goals_enabled"),
-        mood_enabled: selectedModules.has("mood_enabled"),
-        gratitude_enabled: selectedModules.has("gratitude_enabled"),
-      };
-
-      const { error: settingsError } = await supabase
-        .from("user_settings")
-        .upsert(modulePayload, { onConflict: "user_id" });
-
+      const { error: settingsError } = await supabase.from("user_settings").upsert(
+        {
+          user_id: userId,
+          study_enabled: modules.has("study_enabled"),
+          exercise_enabled: modules.has("exercise_enabled"),
+          habits_enabled: modules.has("habits_enabled"),
+          cooking_enabled: modules.has("cooking_enabled"),
+          goals_enabled: modules.has("goals_enabled"),
+          mood_enabled: modules.has("mood_enabled"),
+          gratitude_enabled: modules.has("gratitude_enabled"),
+        },
+        { onConflict: "user_id" },
+      );
       if (settingsError) throw settingsError;
+      // Lo esencial ya está en el servidor: el borrador local deja de ser necesario.
+      finished.current = true;
+      if (userId) void clearOnboardingDraft(userId);
 
-      // Notificaciones
-      const permissionStatus = await requestNotificationPermissions();
-      if (permissionStatus === "granted") {
+      // Consentimientos: solo se registran los que la usuaria activó (todos arrancan apagados).
+      await Promise.all([
+        memoryConsent ? setConsent("mochi_memory", true) : Promise.resolve(),
+        analyticsConsent ? setConsent("analytics", true) : Promise.resolve(),
+        cycleConsent ? setConsent("cycle_server", true) : Promise.resolve(),
+      ]);
+
+      if (notificationsGranted) {
         await saveNotificationPrefs({
           enabled: true,
           morningEnabled: true,
@@ -249,298 +301,345 @@ function OnboardingScreenContent() {
         await scheduleMorningReminder(wakeUpTime);
       }
 
-      router.replace("/");
+      track("onboarding_completed", { modules_enabled: modules.size });
+      await refreshProfile();
+      setStep("plan");
     } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "No se pudo guardar tu perfil",
-      );
+      reportError(saveError, { scope: "onboarding/finish" });
+      setError(saveError instanceof Error ? saveError.message : "No se pudo guardar tu perfil.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  // ─── Step 1: Perfil ───────────────────────────────────────────────────────
-
-  if (step === "profile") {
-    return (
-      <SafeAreaView className="flex-1 bg-teal-100" edges={["top", "bottom"]}>
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+  const canGoBack = stepIndex > 1 && step !== "plan";
+  useEffect(() => {
+    if (!canGoBack) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      go(FLOW[stepIndex - 1]);
+      return true;
+    });
+    return () => sub.remove();
+  }, [canGoBack, stepIndex]);
+  const progress = (
+    <View className="mb-4 flex-row items-center gap-3">
+      {canGoBack ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Volver al paso anterior"
+          hitSlop={12}
+          onPress={() => go(FLOW[stepIndex - 1])}
         >
-          <ScrollView
-            className="flex-1 px-6 pt-10"
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-          >
-            <View className="absolute right-10 top-4 h-12 w-12 items-center justify-center rounded-2xl bg-yellow-200">
-              <Ionicons name="star" size={22} />
-            </View>
+          <Text className="text-sm font-extrabold text-accent">Atrás</Text>
+        </Pressable>
+      ) : null}
+      <StepProgress index={stepIndex} total={FLOW.length} />
+    </View>
+  );
 
-            <View className="mb-5 items-center">
-              <MochiCharacter mood="excited" size={90} />
-              <Text className="mt-3 text-sm font-semibold text-teal-700">
-                Estoy lista para acompañarte hoy
-              </Text>
+  const body = (() => {
+    switch (step) {
+      case "welcome":
+        return (
+          <>
+            <View className="items-center">
+              <MochiCharacter expression="excited" size={110} />
             </View>
-
-            <View className="mb-6">
-              <Text className="text-4xl font-extrabold text-teal-900">
-                Bienvenida a Mochi
+            <Text className="mt-4 text-center text-3xl font-extrabold text-ink">
+              Bienvenida a Mochi
+            </Text>
+            <Text className="mt-2 text-center text-base font-semibold text-ink-muted">
+              Tu compañera de estudio y bienestar. Vamos a dejarla a tu medida en unos pasos.
+            </Text>
+            <Card className="mt-6">
+              <Text className="text-sm font-semibold text-ink-muted">
+                Mochi no es un dispositivo médico ni sirve como método anticonceptivo. Si algo te
+                preocupa sobre tu salud, consulta con un profesional.
               </Text>
-              <Text className="mt-2 text-lg font-semibold text-teal-700">
-                Configuremos tu perfil
-              </Text>
+            </Card>
+            <View className="mt-6">
+              <Button title="Empezar" onPress={() => go("age")} />
             </View>
-
-            {/* Indicador de pasos */}
-            <View className="mb-5 flex-row items-center justify-center gap-2">
-              <View className="h-2 w-8 rounded-full bg-teal-500" />
-              <View className="h-2 w-8 rounded-full bg-teal-200" />
-            </View>
-
-            <View className="rounded-3xl border-2 border-teal-200 bg-white/80 p-5">
-              <Text className="text-sm font-bold text-teal-900">
-                ¿Cuál es tu nombre?
-              </Text>
-              <TextInput
-                className="mt-2 rounded-3xl border-2 border-teal-200 bg-white px-4 py-4 text-base text-teal-900"
-                placeholder="Tu nombre bonito"
+          </>
+        );
+      case "age":
+        return (
+          <>
+            <Text className="text-2xl font-extrabold text-ink">Verifiquemos tu edad</Text>
+            <Text className="mb-4 mt-1 text-sm font-semibold text-ink-muted">
+              Mochi es para personas de 16 años o más. No guardamos tu fecha, solo si eres menor o
+              mayor de 18.
+            </Text>
+            <Input
+              label="Año de nacimiento"
+              keyboardType="number-pad"
+              maxLength={4}
+              value={birthYear}
+              onChangeText={setBirthYear}
+              placeholder="2004"
+            />
+            <Input
+              label="Mes de nacimiento (1 a 12)"
+              keyboardType="number-pad"
+              maxLength={2}
+              value={birthMonth}
+              onChangeText={setBirthMonth}
+              placeholder="8"
+              error={error}
+            />
+            {ageGroup === "16_17" ? (
+              <Card className="mb-4">
+                <Toggle
+                  label="Mi madre, padre o tutor sabe que uso Mochi y está de acuerdo"
+                  value={guardianOk}
+                  onValueChange={setGuardianOk}
+                />
+                <Text className="mt-1 text-xs font-semibold text-ink-muted">
+                  A tu edad tratamos tus datos con más cuidado: no verás anuncios personalizados.
+                </Text>
+              </Card>
+            ) : null}
+            <Button title="Continuar" onPress={handleAge} />
+          </>
+        );
+      case "profile":
+        return (
+          <>
+            <Text className="text-2xl font-extrabold text-ink">¿Cómo te llamas?</Text>
+            <View className="mt-4">
+              <Input
+                label="Nombre"
                 value={fullName}
                 onChangeText={setFullName}
-                editable={!loading}
-                maxLength={60}
+                placeholder="Tu nombre"
+                autoCapitalize="words"
+                error={error}
               />
-
-              <Text className="mt-4 text-sm font-bold text-teal-900">
-                ¿A qué hora despiertas?
-              </Text>
-              <TouchableOpacity
-                className="mt-2 rounded-3xl border-2 border-teal-200 bg-white px-4 py-4"
+              <Text className="mb-1 text-sm font-bold text-ink">¿A qué hora te despiertas?</Text>
+              <Button
+                title={wakeUpTime}
+                variant="outline"
                 onPress={() => setShowTimePicker(true)}
-                disabled={loading}
-              >
-                <Text className="text-center text-2xl font-extrabold text-teal-900">
-                  {wakeUpTime}
-                </Text>
-              </TouchableOpacity>
-
-              {error ? (
-                <Text className="mt-3 text-sm text-red-600">{error}</Text>
-              ) : null}
-
-              <IconCtaButton
-                label="Continuar"
-                onPress={handleProfileNext}
-                trailingIconName="arrow-forward"
-                trailingIconColor="#ffffff"
-                trailingIconSize={18}
-                disabled={!formIsValid}
-                containerClassName="mt-5 w-full rounded-3xl bg-teal-500 px-4 py-4"
-                textClassName="text-base text-white"
               />
             </View>
-
-            <View className="mt-5 rounded-3xl border border-teal-200 bg-white/70 p-4">
-              <Text className="text-center text-sm text-teal-800">
-                Puedes cambiar estos datos luego desde Ajustes.
-              </Text>
+            <View className="mt-6">
+              <Button
+                title="Continuar"
+                onPress={() => {
+                  if (fullName.trim().length < 2) setError("Escribe tu nombre para continuar.");
+                  else go("goals");
+                }}
+              />
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+          </>
+        );
+      case "goals":
+        return (
+          <>
+            <Text className="text-2xl font-extrabold text-ink">¿Qué quieres lograr?</Text>
+            <Text className="mb-4 mt-1 text-sm font-semibold text-ink-muted">
+              Elige todo lo que te interese; puedes cambiarlo después.
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {GOALS.map((g) => (
+                <Chip
+                  key={g.key}
+                  label={g.label}
+                  selected={goals.includes(g.key)}
+                  onPress={() => toggleGoal(g.key)}
+                />
+              ))}
+            </View>
+            <View className="mt-6">
+              <Button title="Continuar" onPress={() => go("modules")} />
+            </View>
+          </>
+        );
+      case "modules":
+        return (
+          <>
+            <Text className="text-2xl font-extrabold text-ink">Tus módulos</Text>
+            <Text className="mb-2 mt-1 text-sm font-semibold text-ink-muted">
+              Activa solo lo que vayas a usar.
+            </Text>
+            {MODULES.map((m) => (
+              <Toggle
+                key={m.key}
+                label={m.label}
+                description={m.description}
+                value={modules.has(m.key)}
+                onValueChange={() => toggleModule(m.key)}
+              />
+            ))}
+            <View className="mt-6">
+              <Button title="Continuar" onPress={() => go("consents")} />
+            </View>
+          </>
+        );
+      case "consents":
+        return (
+          <>
+            <Text className="text-2xl font-extrabold text-ink">Tu privacidad, tu decisión</Text>
+            <Text className="mb-3 mt-1 text-sm font-semibold text-ink-muted">
+              Todo está apagado. Activa solo lo que quieras; puedes cambiarlo en Ajustes cuando
+              quieras.
+            </Text>
+            <Card className="mb-3">
+              <Toggle
+                label="Memoria de Mochi"
+                value={memoryConsent}
+                onValueChange={setMemoryConsent}
+              />
+              <Text className="text-xs font-semibold text-ink-muted">
+                Guarda un resumen de tus metas, exámenes y racha y lo envía a la IA para
+                personalizar sus respuestas. Nunca incluye datos de salud.
+              </Text>
+            </Card>
+            <Card className="mb-3">
+              <Toggle
+                label="Guardar resumen de mi ciclo en Mochi"
+                value={cycleConsent}
+                onValueChange={setCycleConsent}
+              />
+              <Text className="text-xs font-semibold text-ink-muted">
+                Solo la fecha de inicio y duración. Sirve para que tu pareja vea tu fase en Duo si
+                tú lo permites. No va a la IA.
+              </Text>
+            </Card>
+            <Card className="mb-3">
+              <Toggle
+                label="Ayudar a mejorar Mochi"
+                value={analyticsConsent}
+                onValueChange={setAnalyticsConsent}
+              />
+              <Text className="text-xs font-semibold text-ink-muted">
+                Estadísticas de uso anónimas. Nunca incluyen salud ni lo que escribes.
+              </Text>
+            </Card>
+            <Button title="Continuar" onPress={() => go("connect")} />
+          </>
+        );
+      case "connect":
+        return (
+          <>
+            <Text className="text-2xl font-extrabold text-ink">Conexiones opcionales</Text>
+            <Card className="mt-4">
+              <Text className="text-base font-extrabold text-ink">Recordatorios</Text>
+              <Text className="mb-3 mt-1 text-sm font-semibold text-ink-muted">
+                Un aviso suave por la mañana y para tus bloques de estudio.
+              </Text>
+              <Button
+                title={notificationsGranted ? "Activados" : "Permitir notificaciones"}
+                variant={notificationsGranted ? "soft" : "outline"}
+                disabled={notificationsGranted}
+                onPress={() => void askNotifications()}
+              />
+            </Card>
+            {healthAvailable ? (
+              <Card className="mt-3">
+                <Text className="text-base font-extrabold text-ink">Health Connect</Text>
+                <Text className="mb-3 mt-1 text-sm font-semibold text-ink-muted">
+                  Si registras tu ciclo en otra app, Mochi puede leerlo en tu teléfono para adaptar
+                  sus sugerencias.
+                </Text>
+                <Button
+                  title={healthRequested ? "Solicitado" : "Conectar Health Connect"}
+                  variant={healthRequested ? "soft" : "outline"}
+                  disabled={healthRequested}
+                  onPress={() => void askHealth()}
+                />
+              </Card>
+            ) : null}
+            {error ? <Text className="mt-3 text-sm font-semibold text-danger">{error}</Text> : null}
+            <View className="mt-6">
+              <Button title="Terminar" loading={saving} onPress={() => void finish()} />
+            </View>
+          </>
+        );
+      case "plan":
+        return (
+          <>
+            <View className="items-center">
+              <MochiCharacter expression="proud" size={100} />
+            </View>
+            <Text className="mt-4 text-center text-2xl font-extrabold text-ink">
+              ¡Todo listo, {fullName.trim().split(" ")[0]}!
+            </Text>
+            <Card className="mt-6">
+              <Text className="text-xs font-extrabold uppercase text-ink-muted">
+                Tu plan de hoy
+              </Text>
+              <Text className="mt-1 text-xl font-extrabold text-ink">{plan.title}</Text>
+              <Text className="mb-4 mt-1 text-sm font-semibold text-ink-muted">{plan.body}</Text>
+              <Button title={plan.cta} onPress={() => router.replace(plan.route as never)} />
+            </Card>
+            <View className="mt-3">
+              <Button title="Ir al inicio" variant="soft" onPress={() => router.replace("/")} />
+            </View>
+          </>
+        );
+      case "blocked":
+        return (
+          <>
+            <View className="items-center">
+              <MochiCharacter expression="soft_sad" size={100} />
+            </View>
+            <Text className="mt-4 text-center text-2xl font-extrabold text-ink">
+              Aún no puedes usar Mochi
+            </Text>
+            <Text className="mb-6 mt-2 text-center text-sm font-semibold text-ink-muted">
+              Mochi es para personas de 16 años o más. No guardamos tu fecha de nacimiento. Vuelve
+              cuando cumplas 16.
+            </Text>
+            <Button
+              title="Cerrar sesión"
+              variant="outline"
+              onPress={() => void supabase.auth.signOut()}
+            />
+          </>
+        );
+    }
+  })();
 
-        <TimePickerModal
-          visible={showTimePicker}
-          time={wakeUpTime}
-          label="Hora de despertar"
-          onConfirm={(time) => {
-            setWakeUpTime(time);
-            setShowTimePicker(false);
-          }}
-          onCancel={() => setShowTimePicker(false)}
-        />
-      </SafeAreaView>
-    );
-  }
-
-  // ─── Step 2: Módulos ──────────────────────────────────────────────────────
+  // Espera al borrador para no mostrar la bienvenida un instante antes del paso restaurado.
+  if (userId && !draftLoaded) return <SafeAreaView className="flex-1 bg-canvas" />;
 
   return (
-    <SafeAreaView className="flex-1 bg-purple-50" edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-canvas" edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
-          className="flex-1 px-6 pt-8"
-          showsVerticalScrollIndicator={false}
+          className="flex-1 px-6 pt-6"
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         >
-          <View className="mb-5 items-center">
-            <MochiCharacter mood="happy" size={80} />
-          </View>
-
-          <View className="mb-4">
-            <Text className="text-3xl font-extrabold text-purple-900">
-              ¿Qué módulos quieres?
-            </Text>
-            <Text className="mt-2 text-sm font-semibold text-purple-600">
-              Elige los que mejor se adapten a ti. Puedes cambiarlos cuando
-              quieras.
-            </Text>
-          </View>
-
-          {/* Indicador de pasos */}
-          <View className="mb-5 flex-row items-center justify-center gap-2">
-            <View className="h-2 w-8 rounded-full bg-purple-300" />
-            <View className="h-2 w-8 rounded-full bg-purple-600" />
-          </View>
-
-          <View className="gap-3">
-            {moduleOptions.map((module, index) => {
-              const isSelected = selectedModules.has(module.key);
-              const isReadOnly = module.editable === false;
-              return (
-                <TourZone
-                  key={module.key}
-                  stepKey={`module-${module.key}`}
-                  name={module.label}
-                  description={module.description}
-                  order={index + 1}
-                  zonePadding={6}
-                >
-                  <TouchableOpacity
-                    className={`flex-row items-center rounded-2xl border-2 p-4 ${
-                      isSelected
-                        ? `${module.borderColor} ${module.selectedBg}`
-                        : "border-slate-200 bg-white"
-                    }`}
-                    onPress={() => toggleModule(module.key)}
-                    activeOpacity={0.85}
-                    disabled={isReadOnly}
-                  >
-                    <View
-                      className={`mr-4 h-11 w-11 items-center justify-center rounded-xl ${
-                        isSelected ? "bg-white" : "bg-slate-100"
-                      }`}
-                    >
-                      <Ionicons
-                        name={module.icon}
-                        size={22}
-                        color={isSelected ? module.iconColor : "#94a3b8"}
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text
-                        className={`text-sm font-extrabold ${
-                          isSelected ? "text-slate-900" : "text-slate-500"
-                        }`}
-                      >
-                        {module.label}
-                      </Text>
-                      <Text
-                        className={`mt-0.5 text-xs font-semibold ${
-                          isSelected ? "text-slate-600" : "text-slate-400"
-                        }`}
-                      >
-                        {module.description}
-                      </Text>
-                      {isReadOnly ? (
-                        <Text className="mt-1 text-[11px] font-bold text-amber-700">
-                          Solo informativo
-                        </Text>
-                      ) : null}
-                    </View>
-                    <View
-                      className={`h-6 w-6 items-center justify-center rounded-full border-2 ${
-                        isSelected
-                          ? "border-purple-500 bg-purple-500"
-                          : "border-slate-300 bg-white"
-                      }`}
-                    >
-                      {isSelected && !isReadOnly ? (
-                        <Ionicons name="checkmark" size={14} color="white" />
-                      ) : null}
-                    </View>
-                  </TouchableOpacity>
-                </TourZone>
-              );
-            })}
-          </View>
-
-          <View className="mt-4 rounded-2xl border border-purple-200 bg-purple-100 p-3">
-            <Text className="text-center text-xs font-semibold text-purple-700">
-              {selectedModules.size === 0
-                ? "Selecciona al menos un módulo"
-                : `${selectedModules.size} módulo${selectedModules.size !== 1 ? "s" : ""} seleccionado${selectedModules.size !== 1 ? "s" : ""}`}
-            </Text>
-          </View>
-
-          {error ? (
-            <View className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3">
-              <Text className="text-center text-sm font-semibold text-red-600">
-                {error}
-              </Text>
-            </View>
-          ) : null}
-
-          <View className="mt-5 flex-row gap-3">
-            <TouchableOpacity
-              className="h-14 w-14 items-center justify-center rounded-2xl border-2 border-purple-200 bg-white"
-              onPress={() => setStep("profile")}
-              disabled={loading}
-            >
-              <Ionicons name="chevron-back" size={22} color="#7c3aed" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className={`flex-1 items-center justify-center rounded-2xl py-4 ${
-                selectedModules.size > 0 && !loading
-                  ? "bg-purple-600"
-                  : "bg-purple-300"
-              }`}
-              onPress={() => void handleConfirm()}
-              disabled={selectedModules.size === 0 || loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-base font-extrabold text-white">
-                  ¡Empezar con Mochi!
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          {step !== "blocked" && step !== "plan" ? progress : null}
+          <Animated.View
+            key={step}
+            entering={FadeInRight.duration(260).easing(EASE_OUT).reduceMotion(REDUCE)}
+          >
+            {body}
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <TimePickerModal
+        visible={showTimePicker}
+        time={wakeUpTime}
+        label="Hora de despertar"
+        onConfirm={(time: string) => {
+          setWakeUpTime(time);
+          setShowTimePicker(false);
+        }}
+        onCancel={() => setShowTimePicker(false)}
+      />
     </SafeAreaView>
   );
 }
 
-export function OnboardingScreen() {
-  return (
-    <TourProvider
-      stepsOrder={moduleTourOrder}
-      config={{
-        backdropOpacity: 0.58,
-        enableGlow: true,
-        labels: {
-          next: "Siguiente",
-          previous: "Atras",
-          finish: "Listo",
-          skip: "Cerrar",
-        },
-      }}
-    >
-      <OnboardingScreenContent />
-    </TourProvider>
-  );
+/** Montada por usuaria: un cambio de cuenta nunca reutiliza el estado ni el borrador de la anterior. */
+export default function OnboardingRoute() {
+  const { session } = useSession();
+  return <OnboardingScreen key={session?.user.id ?? "anon"} />;
 }
-
-export default OnboardingScreen;
