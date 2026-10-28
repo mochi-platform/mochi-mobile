@@ -1,343 +1,122 @@
-import { getTabBarClearance } from "@/src/shared/lib/layout";
-import { tc } from "@/src/shared/theme/colors";
-import { useCallback, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import { useCustomAlert } from "@/src/shared/components/CustomAlert";
-import { TabHeader } from "@/src/shared/components/TabHeader";
-import { useSession } from "@/src/core/providers/SessionContext";
-import { addPoints } from "@/src/shared/lib/gamification";
-import { supabase } from "@/src/shared/lib/supabase";
-import type { GratitudeLog } from "@/src/shared/types/database";
-import { toLocalISODate } from "@/src/shared/lib/dates";
 import { useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import { Alert, View } from "react-native";
+import { useSession } from "@/src/core/providers/SessionContext";
+import { diaryDateLabel } from "@/src/features/me/diary";
+import { fetchGratitude, saveGratitude, type GratitudeEntry } from "@/src/features/gratitude/api";
+import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { addPoints } from "@/src/shared/lib/gamification";
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import type { MochiHandle } from "@/src/shared/mochi/MochiCanvas";
+import {
+  Button,
+  Caption,
+  IconTile,
+  Input,
+  ListGroup,
+  ListRow,
+  MochiBubble,
+  Screen,
+  SectionHeader,
+  Surface,
+  haptic,
+} from "@/src/shared/ui";
 
-function getTodayISO(): string {
-  return toLocalISODate(new Date());
-}
-
-function formatDate(isoDate: string): string {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
-    .format(new Date(`${isoDate}T00:00:00`))
-    .replace(".", "");
-}
+const PROMPTS = ["Algo que te hizo sonreír", "Alguien que te ayudó", "Algo pequeño que disfrutaste"];
 
 export function GratitudeScreen() {
-  const insets = useSafeAreaInsets();
   const { session } = useSession();
-  const { showAlert, AlertComponent } = useCustomAlert();
-
-  const [todayEntry, setTodayEntry] = useState<GratitudeLog | null>(null);
-  const [history, setHistory] = useState<GratitudeLog[]>([]);
-  const [editingToday, setEditingToday] = useState(false);
-
-  const [entry1, setEntry1] = useState("");
-  const [entry2, setEntry2] = useState("");
-  const [entry3, setEntry3] = useState("");
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const userId = session?.user.id;
+  const [today, setToday] = useState<GratitudeEntry | null>(null);
+  const [history, setHistory] = useState<GratitudeEntry[]>([]);
+  const [items, setItems] = useState(["", "", ""]);
+  const [saving, setSaving] = useState(false);
+  const mochi = useRef<MochiHandle>(null);
 
-  const loadGratitudeData = useCallback(async () => {
-    if (!userId) {
-      setTodayEntry(null);
-      setHistory([]);
-      setLoading(false);
-      return;
-    }
-
+  const load = useCallback(async () => {
+    if (!userId) return;
     try {
-      setLoading(true);
-      setError(null);
-
-      const todayISO = getTodayISO();
-      const { data: todayData, error: todayError } = await supabase
-        .from("gratitude_logs")
-        .select("id, user_id, entry_1, entry_2, entry_3, logged_date, created_at")
-        .eq("user_id", userId)
-        .eq("logged_date", todayISO)
-        .maybeSingle();
-
-      if (todayError) throw todayError;
-
-      const { data: historyData, error: historyError } = await supabase
-        .from("gratitude_logs")
-        .select("id, user_id, entry_1, entry_2, entry_3, logged_date, created_at")
-        .eq("user_id", userId)
-        .order("logged_date", { ascending: false })
-        .limit(5);
-
-      if (historyError) throw historyError;
-
-      const normalizedToday = (todayData as GratitudeLog | null) ?? null;
-
-      setTodayEntry(normalizedToday);
-      setHistory((historyData ?? []) as GratitudeLog[]);
-      setEntry1(normalizedToday?.entry_1 ?? "");
-      setEntry2(normalizedToday?.entry_2 ?? "");
-      setEntry3(normalizedToday?.entry_3 ?? "");
-      setEditingToday(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar tu diario de gratitud");
-      setTodayEntry(null);
-      setHistory([]);
-    } finally {
-      setLoading(false);
+      const data = await fetchGratitude(userId);
+      setToday(data.today);
+      setHistory(data.history);
+      setItems([0, 1, 2].map((i) => data.today?.items[i] ?? ""));
+    } catch (e) {
+      reportError(e, { scope: "gratitude/load" });
     }
   }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadGratitudeData();
-    }, [loadGratitudeData]),
+      void load();
+    }, [load]),
   );
 
-  const showEditor = !todayEntry || editingToday;
-
-  const handleSaveGratitude = async () => {
-    if (!userId) return;
-
-    if (!entry1.trim()) {
-      showAlert({
-        title: "Falta información",
-        message: "Escribe al menos una cosa por la que sientes gratitud hoy",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
-      return;
-    }
-
+  const save = async () => {
+    if (!userId || !items[0].trim()) return;
+    setSaving(true);
     try {
-      setSaving(true);
-
-      const todayISO = getTodayISO();
-      const { error: upsertError } = await supabase.from("gratitude_logs").upsert(
-        {
-          user_id: userId,
-          entry_1: entry1.trim(),
-          entry_2: entry2.trim() || null,
-          entry_3: entry3.trim() || null,
-          logged_date: todayISO,
-        },
-        { onConflict: "user_id,logged_date" },
-      );
-
-      if (upsertError) throw upsertError;
-
-      await addPoints(userId, "gratitude_entry");
-
-      showAlert({
-        title: "Gratitud guardada",
-        message: "Excelente, sumaste 3 puntos por tu registro de hoy",
-        buttons: [{ text: "Qué bien", style: "default" }],
-      });
-
-      await loadGratitudeData();
-    } catch (err) {
-      showAlert({
-        title: "Error",
-        message: err instanceof Error ? err.message : "No se pudo guardar tu registro",
-        buttons: [{ text: "Entendido", style: "destructive" }],
-      });
+      const first = !today;
+      await saveGratitude(userId, items);
+      if (first) await addPoints(userId, "gratitude_entry");
+      haptic("success");
+      mochi.current?.react("celebrate");
+      await load();
+    } catch (e) {
+      reportError(e, { scope: "gratitude/save" });
+      Alert.alert("No se pudo guardar", "Intenta de nuevo en un momento.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <>
-      <View className="flex-1 bg-canvas">
-        <KeyboardAvoidingView
+    <Screen title="Gratitud">
+      <View className="mt-2 flex-row items-end gap-2.5">
+        <MochiCharacter ref={mochi} expression={today ? "love" : "happy"} size={96} interactive />
+        <MochiBubble
           className="flex-1"
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <ScrollView
-            className="flex-1 px-5 pt-12"
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            contentContainerStyle={{ paddingBottom: getTabBarClearance(insets.bottom) }}
-          >
-            <TabHeader
-              iconName="flower"
-              title="Gratitud"
-              subtitle="Escribe hasta 3 cosas bonitas de tu día"
-              iconColor={tc("#047857")}
-              titleClassName="text-2xl font-extrabold text-emerald-900 dark:text-emerald-100"
-              subtitleClassName="text-sm font-semibold text-emerald-700 dark:text-emerald-300"
-            />
-
-            {loading ? (
-              <View className="mt-6 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6 dark:border-emerald-800 dark:bg-surface">
-                <MochiCharacter mood="thinking" size={88} />
-                <Text className="mt-3 text-sm font-semibold text-emerald-800 dark:text-emerald-200">
-                  Cargando diario...
-                </Text>
-              </View>
-            ) : error ? (
-              <View className="mt-6 items-center rounded-3xl border-2 border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-950">
-                <MochiCharacter mood="sleepy" size={80} />
-                <Text className="mt-3 text-center text-sm font-semibold text-red-700 dark:text-red-300">
-                  {error}
-                </Text>
-                <TouchableOpacity
-                  className="mt-4 rounded-2xl bg-red-500 px-5 py-2"
-                  onPress={() => void loadGratitudeData()}
-                >
-                  <Text className="font-extrabold text-white">Reintentar</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <>
-                <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-4 dark:border-emerald-800 dark:bg-surface">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
-                      Registro de hoy
-                    </Text>
-                    {todayEntry && !editingToday && (
-                      <TouchableOpacity
-                        className="rounded-full bg-emerald-100 px-3 py-1 dark:bg-emerald-900"
-                        onPress={() => setEditingToday(true)}
-                      >
-                        <Text className="text-xs font-extrabold text-emerald-800 dark:text-emerald-200">
-                          Editar
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  {showEditor ? (
-                    <>
-                      <View className="mt-4">
-                        <Text className="mb-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
-                          Cosa 1
-                        </Text>
-                        <TextInput
-                          className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-slate-200"
-                          placeholder="Algo lindo de hoy"
-                          placeholderTextColor={tc("#6ee7b7")}
-                          value={entry1}
-                          onChangeText={setEntry1}
-                        />
-                      </View>
-
-                      <View className="mt-4">
-                        <Text className="mb-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
-                          Cosa 2 (opcional)
-                        </Text>
-                        <TextInput
-                          className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-slate-200"
-                          placeholder="Otra cosa que agradeces"
-                          placeholderTextColor={tc("#6ee7b7")}
-                          value={entry2}
-                          onChangeText={setEntry2}
-                        />
-                      </View>
-
-                      <View className="mt-4">
-                        <Text className="mb-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
-                          Cosa 3 (opcional)
-                        </Text>
-                        <TextInput
-                          className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-slate-200"
-                          placeholder="Una más para cerrar el día"
-                          placeholderTextColor={tc("#6ee7b7")}
-                          value={entry3}
-                          onChangeText={setEntry3}
-                        />
-                      </View>
-
-                      <TouchableOpacity
-                        className="mt-5 items-center rounded-2xl bg-emerald-500 py-3"
-                        onPress={() => void handleSaveGratitude()}
-                        disabled={saving}
-                      >
-                        <Text className="font-extrabold text-white">
-                          {saving ? "Guardando..." : "Guardar gratitud"}
-                        </Text>
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <View className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
-                      <Text className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                        1. {todayEntry.entry_1}
-                      </Text>
-                      {todayEntry.entry_2 ? (
-                        <Text className="mt-2 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                          2. {todayEntry.entry_2}
-                        </Text>
-                      ) : null}
-                      {todayEntry.entry_3 ? (
-                        <Text className="mt-2 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                          3. {todayEntry.entry_3}
-                        </Text>
-                      ) : null}
-                    </View>
-                  )}
-                </View>
-
-                <View className="mt-6">
-                  <Text className="text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
-                    Últimos 5 registros
-                  </Text>
-
-                  {history.length === 0 ? (
-                    <View className="mt-3 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6 dark:border-emerald-800 dark:bg-surface">
-                      <MochiCharacter mood="happy" size={76} />
-                      <Text className="mt-3 text-center text-sm font-semibold text-emerald-800 dark:text-emerald-200">
-                        Tu diario está vacío por ahora. Empieza hoy.
-                      </Text>
-                    </View>
-                  ) : (
-                    <View className="mt-3">
-                      {history.map((entry) => (
-                        <View
-                          key={entry.id}
-                          className="mb-3 rounded-2xl border-2 border-emerald-200 bg-white p-4 dark:border-emerald-800 dark:bg-surface"
-                        >
-                          <Text className="text-xs font-extrabold uppercase text-emerald-700 dark:text-emerald-300">
-                            {formatDate(entry.logged_date)}
-                          </Text>
-                          <Text className="mt-2 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                            1. {entry.entry_1}
-                          </Text>
-                          {entry.entry_2 ? (
-                            <Text className="mt-1 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                              2. {entry.entry_2}
-                            </Text>
-                          ) : null}
-                          {entry.entry_3 ? (
-                            <Text className="mt-1 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                              3. {entry.entry_3}
-                            </Text>
-                          ) : null}
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              </>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
+          tail="left"
+          text={today ? "Gracias por compartirlo conmigo. Lo guardé en tu diario." : "¿Qué fue lo bonito de hoy? Basta con una cosa."}
+        />
       </View>
-      {AlertComponent}
-    </>
+
+      <Surface elevation={2} className="mt-5 p-4">
+        {PROMPTS.map((prompt, index) => (
+          <Input
+            key={prompt}
+            label={index === 0 ? prompt : `${prompt} (opcional)`}
+            value={items[index]}
+            onChangeText={(text) => setItems((prev) => prev.map((v, i) => (i === index ? text : v)))}
+            placeholder="Escribe una línea…"
+            maxLength={200}
+          />
+        ))}
+        <Button
+          title={today ? "Actualizar" : "Guardar"}
+          loading={saving}
+          disabled={!items[0].trim()}
+          onPress={() => void save()}
+        />
+        {!today ? <Caption className="mt-2 text-center">Sumas 3 puntos con tu primer registro del día.</Caption> : null}
+      </Surface>
+
+      {history.length > 0 ? (
+        <>
+          <SectionHeader title="Días anteriores" />
+          <ListGroup>
+            {history.slice(0, 6).map((entry) => (
+              <ListRow
+                key={entry.date}
+                multiline
+                title={entry.items.join(" · ")}
+                subtitle={diaryDateLabel(entry.date)}
+                leading={<IconTile icon="flower" tint="duo" />}
+              />
+            ))}
+          </ListGroup>
+        </>
+      ) : null}
+    </Screen>
   );
 }
 
