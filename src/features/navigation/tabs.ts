@@ -16,7 +16,7 @@ export const TAB_DEFS: Record<TabKey, TabDef> = {
   estudio: { key: "estudio", label: "Estudio", icon: "book", route: "/(tabs)/study" },
   cocina: { key: "cocina", label: "Cocina", icon: "restaurant", route: "/(tabs)/cooking" },
   yo: { key: "yo", label: "Yo", icon: "flower", route: "/(tabs)/me" },
-  duo: { key: "duo", label: "Duo", icon: "heart", route: "/mochi-duo" },
+  duo: { key: "duo", label: "Duo", icon: "heart", route: "/(tabs)/duo" },
 };
 
 type Visibility = {
@@ -47,6 +47,6 @@ export function activeTabFor(pathname: string): TabKey | null {
   if (pathname === "/study") return "estudio";
   if (pathname === "/cooking") return "cocina";
   if (YO_ROUTES.includes(pathname)) return "yo";
-  if (pathname === "/mochi-duo") return "duo";
+  if (pathname === "/duo") return "duo";
   return null;
 }

@@ -29,7 +29,7 @@ describe("activeTabFor", () => {
     ["/me", "yo"],
     ["/habits", "yo"],
     ["/wellness", "yo"],
-    ["/mochi-duo", "duo"],
+    ["/duo", "duo"],
   ])("%s → %s", (path, tab) => {
     expect(activeTabFor(path)).toBe(tab);
   });
@@ -38,5 +38,6 @@ describe("activeTabFor", () => {
     expect(activeTabFor("/profile")).toBeNull();
     expect(activeTabFor("/study-timer")).toBeNull();
     expect(activeTabFor("/mochi-duo-invite")).toBeNull();
+    expect(activeTabFor("/mochi-duo")).toBeNull();
   });
 });

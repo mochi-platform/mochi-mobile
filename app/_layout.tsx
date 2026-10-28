@@ -132,7 +132,7 @@ function isRouteAllowed(
     return true;
   }
 
-  if (pathname === "/mochi-duo" || pathname.startsWith("/mochi-duo")) {
+  if (pathname === "/duo" || pathname === "/mochi-duo" || pathname.startsWith("/mochi-duo")) {
     return settings.partner_features_enabled;
   }
 
@@ -191,7 +191,7 @@ function isRouteAllowed(
 }
 
 function RootLayoutNavigator() {
-  const { session, loading, requiresOnboarding, profileError, refreshProfile } = useSession();
+  const { session, loading, requiresOnboarding, profileError, refreshProfile, appMode } = useSession();
   const { moduleVisibility, moduleVisibilityLoaded } = useModuleVisibility();
   const { theme } = useSystemBars();
   const pathname = usePathname();
@@ -394,7 +394,7 @@ function RootLayoutNavigator() {
   const activeTab = activeTabFor(pathname);
   const showTabBar =
     activeTab !== null && Boolean(session) && !requiresOnboarding && !pathname.startsWith("/auth");
-  const tabs = tabsFor(moduleVisibility);
+  const tabs = tabsFor(moduleVisibility, appMode);
 
   return (
     <View className="flex-1">

@@ -9,6 +9,7 @@ import {
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
+import { fetchAppMode } from "@/src/features/duo/api";
 import { clearOnboardingDraft } from "@/src/features/onboarding/draft";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
@@ -19,6 +20,8 @@ type SessionContextValue = {
   requiresOnboarding: boolean;
   profileError: string | null;
   refreshProfile: () => Promise<void>;
+  /** «partner» si la persona llegó solo por Duo (ver src/features/navigation/tabs.ts). */
+  appMode: "personal" | "partner";
 };
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined);
@@ -44,9 +47,27 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [loading, setLoading] = useState(true);
   const [requiresOnboarding, setRequiresOnboarding] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [appMode, setAppMode] = useState<"personal" | "partner">("personal");
+
+  // El modo se lee aparte y sin bloquear: si falla, la app sigue en modo personal.
+  const userIdForMode = session?.user.id;
+  useEffect(() => {
+    if (!userIdForMode) {
+      setAppMode("personal");
+      return;
+    }
+    let alive = true;
+    void fetchAppMode(userIdForMode).then((mode) => {
+      if (alive) setAppMode(mode);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [userIdForMode]);
 
   const refreshProfile = useCallback(async () => {
     if (!session?.user.id) return;
+    void fetchAppMode(session.user.id).then(setAppMode);
     try {
       const needsOnboarding = await fetchOnboardingStatus(session.user.id);
       setRequiresOnboarding(needsOnboarding);
@@ -180,8 +201,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
       requiresOnboarding,
       profileError,
       refreshProfile,
+      appMode,
     }),
-    [session, loading, requiresOnboarding, profileError, refreshProfile],
+    [session, loading, requiresOnboarding, profileError, refreshProfile, appMode],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

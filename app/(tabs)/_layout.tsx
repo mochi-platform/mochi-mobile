@@ -64,6 +64,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen name="me" options={{ title: "Yo" }} />
+      <Tabs.Screen name="duo" options={{ title: "Duo" }} />
       <Tabs.Screen
         name="goals"
         options={{
