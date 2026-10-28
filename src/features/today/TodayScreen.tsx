@@ -14,7 +14,6 @@ import {
 } from "@/src/features/companion/lines";
 import { formatTimeHHMM } from "@/src/features/home/dashboard/helpers";
 import { useDashboardData } from "@/src/features/home/dashboard/useDashboardData";
-import { CycleWidget } from "@/src/shared/components/CycleWidget";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { getDailyMotivation } from "@/src/shared/lib/ai";
 import { toLocalISODate } from "@/src/shared/lib/dates";
@@ -36,6 +35,7 @@ import {
   haptic,
 } from "@/src/shared/ui";
 import { fetchTodayMood, saveTodayMood } from "./api";
+import { CycleCard } from "./CycleCard";
 import { MoodFace } from "./MoodFace";
 
 const MOODS: Mood[] = [1, 2, 3, 4, 5];
@@ -69,7 +69,7 @@ function daysUntil(isoDate: string): number {
 export function TodayScreen({ userName, moduleVisibility: m, onOpenQuickCapture }: TodayScreenProps) {
   const { session } = useSession();
   const userId = session?.user.id;
-  const { cycleData, isAvailable, hasPermission, requestPermission, logPeriodToday } = useCycle();
+  const { cycleData } = useCycle();
   const data = useDashboardData(userId);
   const mochi = useRef<MochiHandle>(null);
   const [mood, setMood] = useState<Mood | null>(null);
@@ -198,20 +198,7 @@ export function TodayScreen({ userName, moduleVisibility: m, onOpenQuickCapture 
         </View>
       </MochiBubble>
 
-      {cycleData !== null || (isAvailable && hasPermission) ? (
-        <View className="mt-4">
-          <CycleWidget
-            cycleData={cycleData}
-            isAvailable={isAvailable}
-            hasPermission={hasPermission}
-            onRequestPermission={async () => {
-              await requestPermission();
-            }}
-            onLogPeriod={logPeriodToday}
-            onDismissPrompt={() => undefined}
-          />
-        </View>
-      ) : null}
+      <CycleCard onConnectHealth={() => router.push("/(tabs)/me")} />
 
       {hasDay ? (
         <>
