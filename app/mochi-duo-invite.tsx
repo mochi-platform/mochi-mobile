@@ -127,7 +127,7 @@ export function MochiDuoInviteScreen() {
           buttons: [{ text: "Perfecto", style: "default" }],
         });
         await loadSpace();
-        router.push("/mochi-duo");
+        router.replace("/(tabs)/duo");
       }
     } catch (err) {
       showAlert({

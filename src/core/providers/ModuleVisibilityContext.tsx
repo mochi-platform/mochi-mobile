@@ -1,4 +1,13 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
 
@@ -31,6 +40,8 @@ export const defaultModuleVisibility: ModuleVisibility = {
 type ModuleVisibilityContextValue = {
   moduleVisibility: ModuleVisibility;
   moduleVisibilityLoaded: boolean;
+  /** Vuelve a leer los módulos del servidor (p. ej. al terminar el onboarding). */
+  refreshModuleVisibility: () => Promise<void>;
 };
 
 const ModuleVisibilityContext = createContext<ModuleVisibilityContextValue | null>(null);
@@ -44,6 +55,16 @@ export function ModuleVisibilityProvider({ children }: ModuleVisibilityProviderP
   const [moduleVisibility, setModuleVisibility] =
     useState<ModuleVisibility>(defaultModuleVisibility);
   const [moduleVisibilityLoaded, setModuleVisibilityLoaded] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const reloadWaiters = useRef<(() => void)[]>([]);
+  const refreshModuleVisibility = useCallback(
+    () =>
+      new Promise<void>((resolve) => {
+        reloadWaiters.current.push(resolve);
+        setReloadKey((k) => k + 1);
+      }),
+    [],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -81,19 +102,23 @@ export function ModuleVisibilityProvider({ children }: ModuleVisibilityProviderP
     }
 
     setModuleVisibilityLoaded(false);
-    void loadModuleVisibility();
+    void loadModuleVisibility().finally(() => {
+      const waiters = reloadWaiters.current.splice(0);
+      waiters.forEach((resolve) => resolve());
+    });
 
     return () => {
       mounted = false;
     };
-  }, [session?.user.id]);
+  }, [session?.user.id, reloadKey]);
 
   const value = useMemo(
     () => ({
       moduleVisibility,
       moduleVisibilityLoaded,
+      refreshModuleVisibility,
     }),
-    [moduleVisibility, moduleVisibilityLoaded],
+    [moduleVisibility, moduleVisibilityLoaded, refreshModuleVisibility],
   );
 
   return (

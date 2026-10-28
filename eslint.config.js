@@ -15,6 +15,8 @@ const MIGRATED = [
   "src/features/duo/DuoScreen.tsx",
   "src/features/duo/api.ts",
   "src/features/duo/partnerTips.ts",
+  "src/features/onboarding/OnboardingScreen.tsx",
+  "app/onboarding.tsx",
   "src/features/companion/**/*.{ts,tsx}",
   "app/(tabs)/wellness.tsx",
 ];
