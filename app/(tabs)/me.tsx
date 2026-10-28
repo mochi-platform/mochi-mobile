@@ -1,19 +1,50 @@
-import { router } from "expo-router";
-import { Alert, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Alert, Text, View } from "react-native";
 import { useCycle } from "@/src/core/providers/CycleContext";
 import { useModuleVisibility } from "@/src/core/providers/ModuleVisibilityContext";
+import { useSession } from "@/src/core/providers/SessionContext";
+import { diaryDateLabel, fetchDiary, type DiaryDay } from "@/src/features/me/diary";
+import { CycleCard } from "@/src/features/today/CycleCard";
+import { MoodFace } from "@/src/features/today/MoodFace";
+import type { Mood } from "@/src/features/companion/lines";
 import { openHealthConnectSettingsScreen } from "@/src/shared/lib/healthConnect";
-import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import { IconTile, ListGroup, ListRow, MochiBubble, Screen, SectionHeader } from "@/src/shared/ui";
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import {
+  Caption,
+  IconTile,
+  ListGroup,
+  ListRow,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Surface,
+} from "@/src/shared/ui";
 
-/**
- * Yo: cuerpo, ánimo y hábitos en un solo lugar (reemplaza a Bienestar).
- * Versión puente del Remaster: en la Fase 5 suma la tarjeta del ciclo y el diario unificado.
- */
+/** Yo: el ciclo, el diario (ánimo + gratitud) y las rutinas, en un solo lugar. */
 export default function MeScreen() {
+  const { session } = useSession();
+  const userId = session?.user.id;
   const { moduleVisibility: m } = useModuleVisibility();
+  const { requestPermission } = useCycle();
+  const [diary, setDiary] = useState<DiaryDay[] | null>(null);
   const go = (route: string) => () => router.push(route as never);
-  const { isAvailable, hasPermission, requestPermission } = useCycle();
+  const showDiary = m.mood_enabled || m.gratitude_enabled;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId || !showDiary) return;
+      let alive = true;
+      fetchDiary(userId)
+        .then((days) => {
+          if (alive) setDiary(days);
+        })
+        .catch((error) => reportError(error, { scope: "me/diary" }));
+      return () => {
+        alive = false;
+      };
+    }, [userId, showDiary]),
+  );
 
   const connectHealth = async () => {
     const result = await requestPermission();
@@ -30,34 +61,70 @@ export default function MeScreen() {
     );
   };
 
+  const name = session?.user.user_metadata?.full_name as string | undefined;
   return (
-    <Screen title="Yo">
-      <View className="mt-2 flex-row items-end gap-2.5">
-        <MochiCharacter expression="love" size={96} animated={false} />
-        <MochiBubble className="flex-1" tail="left" text="Aquí cuidamos de ti, a tu ritmo." />
-      </View>
+    <Screen
+      title="Yo"
+      headerRight={
+        <PressableScale
+          onPress={go("/profile")}
+          accessibilityLabel="Perfil y logros"
+          className="h-10 w-10 items-center justify-center rounded-full bg-tint-me"
+        >
+          <Text className="font-display text-base text-tint-me-ink">
+            {(name?.trim().charAt(0) || "Y").toUpperCase()}
+          </Text>
+        </PressableScale>
+      }
+    >
+      <CycleCard onConnectHealth={() => void connectHealth()} />
 
-      {m.mood_enabled || m.gratitude_enabled ? (
+      {showDiary ? (
         <>
-          <SectionHeader title="Diario" />
-          <ListGroup>
+          <SectionHeader
+            title="Diario"
+            actionLabel="Escribir"
+            onAction={go(m.gratitude_enabled ? "/(tabs)/gratitude" : "/(tabs)/mood")}
+          />
+          {diary && diary.length > 0 ? (
+            <ListGroup>
+              {diary.slice(0, 5).map((day) => (
+                <ListRow
+                  key={day.date}
+                  multiline
+                  title={day.text ?? "Solo registraste cómo te sentías."}
+                  subtitle={diaryDateLabel(day.date)}
+                  leading={
+                    day.mood ? (
+                      <MoodFace mood={day.mood as Mood} size={40} />
+                    ) : (
+                      <IconTile icon="flower" tint="duo" />
+                    )
+                  }
+                />
+              ))}
+            </ListGroup>
+          ) : (
+            <Surface tone="sunken" className="p-4">
+              <Caption>
+                Aquí se juntan cómo te sentiste y lo bonito de cada día. Empieza con el check-in de Hoy.
+              </Caption>
+            </Surface>
+          )}
+          <View className="mt-3 flex-row gap-3">
             {m.mood_enabled ? (
-              <ListRow
-                title="Cómo me siento"
-                subtitle="Tu ánimo de hoy y de la semana"
-                leading={<IconTile icon="happy" tint="me" />}
-                onPress={go("/(tabs)/mood")}
-              />
+              <Surface onPress={go("/(tabs)/mood")} accessibilityLabel="Mi ánimo" className="flex-1 flex-row items-center gap-3 p-3.5">
+                <IconTile icon="happy" tint="me" size={36} />
+                <Text className="font-body-extrabold text-[15px] text-ink">Mi ánimo</Text>
+              </Surface>
             ) : null}
             {m.gratitude_enabled ? (
-              <ListRow
-                title="Gratitud"
-                subtitle="Lo bonito de cada día"
-                leading={<IconTile icon="flower" tint="duo" />}
-                onPress={go("/(tabs)/gratitude")}
-              />
+              <Surface onPress={go("/(tabs)/gratitude")} accessibilityLabel="Gratitud" className="flex-1 flex-row items-center gap-3 p-3.5">
+                <IconTile icon="flower" tint="duo" size={36} />
+                <Text className="font-body-extrabold text-[15px] text-ink">Gratitud</Text>
+              </Surface>
             ) : null}
-          </ListGroup>
+          </View>
         </>
       ) : null}
 
@@ -89,20 +156,6 @@ export default function MeScreen() {
                 onPress={go("/(tabs)/goals")}
               />
             ) : null}
-          </ListGroup>
-        </>
-      ) : null}
-
-      {isAvailable && !hasPermission ? (
-        <>
-          <SectionHeader title="Tu ciclo" />
-          <ListGroup>
-            <ListRow
-              title="Conecta Flo o tu app de ciclo"
-              subtitle="Con Health Connect, Mochi adapta sus sugerencias a tu energía"
-              leading={<IconTile icon="water" tint="me" />}
-              onPress={() => void connectHealth()}
-            />
           </ListGroup>
         </>
       ) : null}

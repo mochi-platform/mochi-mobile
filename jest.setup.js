@@ -34,3 +34,8 @@ jest.mock("@shopify/react-native-skia", () => {
     { get: (target, key) => (key in target ? target[key] : component(String(key))) },
   );
 });
+
+// AsyncStorage en memoria (lo usa el cliente de Supabase al importarse).
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
