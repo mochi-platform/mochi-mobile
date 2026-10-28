@@ -1,31 +1,55 @@
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useCallback, useState } from "react";
+import { Alert, Text, View } from "react-native";
 import { useSession } from "@/src/core/providers/SessionContext";
-import { PartnerVoucherModal } from "@/src/features/duo/PartnerVoucherModal";
-import { VoucherImage } from "@/src/features/duo/VoucherImage";
-import { Button } from "@/src/shared/ui";
-import { useCustomAlert } from "@/src/shared/components/CustomAlert";
-import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import { TabHeader } from "@/src/shared/components/TabHeader";
+import { ENERGY_LABEL } from "@/src/features/duo/partnerTips";
+import { energyProfileFromPhase } from "@/src/shared/lib/ai";
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
-import type { JointGoal, PartnerSpace, Voucher } from "@/src/shared/types/database";
+import { COLORS } from "@/src/shared/theme/tokens";
+import {
+  Button,
+  Caption,
+  ErrorState,
+  IconTile,
+  Input,
+  ListGroup,
+  ListRow,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Sheet,
+  Stat,
+  Surface,
+  Toggle,
+  haptic,
+} from "@/src/shared/ui";
 
-type PartnerSnapshot = {
+/** Lo que ella puede compartir. El ciclo se comparte como energía: él nunca ve la fase. */
+const SHARE_OPTIONS: { key: string; label: string; description: string }[] = [
+  {
+    key: "cycle",
+    label: "Mi energía",
+    description: "Baja, media o alta según tu ciclo. Nunca la fase.",
+  },
+  { key: "mood", label: "Mi ánimo", description: "El último ánimo que registraste" },
+  { key: "study", label: "Estudio", description: "Horas de estudio de la semana" },
+  { key: "exercise", label: "Ejercicio", description: "Rutinas de la semana" },
+  { key: "habits", label: "Hábitos", description: "Hábitos cumplidos en la semana" },
+  { key: "cooking", label: "Cocina", description: "Recetas de la semana" },
+];
+
+const MOOD_WORD: Record<number, string> = {
+  1: "Muy mal",
+  2: "Mal",
+  3: "Tranquila",
+  4: "Contenta",
+  5: "Feliz",
+};
+
+type Space = { id: string; ownerId: string; partnerId: string | null };
+type Snapshot = {
   shared_fields?: Record<string, boolean>;
   cycle_phase: string | null;
   study_week: number | null;
@@ -34,214 +58,97 @@ type PartnerSnapshot = {
   mood_last: number | null;
   cooking_week: number | null;
 };
-
-const SHARE_OPTIONS: { key: string; label: string }[] = [
-  { key: "cycle", label: "Fase del ciclo" },
-  { key: "mood", label: "Ánimo" },
-  { key: "study", label: "Estudio" },
-  { key: "exercise", label: "Ejercicio" },
-  { key: "habits", label: "Hábitos" },
-  { key: "cooking", label: "Cocina" },
-];
-
-type DuoProfile = {
+type Goal = {
   id: string;
-  full_name: string | null;
-  mochi_name: string | null;
+  title: string;
+  description: string | null;
+  is_completed: boolean;
+  target_date: string | null;
 };
 
-function formatPhase(value: string | null): string {
-  const map: Record<string, string> = {
-    menstrual: "Menstrual",
-    folicular: "Folicular",
-    ovulatoria: "Ovulatoria",
-    lutea: "Lutea",
-    unknown: "Desconocida",
-  };
-  if (!value) return "Desconocida";
-  return map[value] ?? "Desconocida";
-}
-
-function formatMood(value: number | null): string {
-  if (value === 1) return "Mal";
-  if (value === 2) return "Regular";
-  if (value === 3) return "Bien";
-  if (value === 4) return "Muy bien";
-  if (value === 5) return "Excelente";
-  return "Sin registro";
-}
-
+/** Ajustes de Duo: privacidad (ella), lo que ella comparte (él) y metas juntos. */
 export function MochiDuoScreen() {
   const { session } = useSession();
-  const { showAlert, AlertComponent } = useCustomAlert();
-
-  const [space, setSpace] = useState<PartnerSpace | null>(null);
-  const [ownerProfile, setOwnerProfile] = useState<DuoProfile | null>(null);
-  const [partnerProfile, setPartnerProfile] = useState<DuoProfile | null>(null);
-  const [snapshot, setSnapshot] = useState<PartnerSnapshot | null>(null);
-  const [jointGoals, setJointGoals] = useState<JointGoal[]>([]);
-  const [sharedVouchers, setSharedVouchers] = useState<Voucher[]>([]);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [showGoalModal, setShowGoalModal] = useState(false);
-  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const userId = session?.user.id;
+  const [space, setSpace] = useState<Space | null>(null);
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const [goalOpen, setGoalOpen] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
   const [goalDescription, setGoalDescription] = useState("");
-  const [goalTargetDate, setGoalTargetDate] = useState("");
-  const [savingGoal, setSavingGoal] = useState(false);
+  const [goalDate, setGoalDate] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const userId = session?.user.id;
-
-  const isOwner = space?.owner_user_id === userId;
-
-  const loadSpace = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
+  const load = useCallback(async () => {
+    if (!userId) return;
     try {
-      setLoading(true);
-      setError(null);
-
-      const { data: spaceData, error: spaceError } = await supabase
+      const { data, error: spaceError } = await supabase
         .from("partner_spaces")
-        .select("*")
+        .select("id, owner_user_id, partner_user_id, invite_status")
         .or(`owner_user_id.eq.${userId},partner_user_id.eq.${userId}`)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-
       if (spaceError) throw spaceError;
-
-      const activeSpace = (spaceData as PartnerSpace | null) ?? null;
-      setSpace(activeSpace);
-
-      if (!activeSpace) {
-        setOwnerProfile(null);
-        setPartnerProfile(null);
-        setSnapshot(null);
-        setJointGoals([]);
-        setSharedVouchers([]);
+      if (!data || data.invite_status !== "accepted") {
+        setSpace(null);
         return;
       }
-
-      const profileIds = [activeSpace.owner_user_id, activeSpace.partner_user_id].filter(
-        (id): id is string => Boolean(id),
-      );
-
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, full_name, mochi_name")
-        .in("id", profileIds);
-
-      const profiles = (profilesData as DuoProfile[] | null) ?? [];
-      setOwnerProfile(profiles.find((profile) => profile.id === activeSpace.owner_user_id) ?? null);
-      setPartnerProfile(
-        profiles.find((profile) => profile.id === activeSpace.partner_user_id) ?? null,
-      );
-
-      if (activeSpace.invite_status !== "accepted") {
-        setSnapshot(null);
-        setJointGoals([]);
-        setSharedVouchers([]);
-        return;
-      }
-
-      const [goalsRes, vouchersRes, snapshotRes] = await Promise.all([
+      setSpace({ id: data.id, ownerId: data.owner_user_id, partnerId: data.partner_user_id });
+      const [goalsRes, snapshotRes] = await Promise.all([
         supabase
           .from("joint_goals")
-          .select("*")
-          .eq("space_id", activeSpace.id)
+          .select("id, title, description, is_completed, target_date")
+          .eq("space_id", data.id)
           .order("created_at", { ascending: false }),
-        supabase
-          .from("vouchers")
-          .select(
-            "id, user_id, title, description, points_cost, icon, color, is_redeemed, redeemed_at, created_at, space_id, redeemed_by, updated_by_partner, created_by, mode, image_url",
-          )
-          .eq("space_id", activeSpace.id)
-          .order("created_at", { ascending: false }),
-        supabase.rpc("get_partner_space_snapshot", {
-          p_space_id: activeSpace.id,
-        }),
+        supabase.rpc("get_partner_space_snapshot", { p_space_id: data.id }),
       ]);
-
       if (goalsRes.error) throw goalsRes.error;
-      if (vouchersRes.error) throw vouchersRes.error;
-
-      setJointGoals((goalsRes.data as JointGoal[] | null) ?? []);
-      setSharedVouchers((vouchersRes.data as Voucher[] | null) ?? []);
-      setSnapshot((snapshotRes.data as PartnerSnapshot | null) ?? null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar Mochi Duo™");
-      setSpace(null);
-      setOwnerProfile(null);
-      setPartnerProfile(null);
-      setSnapshot(null);
-      setJointGoals([]);
-      setSharedVouchers([]);
+      setGoals((goalsRes.data ?? []) as Goal[]);
+      setSnapshot((snapshotRes.data as Snapshot | null) ?? null);
+      setError(false);
+    } catch (e) {
+      reportError(e, { scope: "duo-settings/load" });
+      setError(true);
     } finally {
-      setLoading(false);
+      setLoaded(true);
     }
   }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadSpace();
-    }, [loadSpace]),
+      void load();
+    }, [load]),
   );
 
-  const displayOwner = ownerProfile?.full_name?.trim() || "Ella";
-  const displayPartner = partnerProfile?.full_name?.trim() || "El";
+  const isOwner = space?.ownerId === userId;
+  const shared = snapshot?.shared_fields ?? {};
 
-  const summaryCards = useMemo(() => {
-    const shared = snapshot?.shared_fields ?? {};
-    const cards = [
-      {
-        key: "study",
-        label: "Estudio",
-        value: Math.round(((snapshot?.study_week ?? 0) / 3600) * 10) / 10,
-        unit: "h",
-      },
-      { key: "exercise", label: "Ejercicio", value: snapshot?.exercise_week ?? 0, unit: "rut" },
-      { key: "habits", label: "Habitos", value: snapshot?.habits_week ?? 0, unit: "logs" },
-      { key: "cooking", label: "Cocina", value: snapshot?.cooking_week ?? 0, unit: "rec" },
-    ];
-    return cards.filter((card) => shared[card.key]);
-  }, [snapshot]);
-
-  const handleToggleShare = async (key: string, value: boolean) => {
+  const toggleShare = async (key: string, value: boolean) => {
     if (!space) return;
+    setSnapshot((prev) =>
+      prev ? { ...prev, shared_fields: { ...(prev.shared_fields ?? {}), [key]: value } } : prev,
+    );
     const { error: prefsError } = await supabase.rpc("update_partner_space_prefs", {
       p_space_id: space.id,
       p_fields: { [key]: value },
     });
     if (prefsError) {
-      showAlert({
-        title: "No se pudo guardar",
-        message: prefsError.message,
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
-      return;
+      Alert.alert("No se pudo guardar", prefsError.message);
+      void load();
     }
-    await loadSpace();
   };
 
-  const handleCreateGoal = async () => {
-    if (!userId || !space) return;
-    if (!goalTitle.trim()) {
-      showAlert({
-        title: "Falta el titulo",
-        message: "Escribe un titulo para la meta compartida.",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
+  const createGoal = async () => {
+    if (!userId || !space || !goalTitle.trim()) return;
+    if (goalDate && !/^\d{4}-\d{2}-\d{2}$/.test(goalDate.trim())) {
+      Alert.alert("Fecha no válida", "Escríbela como año-mes-día, por ejemplo 2026-12-20.");
       return;
     }
-
+    setSaving(true);
     try {
-      setSavingGoal(true);
       const { error: insertError } = await supabase.from("joint_goals").insert({
         space_id: space.id,
         title: goalTitle.trim(),
@@ -249,451 +156,198 @@ export function MochiDuoScreen() {
         color: "purple",
         progress: 0,
         is_completed: false,
-        target_date: goalTargetDate.trim() || null,
+        target_date: goalDate.trim() || null,
         created_by: userId,
       });
-
       if (insertError) throw insertError;
-
+      haptic("success");
       setGoalTitle("");
       setGoalDescription("");
-      setGoalTargetDate("");
-      setShowGoalModal(false);
-      await loadSpace();
-    } catch (err) {
-      showAlert({
-        title: "No se pudo crear",
-        message: err instanceof Error ? err.message : "Intenta de nuevo en unos segundos.",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
+      setGoalDate("");
+      setGoalOpen(false);
+      await load();
+    } catch (e) {
+      Alert.alert(
+        "No se pudo crear",
+        e instanceof Error ? e.message : "Intenta de nuevo en unos segundos.",
+      );
     } finally {
-      setSavingGoal(false);
+      setSaving(false);
     }
   };
 
-  const handleToggleGoal = async (goal: JointGoal) => {
-    try {
-      const nextCompleted = !goal.is_completed;
-      const nextProgress = nextCompleted ? 100 : 0;
-
-      const { error: updateError } = await supabase
-        .from("joint_goals")
-        .update({ is_completed: nextCompleted, progress: nextProgress })
-        .eq("id", goal.id);
-
-      if (updateError) throw updateError;
-      await loadSpace();
-    } catch (err) {
-      showAlert({
-        title: "No se pudo actualizar",
-        message: err instanceof Error ? err.message : "Intenta de nuevo en unos segundos.",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
+  const toggleGoal = async (goal: Goal) => {
+    const done = !goal.is_completed;
+    setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, is_completed: done } : g)));
+    if (done) haptic("success");
+    const { error: updateError } = await supabase
+      .from("joint_goals")
+      .update({ is_completed: done, progress: done ? 100 : 0 })
+      .eq("id", goal.id);
+    if (updateError) {
+      Alert.alert("No se pudo actualizar", updateError.message);
+      void load();
     }
   };
 
-  const handleRedeemVoucher = async (voucher: Voucher) => {
-    if (!userId) return;
-    if (voucher.is_redeemed) return;
+  const close = (
+    <PressableScale
+      onPress={() => router.back()}
+      accessibilityLabel="Volver"
+      className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+    >
+      <Ionicons name="close" size={20} color={COLORS.inkMuted} />
+    </PressableScale>
+  );
 
-    try {
-      const { error: updateError } = await supabase.rpc("redeem_voucher", {
-        p_voucher_id: voucher.id,
-      });
-
-      if (updateError) throw updateError;
-      await loadSpace();
-    } catch (err) {
-      showAlert({
-        title: "No se pudo canjear",
-        message: err instanceof Error ? err.message : "Intenta de nuevo en unos segundos.",
-        buttons: [{ text: "Entendido", style: "cancel" }],
-      });
-    }
-  };
-
-  if (loading) {
+  if (loaded && !space) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-emerald-50 dark:bg-emerald-950">
-        <MochiCharacter mood="thinking" size={90} />
-        <Text className="mt-4 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-          Cargando Mochi Duo™...
-        </Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-emerald-50 px-6 dark:bg-emerald-950">
-        <MochiCharacter mood="sleepy" size={80} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
-          {error}
-        </Text>
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-emerald-500 px-6 py-3"
-          onPress={() => void loadSpace()}
-        >
-          <Text className="font-bold text-white">Reintentar</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
-
-  if (!space) {
-    return (
-      <SafeAreaView className="flex-1 bg-canvas px-6 dark:bg-emerald-950">
+      <Screen title="Ajustes de Duo" withTabBar={false} headerRight={close}>
+        {error ? <ErrorState message="No pudimos cargar Duo." onRetry={() => void load()} /> : null}
+        <Caption className="mt-4">Todavía no tienes un espacio Duo activo.</Caption>
         <View className="mt-4">
-          <TabHeader
-            iconName="people"
-            title="Mochi Duo™"
-            subtitle="Crea un vinculo con tu pareja para compartir metas y vales"
-            iconColor={tc("#047857")}
-            titleClassName="text-2xl font-extrabold text-emerald-900 dark:text-emerald-100"
-            subtitleClassName="text-sm font-semibold text-emerald-700 dark:text-emerald-300"
-          />
+          <Button title="Invitar a mi pareja" onPress={() => router.push("/mochi-duo-invite")} />
         </View>
-
-        <View className="mt-8 items-center rounded-3xl border-2 border-emerald-200 bg-white p-6 dark:border-emerald-800 dark:bg-surface">
-          <MochiCharacter mood="happy" size={96} />
-          <Text className="mt-4 text-center text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
-            Mochi Duo™
-          </Text>
-          <Text className="mt-2 text-center text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-            Crea un vinculo con tu pareja para compartir metas y vales.
-          </Text>
-          <TouchableOpacity
-            className="mt-5 rounded-2xl bg-emerald-500 px-6 py-3"
-            onPress={() => router.push("/mochi-duo-invite")}
-          >
-            <Text className="font-bold text-white">Crear o unirse</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
-  if (space.invite_status !== "accepted") {
-    return (
-      <SafeAreaView className="flex-1 bg-canvas px-6 dark:bg-emerald-950">
-        <View className="mt-4">
-          <TabHeader
-            iconName="people"
-            title="Mochi Duo™"
-            subtitle="Comparte este codigo con tu pareja para activar Mochi Duo™"
-            iconColor={tc("#047857")}
-            titleClassName="text-2xl font-extrabold text-emerald-900 dark:text-emerald-100"
-            subtitleClassName="text-sm font-semibold text-emerald-700 dark:text-emerald-300"
-          />
-        </View>
-
-        <View className="mt-8 rounded-3xl border-2 border-emerald-200 bg-white p-6 dark:border-emerald-800 dark:bg-surface">
-          <Text className="text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
-            Invitacion pendiente
-          </Text>
-          <Text className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-            Comparte este codigo con tu pareja para activar Mochi Duo™.
-          </Text>
-          <View className="mt-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
-            <Text className="text-center text-2xl font-extrabold text-emerald-900 dark:text-emerald-100">
-              {space.invite_code}
-            </Text>
-          </View>
-          <TouchableOpacity
-            className="mt-4 rounded-2xl bg-emerald-500 py-3"
-            onPress={() => router.push("/mochi-duo-invite")}
-          >
-            <Text className="text-center font-extrabold text-white">Gestionar invitacion</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const energy =
+    !isOwner && shared.cycle ? energyProfileFromPhase(snapshot?.cycle_phase) : undefined;
+  const stats = [
+    {
+      key: "study",
+      value: `${Math.round(((snapshot?.study_week ?? 0) / 3600) * 10) / 10} h`,
+      label: "de estudio",
+    },
+    { key: "exercise", value: String(snapshot?.exercise_week ?? 0), label: "rutinas" },
+    { key: "habits", value: String(snapshot?.habits_week ?? 0), label: "hábitos" },
+    { key: "cooking", value: String(snapshot?.cooking_week ?? 0), label: "recetas" },
+  ].filter((s) => shared[s.key]);
 
   return (
-    <>
-      <SafeAreaView className="flex-1 bg-canvas">
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
-          <View className="mt-4">
-            <TabHeader
-              iconName="people"
-              title="Mochi Duo™"
-              subtitle={`Espacio entre ${displayOwner} y ${displayPartner}`}
-              iconColor={tc("#047857")}
-              titleClassName="text-2xl font-extrabold text-emerald-900 dark:text-emerald-100"
-              subtitleClassName="text-sm font-semibold text-emerald-700 dark:text-emerald-300"
-            />
-          </View>
-
-          {isOwner ? (
-            <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-5 dark:border-emerald-800 dark:bg-surface">
-              <Text className="text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
-                Qué compartes con tu pareja
-              </Text>
-              <Text className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                Todo está apagado hasta que tú lo actives. El ciclo requiere activar antes
-                "Privacidad de tu ciclo" en Ajustes.
-              </Text>
-              {SHARE_OPTIONS.map((option) => (
-                <View key={option.key} className="mt-3 flex-row items-center justify-between">
-                  <Text className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
-                    {option.label}
-                  </Text>
-                  <Switch
-                    accessibilityLabel={`Compartir ${option.label}`}
-                    value={Boolean(space?.shared_fields?.[option.key])}
-                    onValueChange={(value) => void handleToggleShare(option.key, value)}
-                  />
+    <Screen title="Ajustes de Duo" withTabBar={false} headerRight={close}>
+      {isOwner ? (
+        <>
+          <SectionHeader title="Qué compartes" />
+          <Surface className="px-4 py-1">
+            {SHARE_OPTIONS.map((option) => (
+              <Toggle
+                key={option.key}
+                label={option.label}
+                description={option.description}
+                value={Boolean(shared[option.key])}
+                onValueChange={(value) => void toggleShare(option.key, value)}
+              />
+            ))}
+          </Surface>
+          <Caption className="ml-1 mt-2">
+            Tu pareja solo ve lo que actives, y puedes cambiarlo cuando quieras.
+          </Caption>
+        </>
+      ) : (
+        <>
+          <SectionHeader title="Lo que comparte contigo" />
+          {Object.values(shared).every((v) => !v) ? (
+            <Surface tone="sunken" className="p-4">
+              <Caption>Por ahora no comparte nada. Ella decide qué mostrarte.</Caption>
+            </Surface>
+          ) : (
+            <Surface className="p-4">
+              {energy ? (
+                <Text className="font-body-extrabold text-[15px] text-ink">
+                  {ENERGY_LABEL[energy]}
+                </Text>
+              ) : null}
+              {shared.mood && snapshot?.mood_last ? (
+                <Caption className="mt-0.5">
+                  Ánimo: {MOOD_WORD[snapshot.mood_last] ?? "Sin registro"}
+                </Caption>
+              ) : null}
+              {stats.length > 0 ? (
+                <View className="mt-3 flex-row flex-wrap justify-between gap-y-3">
+                  {stats.map((s) => (
+                    <Stat
+                      key={s.key}
+                      className="w-[47%]"
+                      value={s.value}
+                      label={`${s.label} esta semana`}
+                    />
+                  ))}
                 </View>
-              ))}
-            </View>
-          ) : null}
+              ) : null}
+            </Surface>
+          )}
+        </>
+      )}
 
-          <View className="mt-6 rounded-3xl border-2 border-emerald-200 bg-white p-5 dark:border-emerald-800 dark:bg-surface">
-            <Text className="text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
-              Snapshot de ella
-            </Text>
-            {snapshot?.shared_fields?.cycle ? (
-              <Text className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                Fase del ciclo: {formatPhase(snapshot?.cycle_phase ?? null)}
-              </Text>
-            ) : null}
-            {snapshot?.shared_fields?.mood ? (
-              <Text className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                Ultimo mood: {formatMood(snapshot?.mood_last ?? null)}
-              </Text>
-            ) : null}
-            {!isOwner && Object.values(snapshot?.shared_fields ?? {}).every((v) => !v) ? (
-              <Text className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                Ella aún no ha elegido qué compartir contigo.
-              </Text>
-            ) : null}
-
-            <View className="mt-4 flex-row flex-wrap">
-              {summaryCards.map((card) => (
-                <View key={card.label} className="mb-3 w-1/2 pr-2">
-                  <View className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950">
-                    <Text className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      {card.label}
-                    </Text>
-                    <Text className="mt-1 text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
-                      {card.value}
-                    </Text>
-                    <Text className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                      {card.unit}
-                    </Text>
+      <SectionHeader title="Metas juntos" actionLabel="Nueva" onAction={() => setGoalOpen(true)} />
+      {goals.length > 0 ? (
+        <ListGroup>
+          {goals.map((goal) => (
+            <ListRow
+              key={goal.id}
+              title={goal.title}
+              subtitle={
+                goal.is_completed
+                  ? "¡Lo lograron!"
+                  : (goal.description ?? goal.target_date ?? "En camino")
+              }
+              leading={
+                goal.is_completed ? (
+                  <View className="h-10 w-10 items-center justify-center rounded-full bg-tint-ok">
+                    <Ionicons name="checkmark" size={20} color={COLORS.positive} />
                   </View>
-                </View>
-              ))}
-            </View>
-          </View>
+                ) : (
+                  <IconTile icon="flag" tint="duo" />
+                )
+              }
+              onPress={() => void toggleGoal(goal)}
+              accessibilityLabel={`${goal.title}. ${goal.is_completed ? "Cumplida, toca para reabrir" : "Toca para marcar como cumplida"}`}
+            />
+          ))}
+        </ListGroup>
+      ) : (
+        <Surface tone="sunken" className="p-4">
+          <Caption>Una meta para los dos: un viaje, ahorrar algo, una costumbre nueva.</Caption>
+        </Surface>
+      )}
 
-          <View className="mt-6 rounded-3xl border-2 border-purple-200 bg-white p-5 dark:border-purple-800 dark:bg-surface">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-lg font-extrabold text-purple-900 dark:text-purple-100">
-                Metas compartidas
-              </Text>
-              <TouchableOpacity
-                className="rounded-full bg-purple-100 px-3 py-1 dark:bg-purple-900"
-                onPress={() => setShowGoalModal(true)}
-              >
-                <Text className="text-xs font-extrabold text-purple-800 dark:text-purple-200">
-                  Nueva meta
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {jointGoals.length === 0 ? (
-              <View className="mt-4 items-center rounded-2xl border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-950">
-                <MochiCharacter mood="happy" size={72} />
-                <Text className="mt-3 text-center text-sm font-semibold text-purple-700 dark:text-purple-300">
-                  Aun no hay metas compartidas
-                </Text>
-              </View>
-            ) : (
-              <View className="mt-4">
-                {jointGoals.map((goal) => (
-                  <TouchableOpacity
-                    key={goal.id}
-                    className="mb-3 rounded-2xl border border-purple-200 bg-purple-50 p-3 dark:border-purple-800 dark:bg-purple-950"
-                    onPress={() => void handleToggleGoal(goal)}
-                  >
-                    <Text className="text-sm font-extrabold text-purple-900 dark:text-purple-100">
-                      {goal.title}
-                    </Text>
-                    {goal.description ? (
-                      <Text className="mt-1 text-xs font-semibold text-purple-700 dark:text-purple-300">
-                        {goal.description}
-                      </Text>
-                    ) : null}
-                    <View className="mt-2 flex-row items-center justify-between">
-                      <Text className="text-xs font-semibold text-purple-600 dark:text-purple-400">
-                        {goal.is_completed ? "Completada" : "En progreso"}
-                      </Text>
-                      <View className="rounded-full bg-purple-200 px-3 py-1 dark:bg-purple-800">
-                        <Text className="text-xs font-extrabold text-purple-800 dark:text-purple-200">
-                          {goal.progress}%
-                        </Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-
-          <View className="mt-6 rounded-3xl border-2 border-yellow-200 bg-white p-5 dark:border-yellow-800 dark:bg-surface">
-            <Text className="text-lg font-extrabold text-yellow-900 dark:text-yellow-100">
-              Vales compartidos
-            </Text>
-            {!isOwner && space ? (
-              <View className="mt-3">
-                <Button title="Crear un vale para ella" onPress={() => setShowVoucherModal(true)} />
-              </View>
-            ) : null}
-
-            {sharedVouchers.length === 0 ? (
-              <View className="mt-4 items-center rounded-2xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-950">
-                <MochiCharacter mood="happy" size={72} />
-                <Text className="mt-3 text-center text-sm font-semibold text-yellow-800 dark:text-yellow-200">
-                  No hay vales compartidos aun
-                </Text>
-              </View>
-            ) : (
-              <View className="mt-4">
-                {sharedVouchers.map((voucher) => (
-                  <TouchableOpacity
-                    key={voucher.id}
-                    className="mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950"
-                    onPress={() => void handleRedeemVoucher(voucher)}
-                  >
-                    <View className="flex-row items-center justify-between">
-                      <View className="flex-row items-center">
-                        <Ionicons
-                          name={(voucher.icon as keyof typeof Ionicons.glyphMap) || "ticket"}
-                          size={16}
-                          color={tc("#92400e")}
-                        />
-                        <Text className="ml-2 text-sm font-extrabold text-yellow-900 dark:text-yellow-100">
-                          {voucher.title}
-                        </Text>
-                      </View>
-                      <View className="rounded-full bg-yellow-200 px-3 py-1 dark:bg-yellow-800">
-                        <Text className="text-xs font-extrabold text-yellow-900 dark:text-yellow-100">
-                          {voucher.is_redeemed
-                            ? "Canjeado"
-                            : voucher.mode === "gift"
-                              ? "Regalo"
-                              : voucher.mode === "points"
-                                ? `${voucher.points_cost} pts`
-                                : "Pendiente"}
-                        </Text>
-                      </View>
-                    </View>
-                    {voucher.description ? (
-                      <Text className="mt-2 text-xs font-semibold text-yellow-700 dark:text-yellow-300">
-                        {voucher.description}
-                      </Text>
-                    ) : null}
-                    <VoucherImage path={voucher.image_url} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-
-          <View className="h-10" />
-        </ScrollView>
-      </SafeAreaView>
-
-      {space ? (
-        <PartnerVoucherModal
-          visible={showVoucherModal}
-          spaceId={space.id}
-          onClose={() => setShowVoucherModal(false)}
-          onCreated={() => void loadSpace()}
+      <Sheet
+        visible={goalOpen}
+        onClose={() => !saving && setGoalOpen(false)}
+        title="Nueva meta juntos"
+      >
+        <Input
+          label="¿Qué quieren lograr?"
+          value={goalTitle}
+          onChangeText={setGoalTitle}
+          placeholder="Viaje a Baños"
+          maxLength={80}
         />
-      ) : null}
-
-      <Modal visible={showGoalModal} transparent animationType="slide">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1"
-        >
-          <View className="flex-1 justify-end bg-black/40">
-            <View className="max-h-96 rounded-t-3xl bg-white p-4 dark:bg-surface">
-              <View className="mb-4 flex-row items-center justify-between">
-                <Text className="text-lg font-extrabold text-purple-900 dark:text-purple-100">
-                  Nueva meta compartida
-                </Text>
-                <TouchableOpacity onPress={() => setShowGoalModal(false)}>
-                  <Ionicons name="close" size={22} color={tc("#7c3aed")} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <View className="mt-4">
-                  <Text className="mb-2 text-sm font-semibold text-purple-800 dark:text-purple-200">
-                    Titulo
-                  </Text>
-                  <TextInput
-                    value={goalTitle}
-                    onChangeText={setGoalTitle}
-                    placeholder="Ej: Completar el curso de ingles"
-                    placeholderTextColor={tc("#a855f7")}
-                    className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-100"
-                  />
-                </View>
-
-                <View className="mt-4">
-                  <Text className="mb-2 text-sm font-semibold text-purple-800 dark:text-purple-200">
-                    Descripcion (opcional)
-                  </Text>
-                  <TextInput
-                    value={goalDescription}
-                    onChangeText={setGoalDescription}
-                    placeholder="Describe el objetivo"
-                    placeholderTextColor={tc("#a855f7")}
-                    className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-100"
-                  />
-                </View>
-
-                <View className="mt-4">
-                  <Text className="mb-2 text-sm font-semibold text-purple-800 dark:text-purple-200">
-                    Fecha objetivo (opcional)
-                  </Text>
-                  <TextInput
-                    value={goalTargetDate}
-                    onChangeText={setGoalTargetDate}
-                    placeholder="AAAA-MM-DD"
-                    placeholderTextColor={tc("#a855f7")}
-                    className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-100"
-                  />
-                </View>
-
-                <TouchableOpacity
-                  className={`mt-5 rounded-2xl py-3 ${savingGoal ? "bg-purple-300 dark:bg-purple-700" : "bg-purple-500"}`}
-                  onPress={() => {
-                    void handleCreateGoal();
-                  }}
-                  disabled={savingGoal}
-                >
-                  {savingGoal ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <Text className="text-center font-extrabold text-white">Guardar meta</Text>
-                  )}
-                </TouchableOpacity>
-
-                <View className="h-4" />
-              </ScrollView>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {AlertComponent}
-    </>
+        <Input
+          label="Detalle (opcional)"
+          value={goalDescription}
+          onChangeText={setGoalDescription}
+          placeholder="Ahorrar 300 dólares"
+          multiline
+        />
+        <Input
+          label="Fecha (opcional, año-mes-día)"
+          value={goalDate}
+          onChangeText={setGoalDate}
+          placeholder="2026-12-20"
+          keyboardType="numbers-and-punctuation"
+          maxLength={10}
+        />
+        <Button
+          title="Crear meta"
+          loading={saving}
+          disabled={!goalTitle.trim()}
+          onPress={() => void createGoal()}
+        />
+      </Sheet>
+    </Screen>
   );
 }
 
