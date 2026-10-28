@@ -21,6 +21,8 @@ const MIGRATED = [
   "src/features/study/api.ts",
   "app/(tabs)/study.tsx",
   "app/(tabs)/cooking.tsx",
+  "app/(tabs)/habits.tsx",
+  "src/features/habits/**/*.{ts,tsx}",
   "src/features/cooking/components/RecipeCard.tsx",
   "src/features/cooking/components/OwnRecipesList.tsx",
   "src/features/cooking/components/RecipeFiltersCard.tsx",

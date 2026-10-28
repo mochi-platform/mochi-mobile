@@ -1,591 +1,336 @@
-import { TabBarSpacer } from "@/src/shared/ui/TabBarSpacer";
-import { reportError } from "@/src/shared/lib/observability/reportError";
-import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Keyboard,
-  Modal,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
-import { supabase } from "@/src/shared/lib/supabase";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Alert, Text, View } from "react-native";
 import { useSession } from "@/src/core/providers/SessionContext";
-import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import {
+  createHabit,
+  deleteHabit,
+  fetchHabits,
+  last7Days,
+  setHabitDone,
+  setHabitReminder,
+  type HabitItem,
+  type HabitsData,
+} from "@/src/features/habits/api";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import { FloatingActionButton } from "@/src/shared/components/FloatingActionButton";
-import { TabHeader } from "@/src/shared/components/TabHeader";
-import { HabitCard } from "@/src/features/habits/components/HabitCard";
-import type { Habit } from "@/src/shared/types/database";
 import { useCycleRecommendation } from "@/src/shared/hooks/useCycleRecommendation";
 import {
   cancelHabitReminder,
-  loadHabitNotificationMap,
   loadNotificationPrefs,
   removeHabitNotificationPreference,
   saveHabitNotificationEnabled,
   scheduleHabitReminderForHabit,
 } from "@/src/shared/lib/notifications";
-import { toLocalISODate } from "@/src/shared/lib/dates";
-import { useFocusEffect } from "expo-router";
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import type { MochiHandle } from "@/src/shared/mochi/MochiCanvas";
+import { COLORS } from "@/src/shared/theme/tokens";
+import {
+  ACCENT_GLOW,
+  Button,
+  Caption,
+  Chip,
+  ELEVATION,
+  ErrorState,
+  Input,
+  MochiBubble,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Sheet,
+  Skeleton,
+  Strong,
+  Surface,
+  Title,
+  haptic,
+} from "@/src/shared/ui";
 
-const COLOR_OPTIONS = ["pink", "yellow", "blue", "teal", "purple"] as const;
-const ICON_OPTIONS = ["leaf", "water", "book", "heart", "fitness"] as const;
-
-function getLast7Days(): string[] {
-  const days: string[] = [];
-  const today = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    days.push(toLocalISODate(d));
-  }
-  return days;
-}
-
-const colorBgMap: Record<string, string> = {
-  pink: "bg-pink-200 dark:bg-pink-800",
-  yellow: "bg-yellow-200 dark:bg-yellow-800",
-  blue: "bg-blue-200 dark:bg-blue-800",
-  teal: "bg-teal-200 dark:bg-teal-800",
-  purple: "bg-purple-200 dark:bg-purple-800",
+const ICONS = ["leaf", "water", "book", "heart", "fitness", "moon", "walk", "cafe"] as const;
+const ICON_LABEL: Record<(typeof ICONS)[number], string> = {
+  leaf: "Bienestar",
+  water: "Agua",
+  book: "Leer",
+  heart: "Cuidarme",
+  fitness: "Ejercicio",
+  moon: "Dormir",
+  walk: "Caminar",
+  cafe: "Pausa",
 };
+const DAY_LETTER = ["D", "L", "M", "X", "J", "V", "S"];
 
 export function HabitsScreen() {
   const { session } = useSession();
-  const { showAlert, AlertComponent } = useCustomAlert();
-  const { personality, phase } = useCycleRecommendation("habit");
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [completedToday, setCompletedToday] = useState<Set<string>>(new Set());
-  const [weeklyLogs, setWeeklyLogs] = useState<Map<string, Set<string>>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [keyboardInset, setKeyboardInset] = useState(0);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [newHabitName, setNewHabitName] = useState("");
-  const [selectedColor, setSelectedColor] = useState<string>("pink");
-  const [selectedIcon, setSelectedIcon] = useState<string>("leaf");
+  const userId = session?.user.id;
+  const { tip } = useCycleRecommendation("habit");
+  const [data, setData] = useState<HabitsData | null>(null);
+  const [error, setError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [icon, setIcon] = useState<(typeof ICONS)[number]>("leaf");
   const [saving, setSaving] = useState(false);
-  const [habitReminderMap, setHabitReminderMap] = useState<Record<string, boolean>>({});
-  const [habitNotifEnabled, setHabitNotifEnabled] = useState(true);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [habitNotifTime, setHabitNotifTime] = useState("21:00");
-  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mochi = useRef<MochiHandle>(null);
+  const days = useMemo(() => last7Days(), []);
 
-  const loadingScale = useSharedValue(1);
-  const celebrationScale = useSharedValue(0);
-  const progressValue = useSharedValue(0);
-
-  useEffect(() => {
-    if (loading) {
-      loadingScale.value = withRepeat(
-        withSequence(
-          withTiming(1.06, {
-            duration: 650,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          withTiming(1, { duration: 650, easing: Easing.inOut(Easing.quad) }),
-        ),
-        -1,
-        false,
-      );
-    } else {
-      loadingScale.value = withTiming(1, { duration: 180 });
-    }
-  }, [loading, loadingScale]);
-
-  useEffect(() => {
-    return () => {
-      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-
-    const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
-      setKeyboardInset(event.endCoordinates.height);
-    });
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardInset(0);
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  const loadingAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: loadingScale.value }],
-  }));
-
-  const celebrationAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: celebrationScale.value }],
-  }));
-
-  const progressBarAnimatedStyle = useAnimatedStyle(() => ({
-    width: `${progressValue.value * 100}%`,
-  }));
-
-  const todayISO = useMemo(() => toLocalISODate(new Date()), []);
-  const last7Days = useMemo(() => getLast7Days(), []);
-
-  const loadHabits = useCallback(async () => {
-    const userId = session?.user.id;
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
+  const load = useCallback(async () => {
+    if (!userId) return;
     try {
-      setLoading(true);
-      setError(null);
-
-      const weekStart = last7Days[0];
-
-      const [habitsRes, todayLogsRes, weekLogsRes, notifPrefs, habitPrefs] = await Promise.all([
-        supabase
-          .from("habits")
-          .select("*")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("habit_logs")
-          .select("habit_id")
-          .eq("user_id", userId)
-          .eq("log_date", todayISO),
-        supabase
-          .from("habit_logs")
-          .select("habit_id, log_date")
-          .eq("user_id", userId)
-          .gte("log_date", weekStart)
-          .lte("log_date", todayISO),
-        loadNotificationPrefs(),
-        loadHabitNotificationMap(),
-      ]);
-
-      if (habitsRes.error) throw habitsRes.error;
-      if (todayLogsRes.error) throw todayLogsRes.error;
-      if (weekLogsRes.error) throw weekLogsRes.error;
-
-      const weekMap = new Map<string, Set<string>>();
-      for (const log of weekLogsRes.data ?? []) {
-        const existing = weekMap.get(log.habit_id);
-        if (existing) {
-          existing.add(log.log_date);
-        } else {
-          weekMap.set(log.habit_id, new Set([log.log_date]));
-        }
-      }
-
-      setHabits(habitsRes.data ?? []);
-      // El servidor manda: se sincroniza el almacenamiento local con habits.reminder_enabled.
-      const serverPrefs: Record<string, boolean> = {};
-      for (const habit of habitsRes.data ?? []) {
-        const enabled = (habit as { reminder_enabled?: boolean }).reminder_enabled !== false;
-        serverPrefs[habit.id] = enabled;
-        if (habitPrefs[habit.id] !== enabled) {
-          void saveHabitNotificationEnabled(habit.id, enabled);
-        }
-      }
-      setCompletedToday(new Set(todayLogsRes.data?.map((l) => l.habit_id) ?? []));
-      setWeeklyLogs(weekMap);
-      setHabitReminderMap({ ...habitPrefs, ...serverPrefs });
-      setNotificationsEnabled(notifPrefs.enabled);
-      setHabitNotifEnabled(notifPrefs.habitEnabled);
-      setHabitNotifTime(notifPrefs.habitTime);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error cargando hábitos");
+      setData(await fetchHabits(userId));
+      setError(false);
+    } catch (e) {
+      reportError(e, { scope: "habits/load" });
+      setError(true);
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
-  }, [session?.user.id, todayISO, last7Days]);
+  }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadHabits();
-    }, [loadHabits]),
+      void load();
+    }, [load]),
   );
 
-  async function handleToggle(habitId: string) {
-    const userId = session?.user.id;
-    if (!userId) return;
+  const total = data?.habits.length ?? 0;
+  const done = data?.doneToday.size ?? 0;
+  const allDone = total > 0 && done === total;
 
-    const isCompleted = completedToday.has(habitId);
-
-    if (isCompleted) {
-      const { error: deleteError } = await supabase
-        .from("habit_logs")
-        .delete()
-        .eq("user_id", userId)
-        .eq("habit_id", habitId)
-        .eq("log_date", todayISO);
-      if (deleteError) {
-        reportError(deleteError, { scope: "Habits" });
-        return;
-      }
-      setCompletedToday((prev) => {
-        const next = new Set(prev);
-        next.delete(habitId);
-        return next;
-      });
+  const toggle = (habit: HabitItem) => {
+    if (!userId || !data) return;
+    const next = !data.doneToday.has(habit.id);
+    const doneToday = new Set(data.doneToday);
+    if (next) doneToday.add(habit.id);
+    else doneToday.delete(habit.id);
+    setData({ ...data, doneToday });
+    if (next) {
+      haptic("success");
+      mochi.current?.react(doneToday.size === total ? "celebrate" : "nod");
     } else {
-      const { error: insertError } = await supabase.from("habit_logs").insert({
-        user_id: userId,
-        habit_id: habitId,
-        log_date: todayISO,
-      });
-      if (insertError) {
-        reportError(insertError, { scope: "Habits" });
-        return;
-      }
-      setCompletedToday((prev) => {
-        const next = new Set(prev);
-        next.add(habitId);
-        return next;
-      });
-
-      const newSize = completedToday.size + 1;
-      if (habits.length > 0 && newSize === habits.length) {
-        celebrationScale.value = withSequence(
-          withTiming(1.1, { duration: 300, easing: Easing.out(Easing.cubic) }),
-          withTiming(1, { duration: 200 }),
-        );
-        setShowCelebration(true);
-        if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
-        celebrationTimerRef.current = setTimeout(() => setShowCelebration(false), 3000);
-      }
+      haptic("selection");
     }
-  }
+    setHabitDone(userId, habit.id, next).catch((e) => {
+      reportError(e, { scope: "habits/toggle" });
+      void load();
+    });
+  };
 
-  async function handleCreateHabit() {
-    const userId = session?.user.id;
-    if (!userId || !newHabitName.trim()) return;
-
+  const create = async () => {
+    if (!userId || !name.trim()) return;
     setSaving(true);
     try {
-      const { data: createdHabit, error: sbError } = await supabase
-        .from("habits")
-        .insert({
-          user_id: userId,
-          name: newHabitName.trim(),
-          color: selectedColor,
-          icon: selectedIcon,
-        })
-        .select("id, name")
-        .single();
-
-      if (sbError) throw sbError;
-
-      if (createdHabit) {
-        await saveHabitNotificationEnabled(createdHabit.id, true);
-        if (notificationsEnabled && habitNotifEnabled) {
-          await scheduleHabitReminderForHabit(createdHabit, habitNotifTime);
-        }
-      }
-
-      setNewHabitName("");
-      setSelectedColor("pink");
-      setSelectedIcon("leaf");
-      setShowModal(false);
-      await loadHabits();
-    } catch (err) {
-      reportError(err, { scope: "Habits" });
+      const habit = await createHabit(userId, name.trim(), icon);
+      await saveHabitNotificationEnabled(habit.id, true);
+      const prefs = await loadNotificationPrefs();
+      if (prefs.enabled && prefs.habitEnabled) await scheduleHabitReminderForHabit(habit, prefs.habitTime);
+      haptic("success");
+      setName("");
+      setIcon("leaf");
+      setCreateOpen(false);
+      await load();
+    } catch (e) {
+      reportError(e, { scope: "habits/create" });
+      Alert.alert("No se pudo crear", "Intenta de nuevo en un momento.");
     } finally {
       setSaving(false);
     }
-  }
+  };
 
-  async function handleDeleteHabit(habitId: string) {
-    const userId = session?.user.id;
-    if (!userId) return;
-
-    try {
-      const { error: deleteError } = await supabase
-        .from("habits")
-        .delete()
-        .eq("id", habitId)
-        .eq("user_id", userId);
-
-      if (deleteError) throw deleteError;
-
-      await cancelHabitReminder(habitId);
-      await removeHabitNotificationPreference(habitId);
-      setHabitReminderMap((prev) => {
-        const next = { ...prev };
-        delete next[habitId];
-        return next;
-      });
-
-      await loadHabits();
-    } catch (err) {
-      reportError(err, { scope: "Habits" });
-      setError(err instanceof Error ? err.message : "No se pudo eliminar el hábito");
-    }
-  }
-
-  async function handleToggleHabitNotification(habit: Habit) {
-    const currentEnabled = habitReminderMap[habit.id] !== false;
-    const nextEnabled = !currentEnabled;
-
-    setHabitReminderMap((prev) => ({ ...prev, [habit.id]: nextEnabled }));
-
-    try {
-      const { error: updateError } = await supabase
-        .from("habits")
-        .update({ reminder_enabled: nextEnabled })
-        .eq("id", habit.id);
-      if (updateError) throw updateError;
-      await saveHabitNotificationEnabled(habit.id, nextEnabled);
-
-      if (!notificationsEnabled || !habitNotifEnabled) {
-        return;
-      }
-
-      if (nextEnabled) {
-        await scheduleHabitReminderForHabit({ id: habit.id, name: habit.name }, habitNotifTime);
-      } else {
-        await cancelHabitReminder(habit.id);
-      }
-    } catch {
-      setHabitReminderMap((prev) => ({ ...prev, [habit.id]: currentEnabled }));
-    }
-  }
-
-  const completionProgress = habits.length > 0 ? completedToday.size / habits.length : 0;
-
-  useEffect(() => {
-    progressValue.value = withTiming(completionProgress, {
-      duration: 420,
-      easing: Easing.out(Easing.cubic),
+  const toggleReminder = async (habit: HabitItem) => {
+    if (!data) return;
+    const enabled = !habit.reminderEnabled;
+    setData({
+      ...data,
+      habits: data.habits.map((h) => (h.id === habit.id ? { ...h, reminderEnabled: enabled } : h)),
     });
-  }, [completionProgress, progressValue]);
+    haptic("selection");
+    try {
+      await setHabitReminder(habit.id, enabled);
+      await saveHabitNotificationEnabled(habit.id, enabled);
+      const prefs = await loadNotificationPrefs();
+      if (!prefs.enabled || !prefs.habitEnabled) return;
+      if (enabled) await scheduleHabitReminderForHabit({ id: habit.id, name: habit.name }, prefs.habitTime);
+      else await cancelHabitReminder(habit.id);
+    } catch (e) {
+      reportError(e, { scope: "habits/reminder" });
+      void load();
+    }
+  };
+
+  const askDelete = (habit: HabitItem) => {
+    haptic("warning");
+    Alert.alert("Eliminar hábito", `¿Eliminar «${habit.name}» y su historial?`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: () => {
+          if (!userId) return;
+          void deleteHabit(userId, habit.id)
+            .then(async () => {
+              await cancelHabitReminder(habit.id);
+              await removeHabitNotificationPreference(habit.id);
+              await load();
+            })
+            .catch((e) => reportError(e, { scope: "habits/delete" }));
+        },
+      },
+    ]);
+  };
 
   return (
-    <View className="flex-1 bg-canvas">
-      <ScrollView className="flex-1 px-5 pt-12" showsVerticalScrollIndicator={false}>
-        <TabHeader
-          iconName="leaf"
-          title="Mis hábitos"
-          subtitle="Tu seguimiento diario"
-          iconColor={tc("#7c3aed")}
-          titleClassName="text-2xl font-extrabold text-purple-900 dark:text-purple-100"
-          subtitleClassName="text-sm font-semibold text-purple-700 dark:text-purple-300"
-        />
-
-        {personality && (
-          <View
-            className={`mb-4 self-start rounded-full border px-2.5 py-1 ${personality.phaseBadgeClass}`}
-          >
-            <View className="flex-row items-center">
-              <Ionicons name={personality.phaseIconName} size={11} color={tc("#334155")} />
-              <Text className="ml-1 text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
-                {personality.phaseLabel}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {phase === "menstrual" && (
-          <View className="mb-4 rounded-2xl border border-pink-200 bg-pink-100 px-3 py-2 dark:border-pink-800 dark:bg-pink-900">
-            <Text className="text-xs font-semibold text-pink-800 dark:text-pink-200">
-              Hoy celebramos cada hábito que completes
-            </Text>
-          </View>
-        )}
-        {phase === "lutea" && (
-          <View className="mb-4 rounded-2xl border border-violet-200 bg-violet-100 px-3 py-2 dark:border-violet-800 dark:bg-violet-900">
-            <Text className="text-xs font-semibold text-violet-800 dark:text-violet-200">
-              Enfócate en los esenciales, está bien descansar
-            </Text>
-          </View>
-        )}
-
-        {loading ? (
-          <View className="flex-1 items-center justify-center py-12">
-            <Animated.View style={loadingAnimatedStyle}>
-              <MochiCharacter mood={personality?.mochiMood ?? "thinking"} size={92} />
-            </Animated.View>
-            <Text className="mt-4 text-sm font-semibold text-purple-700 dark:text-purple-300">
-              Cargando hábitos...
-            </Text>
-          </View>
-        ) : error ? (
-          <View className="rounded-3xl border-2 border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
-            <Text className="text-sm font-semibold text-red-700 dark:text-red-300">{error}</Text>
-          </View>
-        ) : habits.length === 0 ? (
-          <View className="items-center rounded-3xl border-2 border-purple-200 bg-white p-8 dark:border-purple-800 dark:bg-surface">
-            <MochiCharacter mood="happy" size={88} />
-            <Text className="mt-3 text-center text-sm font-semibold text-purple-600 dark:text-purple-400">
-              Crea tu primer hábito usando el botón de abajo
-            </Text>
-          </View>
-        ) : (
-          <>
-            <View className="mb-4 rounded-2xl border border-purple-200 bg-white/80 px-3 py-3 dark:border-purple-800 dark:bg-surface/80">
-              <View className="mb-2 flex-row items-center justify-between">
-                <Text className="text-xs font-extrabold uppercase tracking-wide text-purple-500">
-                  Progreso de hoy
-                </Text>
-                <Text className="text-xs font-extrabold text-purple-700 dark:text-purple-300">
-                  {Math.round(completionProgress * 100)}%
-                </Text>
-              </View>
-              <View className="h-2.5 overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900">
-                <Animated.View
-                  style={progressBarAnimatedStyle}
-                  className="h-full rounded-full bg-purple-500"
-                />
-              </View>
-            </View>
-            {habits.map((habit) => (
-              <HabitCard
-                key={habit.id}
-                habit={habit}
-                isCompleted={completedToday.has(habit.id)}
-                isReminderEnabled={habitReminderMap[habit.id] !== false}
-                onToggleReminder={() => {
-                  void handleToggleHabitNotification(habit);
-                }}
-                weeklyDots={last7Days.map((d) => weeklyLogs.get(habit.id)?.has(d) ?? false)}
-                weeklyDayLabels={last7Days}
-                onToggle={() => void handleToggle(habit.id)}
-                onLongPress={() => {
-                  showAlert({
-                    title: "Eliminar hábito",
-                    message: "¿Quieres eliminar este hábito? Esta acción no se puede deshacer.",
-                    buttons: [
-                      { text: "Cancelar", style: "cancel" },
-                      {
-                        text: "Eliminar",
-                        style: "destructive",
-                        onPress: () => {
-                          void handleDeleteHabit(habit.id);
-                        },
-                      },
-                    ],
-                  });
-                }}
-              />
-            ))}
-          </>
-        )}
-
-        <TabBarSpacer />
-      </ScrollView>
-
-      {/* Celebration overlay */}
-      {showCelebration && (
-        <View className="absolute inset-0 items-center justify-center bg-black/30">
-          <Animated.View
-            style={celebrationAnimatedStyle}
-            className="items-center rounded-3xl bg-white p-8 dark:bg-surface"
-          >
-            <MochiCharacter mood={personality?.mochiMood ?? "excited"} size={96} />
-            <Text className="mt-4 text-xl font-extrabold text-purple-900 dark:text-purple-100">
-              ¡Todos los hábitos completados!
-            </Text>
-            <Text className="mt-2 text-sm font-semibold text-purple-500">
-              ¡Eres increíble, sigue así!
-            </Text>
-          </Animated.View>
+    <Screen
+      title="Hábitos"
+      refreshing={refreshing}
+      onRefresh={() => {
+        setRefreshing(true);
+        void load();
+      }}
+      headerRight={
+        <PressableScale
+          onPress={() => setCreateOpen(true)}
+          accessibilityLabel="Nuevo hábito"
+          className="h-11 w-11 items-center justify-center rounded-2xl bg-accent"
+          style={ACCENT_GLOW}
+        >
+          <Ionicons name="add" size={26} color={COLORS.accentInk} />
+        </PressableScale>
+      }
+    >
+      {error && !data ? <ErrorState message="No pudimos cargar tus hábitos." onRetry={() => void load()} /> : null}
+      {!data && !error ? (
+        <View className="mt-4 gap-3">
+          <Skeleton height={110} className="rounded-card" />
+          <Skeleton height={180} className="rounded-card" />
         </View>
-      )}
+      ) : null}
 
-      <FloatingActionButton
-        onPress={() => setShowModal(true)}
-        containerClassName="bg-purple-500"
-        borderClassName="border-purple-300 dark:border-purple-700"
-        accessibilityLabel="Crear hábito"
-      />
+      {data && total === 0 ? (
+        <View className="mt-6 items-center">
+          <MochiCharacter expression="happy" size={160} interactive />
+          <MochiBubble
+            className="mt-2 self-stretch"
+            text="Empieza con un hábito pequeño que puedas cumplir hoy. Yo te acompaño."
+          >
+            <View className="mt-3">
+              <Button title="Crear mi primer hábito" onPress={() => setCreateOpen(true)} />
+            </View>
+          </MochiBubble>
+        </View>
+      ) : null}
 
-      {/* Create Habit Modal */}
-      <Modal visible={showModal} transparent animationType="slide">
-        <View className="flex-1 justify-end bg-black/30" style={{ paddingBottom: keyboardInset }}>
-          <View className="max-h-[90%] rounded-t-3xl bg-white px-6 pb-10 pt-6 dark:bg-surface">
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <View className="mb-4 flex-row items-center justify-between">
-                <Text className="text-lg font-extrabold text-purple-900 dark:text-purple-100">
-                  Nuevo hábito
-                </Text>
-                <TouchableOpacity onPress={() => setShowModal(false)}>
-                  <Ionicons name="close" size={22} color={tc("#7c3aed")} />
-                </TouchableOpacity>
+      {data && total > 0 ? (
+        <>
+          <Surface elevation={2} className="mt-4 flex-row items-center gap-3 p-4">
+            <MochiCharacter
+              ref={mochi}
+              expression={allDone ? "celebrating" : done > 0 ? "proud" : "happy"}
+              size={92}
+              interactive
+              shadow={false}
+            />
+            <View className="min-w-0 flex-1">
+              <Title>{allDone ? "¡Lo lograste hoy!" : `${done} de ${total} hoy`}</Title>
+              <Caption className="mt-1">
+                {allDone
+                  ? "Todos tus hábitos listos. Disfruta el resto del día."
+                  : (tip ?? "Uno a la vez. Cada check cuenta.")}
+              </Caption>
+              <View className="mt-2.5 h-2 overflow-hidden rounded-full bg-surface-muted">
+                <View className="h-full rounded-full bg-positive" style={{ width: `${(done / total) * 100}%` }} />
               </View>
+            </View>
+          </Surface>
 
-              <Text className="mb-2 text-sm font-bold text-purple-800 dark:text-purple-200">
-                Nombre
-              </Text>
-              <TextInput
-                className="rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-purple-800 dark:bg-purple-950 dark:text-slate-200"
-                placeholder="Ej. Leer 20 minutos, Meditar..."
-                placeholderTextColor={tc("#c4b5fd")}
-                value={newHabitName}
-                onChangeText={setNewHabitName}
-              />
-
-              <Text className="mb-2 mt-4 text-sm font-bold text-purple-800 dark:text-purple-200">
-                Color
-              </Text>
-              <View className="flex-row">
-                {COLOR_OPTIONS.map((color) => (
-                  <TouchableOpacity
-                    key={color}
-                    className={`mr-2 h-9 w-9 rounded-full border-2 ${colorBgMap[color]} ${selectedColor === color ? "border-purple-500" : "border-transparent"}`}
-                    onPress={() => setSelectedColor(color)}
-                  />
-                ))}
-              </View>
-
-              <Text className="mb-2 mt-4 text-sm font-bold text-purple-800 dark:text-purple-200">
-                Icono
-              </Text>
-              <View className="flex-row">
-                {ICON_OPTIONS.map((icon) => (
-                  <TouchableOpacity
-                    key={icon}
-                    className={`mr-2 h-10 w-10 items-center justify-center rounded-xl border-2 ${selectedIcon === icon ? "border-purple-500 bg-purple-100 dark:bg-purple-900" : "border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950"}`}
-                    onPress={() => setSelectedIcon(icon)}
+          <SectionHeader title="Tus hábitos" />
+          <View className="gap-2.5">
+            {data.habits.map((habit) => {
+              const on = data.doneToday.has(habit.id);
+              const week = data.week.get(habit.id) ?? new Set<string>();
+              return (
+                <View
+                  key={habit.id}
+                  className="flex-row items-center gap-3 rounded-[22px] bg-surface px-3.5 py-3"
+                  style={ELEVATION[1]}
+                >
+                  <PressableScale
+                    haptics={false}
+                    onPress={() => toggle(habit)}
+                    onLongPress={() => askDelete(habit)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: on }}
+                    accessibilityLabel={habit.name}
+                    accessibilityHint="Mantén presionado para eliminar"
+                    className="min-w-0 flex-1 flex-row items-center gap-3"
+                  >
+                    <View
+                      className={`h-9 w-9 items-center justify-center rounded-full ${on ? "bg-positive" : "border-[2.5px] border-ink-faint/60"}`}
+                    >
+                      {on ? <Ionicons name="checkmark" size={20} color="#FFFFFF" /> : null}
+                    </View>
+                    <View className="min-w-0 flex-1">
+                      <View className="flex-row items-center gap-1.5">
+                        <Ionicons
+                          name={(ICONS as readonly string[]).includes(habit.icon) ? (habit.icon as (typeof ICONS)[number]) : "leaf"}
+                          size={15}
+                          color={COLORS.inkMuted}
+                        />
+                        <Strong className={on ? "line-through opacity-60" : ""} numberOfLines={1}>
+                          {habit.name}
+                        </Strong>
+                      </View>
+                      <View className="mt-1.5 flex-row gap-1" accessibilityLabel={`${week.size} de 7 días esta semana`}>
+                        {days.map((iso) => {
+                          const [y, m, d] = iso.split("-").map(Number);
+                          const letter = DAY_LETTER[new Date(y, m - 1, d).getDay()];
+                          const hit = week.has(iso) || (iso === days[6] && on);
+                          return (
+                            <View
+                              key={iso}
+                              className={`h-5 w-5 items-center justify-center rounded-md ${hit ? "bg-tint-ok" : "bg-surface-muted"}`}
+                            >
+                              <Text className={`font-body-extrabold text-[9px] ${hit ? "text-tint-ok-ink" : "text-ink-faint"}`}>
+                                {letter}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  </PressableScale>
+                  <PressableScale
+                    haptics={false}
+                    onPress={() => void toggleReminder(habit)}
+                    hitSlop={8}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: habit.reminderEnabled }}
+                    accessibilityLabel={`Recordatorio de ${habit.name}`}
+                    className="h-9 w-9 items-center justify-center rounded-full bg-surface-muted"
                   >
                     <Ionicons
-                      name={icon as keyof typeof Ionicons.glyphMap}
-                      size={18}
-                      color={selectedIcon === icon ? tc("#7c3aed") : tc("#a78bfa")}
+                      name={habit.reminderEnabled ? "notifications" : "notifications-off-outline"}
+                      size={17}
+                      color={habit.reminderEnabled ? COLORS.accentStrong : COLORS.inkFaint}
                     />
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TouchableOpacity
-                className={`mt-6 items-center rounded-2xl py-4 ${saving || !newHabitName.trim() ? "bg-purple-300 dark:bg-purple-700" : "bg-purple-500"}`}
-                onPress={() => void handleCreateHabit()}
-                disabled={saving || !newHabitName.trim()}
-              >
-                <Text className="font-extrabold text-white">
-                  {saving ? "Creando..." : "Crear hábito"}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
+                  </PressableScale>
+                </View>
+              );
+            })}
           </View>
+          <Caption className="ml-1 mt-3">Mantén presionado un hábito para eliminarlo.</Caption>
+        </>
+      ) : null}
+
+      <Sheet visible={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo hábito">
+        <Input label="¿Qué quieres hacer cada día?" value={name} onChangeText={setName} placeholder="Tomar 8 vasos de agua" maxLength={60} />
+        <Text className="mb-2 ml-1 font-body-bold text-sm text-ink">Ícono</Text>
+        <View className="mb-5 flex-row flex-wrap gap-2">
+          {ICONS.map((i) => (
+            <Chip key={i} icon={i} label={ICON_LABEL[i]} selected={icon === i} onPress={() => setIcon(i)} />
+          ))}
         </View>
-      </Modal>
-      {AlertComponent}
-    </View>
+        <Button title="Crear hábito" loading={saving} disabled={!name.trim()} onPress={() => void create()} />
+      </Sheet>
+    </Screen>
   );
 }
 
