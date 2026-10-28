@@ -1,3 +1,4 @@
+import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,25 +15,25 @@ type FloatingActionButtonProps = {
 };
 
 const fabBorderColorMap: Record<string, string> = {
-  "border-teal-300": "#5eead4",
-  "border-pink-300": "#f9a8d4",
-  "border-orange-300": "#fdba74",
-  "border-purple-300": "#d8b4fe",
-  "border-yellow-300": "#fde047",
-  "border-slate-300": "#cbd5e1",
+  "border-teal-300 dark:border-teal-700": tc("#5eead4"),
+  "border-pink-300 dark:border-pink-700": tc("#f9a8d4"),
+  "border-orange-300 dark:border-orange-700": tc("#fdba74"),
+  "border-purple-300 dark:border-purple-700": tc("#d8b4fe"),
+  "border-yellow-300 dark:border-yellow-700": tc("#fde047"),
+  "border-slate-300 dark:border-slate-700": tc("#cbd5e1"),
 };
 
 export function FloatingActionButton({
   onPress,
   containerClassName,
-  borderClassName = "border-slate-300",
+  borderClassName = "border-slate-300 dark:border-slate-700",
   iconName = "add",
   showSparkles = false,
   accessibilityLabel,
   bottomOffset = 0,
 }: FloatingActionButtonProps) {
   const insets = useSafeAreaInsets();
-  const borderColor = fabBorderColorMap[borderClassName] ?? "#cbd5e1";
+  const borderColor = fabBorderColorMap[borderClassName] ?? tc("#cbd5e1");
 
   return (
     <TouchableOpacity

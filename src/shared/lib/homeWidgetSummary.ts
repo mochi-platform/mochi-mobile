@@ -1,3 +1,4 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { isExpoGo } from "@/lib/env";
@@ -28,14 +29,13 @@ function formatUpdatedLabel(dateISO: string): string {
   }).format(date);
 }
 
-async function syncIOSWidgetSnapshot(
-  payload: HomeWidgetSummaryPayload,
-): Promise<void> {
-  if (Platform.OS !== "ios" || isExpoGo) {
+async function syncWidgetSnapshot(payload: HomeWidgetSummaryPayload): Promise<void> {
+  if ((Platform.OS !== "ios" && Platform.OS !== "android") || isExpoGo) {
     return;
   }
 
   try {
+    // eslint-disable-next-line import/no-unresolved -- módulo con sufijo de plataforma (.ios/.android), lo resuelve Metro
     const widgetModule = await import("@/src/shared/widgets/mochiSummaryWidget");
     widgetModule.mochiSummaryWidget.updateSnapshot({
       points: payload.points,
@@ -45,21 +45,13 @@ async function syncIOSWidgetSnapshot(
     });
     widgetModule.mochiSummaryWidget.reload();
   } catch (error) {
-    console.warn(
-      "[HomeWidget] no se pudo sincronizar el widget nativo:",
-      error instanceof Error ? error.message : String(error),
-    );
+    reportError(error, { scope: "HomeWidget" });
   }
 }
 
-export async function saveHomeWidgetSummary(
-  payload: HomeWidgetSummaryPayload,
-): Promise<void> {
-  await AsyncStorage.setItem(
-    buildHomeWidgetKey(payload.userId),
-    JSON.stringify(payload),
-  );
-  await syncIOSWidgetSnapshot(payload);
+export async function saveHomeWidgetSummary(payload: HomeWidgetSummaryPayload): Promise<void> {
+  await AsyncStorage.setItem(buildHomeWidgetKey(payload.userId), JSON.stringify(payload));
+  await syncWidgetSnapshot(payload);
 }
 
 export async function loadHomeWidgetSummary(

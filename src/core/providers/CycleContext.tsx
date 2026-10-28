@@ -8,8 +8,11 @@ import {
   type ReactNode,
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
+import { syncCycleSummary } from "@/src/shared/lib/consents";
+import { addManualPeriodStart } from "@/src/shared/lib/manualCycle";
 import {
   getCurrentCyclePhase,
+  invalidateCyclePhaseCache,
   hasCyclePermissions,
   isHealthConnectAvailable,
   requestCyclePermissions,
@@ -23,6 +26,7 @@ type CycleContextValue = {
   hasPermission: boolean;
   requestPermission: () => Promise<void>;
   refresh: () => Promise<void>;
+  logPeriodToday: () => Promise<void>;
 };
 
 const CycleContext = createContext<CycleContextValue>({
@@ -32,6 +36,7 @@ const CycleContext = createContext<CycleContextValue>({
   hasPermission: false,
   requestPermission: async () => {},
   refresh: async () => {},
+  logPeriodToday: async () => {},
 });
 
 export function CycleProvider({ children }: { children: ReactNode }) {
@@ -44,33 +49,33 @@ export function CycleProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     try {
-      const available = await isHealthConnectAvailable();
+      const available = await isHealthConnectAvailable().catch(() => false);
       setIsAvailable(available);
-
-      if (!available) {
-        setHasPermission(false);
-        setCycleData(null);
-        return;
-      }
-
-      const granted = await hasCyclePermissions();
+      const granted = available ? await hasCyclePermissions().catch(() => false) : false;
       setHasPermission(granted);
 
-      if (!granted) {
-        setCycleData(null);
-        return;
-      }
-
+      // Funciona también solo con registros manuales.
       const phase = await getCurrentCyclePhase();
       setCycleData(phase);
+      if (phase) {
+        void syncCycleSummary({
+          lastPeriodStart: phase.lastPeriodStart,
+          cycleLength: phase.cycleLength,
+          source: granted ? "health_connect" : "manual",
+        }).catch(() => undefined);
+      }
     } catch {
-      setIsAvailable(false);
-      setHasPermission(false);
       setCycleData(null);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const logPeriodToday = useCallback(async () => {
+    await addManualPeriodStart();
+    await invalidateCyclePhaseCache();
+    await refresh();
+  }, [refresh]);
 
   const requestPermission = useCallback(async () => {
     try {
@@ -104,14 +109,11 @@ export function CycleProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   useEffect(() => {
-    const subscription = AppState.addEventListener(
-      "change",
-      (nextState: AppStateStatus) => {
-        if (nextState === "active") {
-          void refresh();
-        }
-      },
-    );
+    const subscription = AppState.addEventListener("change", (nextState: AppStateStatus) => {
+      if (nextState === "active") {
+        void refresh();
+      }
+    });
 
     return () => {
       subscription.remove();
@@ -126,20 +128,12 @@ export function CycleProvider({ children }: { children: ReactNode }) {
       hasPermission,
       requestPermission,
       refresh,
+      logPeriodToday,
     }),
-    [
-      cycleData,
-      hasPermission,
-      isAvailable,
-      loading,
-      refresh,
-      requestPermission,
-    ],
+    [cycleData, hasPermission, isAvailable, loading, refresh, requestPermission, logPeriodToday],
   );
 
-  return (
-    <CycleContext.Provider value={value}>{children}</CycleContext.Provider>
-  );
+  return <CycleContext.Provider value={value}>{children}</CycleContext.Provider>;
 }
 
 export function useCycle(): CycleContextValue {

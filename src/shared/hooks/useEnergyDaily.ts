@@ -1,3 +1,5 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { toLocalISODate } from "@/src/shared/lib/dates";
 import { useEffect, useState } from "react";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { EnergyLevel } from "@mochi/supabase/types";
@@ -25,7 +27,7 @@ export function useEnergyDaily() {
         }
 
         // Get today's date
-        const today = new Date().toISOString().split("T")[0];
+        const today = toLocalISODate(new Date());
 
         // Fetch today's energy level
         const { data: todayData, error: todayError } = await supabase
@@ -39,14 +41,13 @@ export function useEnergyDaily() {
           throw todayError;
         }
 
-        const currentEnergy =
-          (todayData as EnergyLevel)?.overall_rating ?? null;
+        const currentEnergy = (todayData as EnergyLevel)?.overall_rating ?? null;
         setTodayEnergy(currentEnergy);
 
         // Calculate trend from last 3 days
         const pastDate = new Date();
         pastDate.setDate(pastDate.getDate() - 3);
-        const pastDateStr = pastDate.toISOString().split("T")[0];
+        const pastDateStr = toLocalISODate(pastDate);
 
         const { data: pastData, error: pastError } = await supabase
           .from("energy_levels")
@@ -69,13 +70,8 @@ export function useEnergyDaily() {
 
         setError(null);
       } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error("Error fetching energy"),
-        );
-        console.error(
-          "[useEnergyDaily] error cargando energía:",
-          err instanceof Error ? err.message : String(err),
-        );
+        setError(err instanceof Error ? err : new Error("Error fetching energy"));
+        reportError(err, { scope: "useEnergyDaily" });
       } finally {
         setIsLoading(false);
       }

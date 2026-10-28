@@ -1,3 +1,4 @@
+import { tc } from "@/src/shared/theme/colors";
 import { useEffect } from "react";
 import { Text, View } from "react-native";
 import Animated, {
@@ -63,6 +64,7 @@ export function AchievementToast({
     );
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- las dependencias omitidas son estables o se excluyen a propósito para no reiniciar el efecto
   }, [title]); // re-anima si cambia el logro
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -74,33 +76,30 @@ export function AchievementToast({
 
   return (
     <Animated.View
-      style={[
-        animatedStyle,
-        { position: "absolute", top: 56, left: 16, right: 16, zIndex: 999 },
-      ]}
+      style={[animatedStyle, { position: "absolute", top: 56, left: 16, right: 16, zIndex: 999 }]}
     >
-      <View className="flex-row items-center rounded-2xl border-2 border-yellow-300 bg-yellow-50 px-4 py-3 shadow-md">
+      <View className="flex-row items-center rounded-2xl border-2 border-yellow-300 bg-yellow-50 px-4 py-3 shadow-md dark:border-yellow-700 dark:bg-yellow-950">
         {/* Icono del logro */}
-        <View className="mr-3 h-11 w-11 items-center justify-center rounded-xl bg-yellow-200">
-          <Ionicons name={resolvedIcon} size={22} color="#92400e" />
+        <View className="mr-3 h-11 w-11 items-center justify-center rounded-xl bg-yellow-200 dark:bg-yellow-800">
+          <Ionicons name={resolvedIcon} size={22} color={tc("#92400e")} />
         </View>
 
         {/* Texto */}
         <View className="flex-1">
           <View className="flex-row items-center gap-1.5">
-            <Ionicons name="sparkles" size={12} color="#d97706" />
-            <Text className="text-xs font-extrabold uppercase tracking-wide text-yellow-700">
+            <Ionicons name="sparkles" size={12} color={tc("#d97706")} />
+            <Text className="text-xs font-extrabold uppercase tracking-wide text-yellow-700 dark:text-yellow-300">
               Logro desbloqueado
             </Text>
           </View>
           <Text
-            className="mt-0.5 text-sm font-extrabold text-yellow-950"
+            className="mt-0.5 text-sm font-extrabold text-yellow-950 dark:text-yellow-50"
             numberOfLines={1}
           >
             {title}
           </Text>
           <Text
-            className="text-xs font-semibold text-yellow-700"
+            className="text-xs font-semibold text-yellow-700 dark:text-yellow-300"
             numberOfLines={1}
           >
             {description}
@@ -108,8 +107,8 @@ export function AchievementToast({
         </View>
 
         {/* Puntos */}
-        <View className="ml-3 rounded-full bg-yellow-300 px-2.5 py-1">
-          <Text className="text-xs font-extrabold text-yellow-900">
+        <View className="ml-3 rounded-full bg-yellow-300 px-2.5 py-1 dark:bg-yellow-700">
+          <Text className="text-xs font-extrabold text-yellow-900 dark:text-yellow-100">
             +{points}
           </Text>
         </View>

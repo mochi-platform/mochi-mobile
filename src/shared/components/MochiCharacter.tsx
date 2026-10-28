@@ -9,10 +9,19 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-type MochiMood = "happy" | "thinking" | "sleepy" | "excited";
+import {
+  EXPRESSION_BASE_MOOD,
+  resolveMochiSource,
+  type MochiBaseMood as MochiMood,
+  type MochiExpression,
+  type MochiOutfit,
+} from "@/src/shared/mochi/manifest";
 
 type MochiCharacterProps = {
-  mood: MochiMood;
+  /** Forma antigua (4 estados). Se mantiene por compatibilidad. */
+  mood?: MochiMood;
+  expression?: MochiExpression;
+  outfit?: MochiOutfit;
   size?: number;
 };
 
@@ -23,16 +32,15 @@ const moodScale: Record<MochiMood, number> = {
   excited: 1.05,
 };
 
-const moodSourceMap: Record<MochiMood, number> = {
-  happy: require("../../../assets/mochi-expressions/happy.png"),
-  thinking: require("../../../assets/mochi-expressions/thinking.png"),
-  sleepy: require("../../../assets/mochi-expressions/sleepy.png"),
-  excited: require("../../../assets/mochi-expressions/excited.png"),
-};
-
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
-export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
+export function MochiCharacter({
+  mood: legacyMood,
+  expression = legacyMood ?? "happy",
+  outfit = "none",
+  size = 80,
+}: MochiCharacterProps) {
+  const mood: MochiMood = EXPRESSION_BASE_MOOD[expression];
   const floatY = useSharedValue(0);
   const floatX = useSharedValue(0);
   const scale = useSharedValue(1);
@@ -101,6 +109,7 @@ export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
         animateOscillation(rotate, 0, 1.4, 1000);
         break;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- las dependencias omitidas son estables o se excluyen a propósito para no reiniciar el efecto
   }, [mood]);
 
   // Estilo animado
@@ -121,7 +130,7 @@ export function MochiCharacter({ mood, size = 80 }: MochiCharacterProps) {
 
   return (
     <AnimatedImage
-      source={moodSourceMap[mood]}
+      source={resolveMochiSource(expression, outfit)}
       style={[{ width: resolvedSize, height: resolvedSize }, animatedStyle]}
       resizeMode="contain"
     />

@@ -1,3 +1,4 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { isExpoGo } from "@/lib/env";
 import type { StudyBlock } from "@/src/shared/types/database";
@@ -115,42 +116,23 @@ export async function loadNotificationPrefs(): Promise<NotificationPrefs> {
   };
 }
 
-export async function saveNotificationPrefs(
-  prefs: Partial<NotificationPrefs>,
-): Promise<void> {
+export async function saveNotificationPrefs(prefs: Partial<NotificationPrefs>): Promise<void> {
   const entries: [string, string][] = [];
 
   if (prefs.enabled !== undefined)
     entries.push([STORAGE_KEY.ENABLED, prefs.enabled ? "true" : "false"]);
   if (prefs.morningEnabled !== undefined)
-    entries.push([
-      STORAGE_KEY.MORNING_ENABLED,
-      prefs.morningEnabled ? "true" : "false",
-    ]);
+    entries.push([STORAGE_KEY.MORNING_ENABLED, prefs.morningEnabled ? "true" : "false"]);
   if (prefs.studyEnabled !== undefined)
-    entries.push([
-      STORAGE_KEY.STUDY_ENABLED,
-      prefs.studyEnabled ? "true" : "false",
-    ]);
+    entries.push([STORAGE_KEY.STUDY_ENABLED, prefs.studyEnabled ? "true" : "false"]);
   if (prefs.habitEnabled !== undefined)
-    entries.push([
-      STORAGE_KEY.HABIT_ENABLED,
-      prefs.habitEnabled ? "true" : "false",
-    ]);
+    entries.push([STORAGE_KEY.HABIT_ENABLED, prefs.habitEnabled ? "true" : "false"]);
   if (prefs.weeklyEnabled !== undefined)
-    entries.push([
-      STORAGE_KEY.WEEKLY_ENABLED,
-      prefs.weeklyEnabled ? "true" : "false",
-    ]);
-  if (prefs.habitTime !== undefined)
-    entries.push([STORAGE_KEY.HABIT_TIME, prefs.habitTime]);
+    entries.push([STORAGE_KEY.WEEKLY_ENABLED, prefs.weeklyEnabled ? "true" : "false"]);
+  if (prefs.habitTime !== undefined) entries.push([STORAGE_KEY.HABIT_TIME, prefs.habitTime]);
   if (prefs.cookingEnabled !== undefined)
-    entries.push([
-      STORAGE_KEY.COOKING_ENABLED,
-      prefs.cookingEnabled ? "true" : "false",
-    ]);
-  if (prefs.cookingTime !== undefined)
-    entries.push([STORAGE_KEY.COOKING_TIME, prefs.cookingTime]);
+    entries.push([STORAGE_KEY.COOKING_ENABLED, prefs.cookingEnabled ? "true" : "false"]);
+  if (prefs.cookingTime !== undefined) entries.push([STORAGE_KEY.COOKING_TIME, prefs.cookingTime]);
 
   await AsyncStorage.multiSet(entries);
 }
@@ -176,13 +158,9 @@ function sanitizeExamReminderDays(days: number[] | undefined): number[] {
   return Array.from(new Set(safeDays)).sort((left, right) => right - left);
 }
 
-export async function loadHabitNotificationMap(): Promise<
-  Record<string, boolean>
-> {
+export async function loadHabitNotificationMap(): Promise<Record<string, boolean>> {
   const allKeys = await AsyncStorage.getAllKeys();
-  const reminderKeys = allKeys.filter((key) =>
-    key.startsWith(STORAGE_KEY.HABIT_ITEM_PREFIX),
-  );
+  const reminderKeys = allKeys.filter((key) => key.startsWith(STORAGE_KEY.HABIT_ITEM_PREFIX));
 
   if (reminderKeys.length === 0) {
     return {};
@@ -202,15 +180,10 @@ export async function saveHabitNotificationEnabled(
   habitId: string,
   enabled: boolean,
 ): Promise<void> {
-  await AsyncStorage.setItem(
-    habitNotificationStorageKey(habitId),
-    enabled ? "true" : "false",
-  );
+  await AsyncStorage.setItem(habitNotificationStorageKey(habitId), enabled ? "true" : "false");
 }
 
-export async function removeHabitNotificationPreference(
-  habitId: string,
-): Promise<void> {
+export async function removeHabitNotificationPreference(habitId: string): Promise<void> {
   await AsyncStorage.removeItem(habitNotificationStorageKey(habitId));
 }
 
@@ -234,10 +207,7 @@ export async function loadExamReminderDays(examId: string): Promise<number[]> {
   }
 }
 
-export async function saveExamReminderDays(
-  examId: string,
-  days: number[],
-): Promise<void> {
+export async function saveExamReminderDays(examId: string, days: number[]): Promise<void> {
   await AsyncStorage.setItem(
     examReminderStorageKey(examId),
     JSON.stringify({ days: sanitizeExamReminderDays(days) }),
@@ -258,10 +228,7 @@ function toExpoWeekday(appDayOfWeek: number): number {
   return appDayOfWeek + 1;
 }
 
-function subtractMinutes(
-  hhmm: string,
-  mins: number,
-): { hour: number; minute: number } {
+function subtractMinutes(hhmm: string, mins: number): { hour: number; minute: number } {
   const { hour, minute } = parseTime(hhmm);
   const totalMinutes = hour * 60 + minute - mins;
   if (totalMinutes < 0) {
@@ -273,9 +240,7 @@ function subtractMinutes(
 
 // ─── Morning reminder ────────────────────────────────────────────────────────
 
-export async function scheduleMorningReminder(
-  wakeUpTime: string,
-): Promise<void> {
+export async function scheduleMorningReminder(wakeUpTime: string): Promise<void> {
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
 
@@ -301,21 +266,14 @@ export async function cancelMorningReminder(): Promise<void> {
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
 
-  await Notifications.cancelScheduledNotificationAsync(
-    NOTIFICATION_ID.MORNING,
-  ).catch((error) =>
-    console.error(
-      "[Notifications] error cancelando recordatorio de mañana:",
-      error instanceof Error ? error.message : String(error),
-    ),
+  await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_ID.MORNING).catch((error) =>
+    reportError(error, { scope: "Notifications" }),
   );
 }
 
 // ─── Study block reminders ───────────────────────────────────────────────────
 
-export async function scheduleStudyBlockReminders(
-  blocks: StudyBlock[],
-): Promise<void> {
+export async function scheduleStudyBlockReminders(blocks: StudyBlock[]): Promise<void> {
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
 
@@ -347,16 +305,11 @@ export async function cancelAllStudyBlockReminders(): Promise<void> {
   if (!Notifications) return;
 
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  const studyIds = scheduled
-    .map((n) => n.identifier)
-    .filter((id) => id.startsWith("study-block-"));
+  const studyIds = scheduled.map((n) => n.identifier).filter((id) => id.startsWith("study-block-"));
   await Promise.all(
     studyIds.map((id) =>
       Notifications.cancelScheduledNotificationAsync(id).catch((error) =>
-        console.error(
-          "[Notifications] error cancelando recordatorio de bloque:",
-          error instanceof Error ? error.message : String(error),
-        ),
+        reportError(error, { scope: "Notifications" }),
       ),
     ),
   );
@@ -369,12 +322,8 @@ export async function scheduleWeeklySummaryNotification(
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
 
-  await Notifications.cancelScheduledNotificationAsync("weekly-summary").catch(
-    (error) =>
-      console.error(
-        "[Notifications] error cancelando resumen semanal previo:",
-        error instanceof Error ? error.message : String(error),
-      ),
+  await Notifications.cancelScheduledNotificationAsync("weekly-summary").catch((error) =>
+    reportError(error, { scope: "Notifications" }),
   );
 
   await Notifications.scheduleNotificationAsync({
@@ -398,12 +347,8 @@ export async function cancelWeeklySummaryNotification(): Promise<void> {
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
 
-  await Notifications.cancelScheduledNotificationAsync("weekly-summary").catch(
-    (error) =>
-      console.error(
-        "[Notifications] error cancelando resumen semanal:",
-        error instanceof Error ? error.message : String(error),
-      ),
+  await Notifications.cancelScheduledNotificationAsync("weekly-summary").catch((error) =>
+    reportError(error, { scope: "Notifications" }),
   );
 }
 
@@ -424,10 +369,7 @@ export async function scheduleExamReminder(
     const reminderDate = new Date(`${examDate}T20:00:00`);
     reminderDate.setDate(reminderDate.getDate() - daysBefore);
 
-    if (
-      Number.isNaN(reminderDate.getTime()) ||
-      reminderDate.getTime() <= Date.now()
-    ) {
+    if (Number.isNaN(reminderDate.getTime()) || reminderDate.getTime() <= Date.now()) {
       continue;
     }
 
@@ -468,10 +410,7 @@ export async function cancelExamReminder(examId: string): Promise<void> {
   await Promise.all(
     identifiers.map((identifier) =>
       Notifications.cancelScheduledNotificationAsync(identifier).catch((error) =>
-        console.error(
-          "[Notifications] error cancelando recordatorio de examen:",
-          error instanceof Error ? error.message : String(error),
-        ),
+        reportError(error, { scope: "Notifications" }),
       ),
     ),
   );
@@ -486,10 +425,7 @@ export async function sendPomodoroPhaseNotification(
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
 
-  const title =
-    phase === "focus"
-      ? "Pomodoro: vuelve al enfoque"
-      : "Pomodoro: hora de descanso";
+  const title = phase === "focus" ? "Pomodoro: vuelve al enfoque" : "Pomodoro: hora de descanso";
   const body =
     phase === "focus"
       ? `Inicia el ciclo ${cycle}. Tu progreso cuenta.`
@@ -595,24 +531,14 @@ export async function cancelHabitReminder(habitId?: string): Promise<void> {
   if (!Notifications) return;
 
   if (habitId) {
-    await Notifications.cancelScheduledNotificationAsync(
-      NOTIFICATION_ID.habit(habitId),
-    ).catch((error) =>
-      console.error(
-        "[Notifications] error cancelando recordatorio de hábito:",
-        error instanceof Error ? error.message : String(error),
-      ),
+    await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_ID.habit(habitId)).catch(
+      (error) => reportError(error, { scope: "Notifications" }),
     );
     return;
   }
 
-  await Notifications.cancelScheduledNotificationAsync(
-    NOTIFICATION_ID.HABIT_LEGACY,
-  ).catch((error) =>
-    console.error(
-      "[Notifications] error cancelando recordatorio de hábitos legacy:",
-      error instanceof Error ? error.message : String(error),
-    ),
+  await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_ID.HABIT_LEGACY).catch(
+    (error) => reportError(error, { scope: "Notifications" }),
   );
 
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
@@ -623,10 +549,7 @@ export async function cancelHabitReminder(habitId?: string): Promise<void> {
   await Promise.all(
     habitIds.map((id) =>
       Notifications.cancelScheduledNotificationAsync(id).catch((error) =>
-        console.error(
-          "[Notifications] error cancelando recordatorio de hábito por id:",
-          error instanceof Error ? error.message : String(error),
-        ),
+        reportError(error, { scope: "Notifications" }),
       ),
     ),
   );
@@ -665,13 +588,8 @@ export async function cancelCookingReminder(): Promise<void> {
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
 
-  await Notifications.cancelScheduledNotificationAsync(
-    NOTIFICATION_ID.COOKING,
-  ).catch((error) =>
-    console.error(
-      "[Notifications] error cancelando recordatorio de cocina:",
-      error instanceof Error ? error.message : String(error),
-    ),
+  await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_ID.COOKING).catch((error) =>
+    reportError(error, { scope: "Notifications" }),
   );
 }
 

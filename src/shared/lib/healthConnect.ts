@@ -1,14 +1,13 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { toLocalISODate } from "@/src/shared/lib/dates";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import type { Permission } from "react-native-health-connect";
 import { isExpoGo } from "@/lib/env";
+import { computeCycleState } from "@/src/shared/lib/cycleMath";
+import { getManualPeriodStarts } from "@/src/shared/lib/manualCycle";
 
-export type CyclePhase =
-  | "menstrual"
-  | "folicular"
-  | "ovulatoria"
-  | "lutea"
-  | "unknown";
+export type CyclePhase = "menstrual" | "folicular" | "ovulatoria" | "lutea" | "unknown";
 
 export interface MenstruationRecord {
   startDate: string;
@@ -23,6 +22,7 @@ export interface CyclePhaseData {
   nextPeriodDate: string;
   daysUntilNextPeriod: number;
   fertilityWindow: boolean;
+  lastPeriodStart?: string;
   source: "health_connect" | "manual" | "estimated";
 }
 
@@ -34,9 +34,7 @@ type CachedCyclePayload = {
 const PHASE_CACHE_KEY = "cycle:phase:cache";
 const PHASE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 let permissionRequestInFlight: Promise<boolean> | null = null;
-let healthConnectModulePromise:
-  | Promise<typeof import("react-native-health-connect")>
-  | null = null;
+let healthConnectModulePromise: Promise<typeof import("react-native-health-connect")> | null = null;
 
 async function getHealthConnectModule(): Promise<
   typeof import("react-native-health-connect") | null
@@ -47,9 +45,14 @@ async function getHealthConnectModule(): Promise<
 }
 
 function logHealthConnectError(scope: string, error: unknown): void {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(`[health-connect] ${scope}: ${message}`);
+  reportError(error, { scope: `health-connect/${scope}` });
 }
+
+/** Opcional: permite leer más de 30 días hacia atrás. Sin él, el ciclo funciona con la ventana por defecto. */
+export const HISTORY_PERMISSION = {
+  accessType: "read",
+  recordType: "ReadHealthDataHistory",
+} as unknown as Permission;
 
 export const CYCLE_PERMISSIONS: Permission[] = [
   { accessType: "read", recordType: "MenstruationPeriod" },
@@ -57,7 +60,7 @@ export const CYCLE_PERMISSIONS: Permission[] = [
 ];
 
 function toISODate(input: Date): string {
-  return input.toISOString().slice(0, 10);
+  return toLocalISODate(input);
 }
 
 function startOfToday(): Date {
@@ -71,17 +74,6 @@ function daysBetween(startISO: string, endISO: string): number {
   const end = new Date(`${endISO}T00:00:00`);
   const diff = end.getTime() - start.getTime();
   return Math.floor(diff / (24 * 60 * 60 * 1000));
-}
-
-function addDays(baseISO: string, days: number): string {
-  const date = new Date(`${baseISO}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return toISODate(date);
-}
-
-function normalizeCycleDay(dayOfCycle: number, cycleLength: number): number {
-  if (dayOfCycle <= 0) return 1;
-  return ((dayOfCycle - 1) % cycleLength) + 1;
 }
 
 function groupConsecutiveDays(days: string[]): MenstruationRecord[] {
@@ -113,9 +105,7 @@ function groupConsecutiveDays(days: string[]): MenstruationRecord[] {
 function estimateCycleLength(records: MenstruationRecord[]): number {
   if (records.length < 2) return 28;
 
-  const starts = records
-    .map((record) => record.startDate)
-    .sort((a, b) => (a < b ? -1 : 1));
+  const starts = records.map((record) => record.startDate).sort((a, b) => (a < b ? -1 : 1));
 
   const distances: number[] = [];
   for (let i = 1; i < starts.length; i += 1) {
@@ -126,9 +116,7 @@ function estimateCycleLength(records: MenstruationRecord[]): number {
   }
 
   if (distances.length === 0) return 28;
-  const average = Math.round(
-    distances.reduce((sum, value) => sum + value, 0) / distances.length,
-  );
+  const average = Math.round(distances.reduce((sum, value) => sum + value, 0) / distances.length);
   return Math.min(35, Math.max(24, average));
 }
 
@@ -141,9 +129,7 @@ function estimatePeriodLength(records: MenstruationRecord[]): number {
 
   if (lengths.length === 0) return 5;
 
-  const average = Math.round(
-    lengths.reduce((sum, value) => sum + value, 0) / lengths.length,
-  );
+  const average = Math.round(lengths.reduce((sum, value) => sum + value, 0) / lengths.length);
   return Math.min(8, Math.max(3, average));
 }
 
@@ -193,11 +179,12 @@ export async function requestCyclePermissions(): Promise<boolean> {
     if (!healthConnect) return false;
 
     try {
-      const granted = await healthConnect.requestPermission(CYCLE_PERMISSIONS);
+      const granted = await healthConnect.requestPermission([
+        ...CYCLE_PERMISSIONS,
+        HISTORY_PERMISSION,
+      ]);
       const grantedKeys = new Set(
-        granted.map(
-          (permission) => `${permission.accessType}:${permission.recordType}`,
-        ),
+        granted.map((permission) => `${permission.accessType}:${permission.recordType}`),
       );
 
       return CYCLE_PERMISSIONS.every((permission) =>
@@ -226,9 +213,7 @@ export async function hasCyclePermissions(): Promise<boolean> {
   try {
     const granted = await healthConnect.getGrantedPermissions();
     const grantedKeys = new Set(
-      granted.map(
-        (permission) => `${permission.accessType}:${permission.recordType}`,
-      ),
+      granted.map((permission) => `${permission.accessType}:${permission.recordType}`),
     );
 
     return CYCLE_PERMISSIONS.every((permission) =>
@@ -236,6 +221,21 @@ export async function hasCyclePermissions(): Promise<boolean> {
     );
   } catch (error) {
     logHealthConnectError("hasCyclePermissions", error);
+    return false;
+  }
+}
+
+/** ¿Se concedió la lectura de historial (más de 30 días)? */
+export async function hasHistoryPermission(): Promise<boolean> {
+  const isReady = await ensureHealthConnectInitialized();
+  if (!isReady) return false;
+  const healthConnect = await getHealthConnectModule();
+  if (!healthConnect) return false;
+  try {
+    const granted = await healthConnect.getGrantedPermissions();
+    return granted.some((p) => (p.recordType as string) === "ReadHealthDataHistory");
+  } catch (error) {
+    logHealthConnectError("hasHistoryPermission", error);
     return false;
   }
 }
@@ -266,7 +266,8 @@ export async function readMenstruationRecords(): Promise<MenstruationRecord[]> {
 
   const now = new Date();
   const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(now.getMonth() - 6);
+  // Con el permiso de historial se leen hasta 24 meses; sin él, 6 (Health Connect limita lo anterior a 30 días).
+  sixMonthsAgo.setMonth(now.getMonth() - ((await hasHistoryPermission()) ? 24 : 6));
 
   try {
     const periodResult = await healthConnect.readRecords("MenstruationPeriod", {
@@ -280,9 +281,7 @@ export async function readMenstruationRecords(): Promise<MenstruationRecord[]> {
     });
 
     const periodDays = Array.from(
-      new Set(
-        periodResult.records.map((record) => toISODate(new Date(record.time))),
-      ),
+      new Set(periodResult.records.map((record) => toISODate(new Date(record.time)))),
     );
 
     const periodRecords = groupConsecutiveDays(periodDays);
@@ -302,9 +301,7 @@ export async function readMenstruationRecords(): Promise<MenstruationRecord[]> {
     });
 
     const flowDays = Array.from(
-      new Set(
-        flowResult.records.map((record) => toISODate(new Date(record.time))),
-      ),
+      new Set(flowResult.records.map((record) => toISODate(new Date(record.time)))),
     ).sort((a, b) => (a < b ? -1 : 1));
 
     if (flowDays.length === 0) return [];
@@ -358,61 +355,63 @@ export async function getCycleLastSync(): Promise<string | null> {
   }
 }
 
+/** Une los registros de Health Connect con los manuales (inicios a menos de 4 días se consideran el mismo). */
+async function readAllPeriodRecords(): Promise<MenstruationRecord[]> {
+  const [fromHealth, manualStarts] = await Promise.all([
+    readMenstruationRecords(),
+    getManualPeriodStarts(),
+  ]);
+
+  const merged = [...fromHealth];
+  for (const start of manualStarts) {
+    const duplicate = merged.some((record) => Math.abs(daysBetween(record.startDate, start)) <= 3);
+    if (!duplicate) merged.push({ startDate: start, endDate: start });
+  }
+  return merged.sort((a, b) => (a.startDate < b.startDate ? 1 : -1));
+}
+
+export async function invalidateCyclePhaseCache(): Promise<void> {
+  await AsyncStorage.removeItem(PHASE_CACHE_KEY);
+}
+
 export async function getCurrentCyclePhase(): Promise<CyclePhaseData | null> {
   const cached = await getValidCachedPhase();
   if (cached) return cached;
 
-  const records = await readMenstruationRecords();
-  if (records.length === 0) return null;
-
+  const records = await readAllPeriodRecords();
   const lastPeriod = records[0];
   if (!lastPeriod) return null;
 
   const cycleLength = estimateCycleLength(records);
   const periodLength =
-    daysBetween(lastPeriod.startDate, lastPeriod.endDate) + 1 ||
-    estimatePeriodLength(records);
+    daysBetween(lastPeriod.startDate, lastPeriod.endDate) + 1 > 1
+      ? daysBetween(lastPeriod.startDate, lastPeriod.endDate) + 1
+      : estimatePeriodLength(records);
 
-  const todayISO = toISODate(startOfToday());
-  const absoluteDay = daysBetween(lastPeriod.startDate, todayISO) + 1;
-  const dayOfCycle = normalizeCycleDay(absoluteDay, cycleLength);
-
-  let phase: CyclePhase = "unknown";
-  if (dayOfCycle <= periodLength) {
-    phase = "menstrual";
-  } else if (dayOfCycle >= 13 && dayOfCycle <= 16) {
-    phase = "ovulatoria";
-  } else if (dayOfCycle >= 6 && dayOfCycle < 13) {
-    phase = "folicular";
-  } else {
-    phase = "lutea";
-  }
-
-  const cyclesPassed = Math.max(1, Math.ceil(absoluteDay / cycleLength));
-  const nextPeriodDate = addDays(
-    lastPeriod.startDate,
-    cyclesPassed * cycleLength,
-  );
-  const daysUntilNextPeriod = Math.max(
-    0,
-    daysBetween(todayISO, nextPeriodDate),
-  );
+  const state = computeCycleState({
+    lastPeriodStart: lastPeriod.startDate,
+    periodLength,
+    cycleLength,
+    todayISO: toISODate(startOfToday()),
+  });
 
   const data: CyclePhaseData = {
-    phase,
-    dayOfCycle,
+    phase: state.phase,
+    dayOfCycle: state.dayOfCycle,
     cycleLength,
     periodLength,
-    nextPeriodDate,
-    daysUntilNextPeriod,
-    fertilityWindow: dayOfCycle >= 11 && dayOfCycle <= 16,
+    nextPeriodDate: state.nextPeriodDate,
+    daysUntilNextPeriod: state.daysUntilNextPeriod,
+    fertilityWindow: state.fertilityWindow,
+    lastPeriodStart: lastPeriod.startDate,
     source: "health_connect",
   };
 
   try {
     await setCachedPhase(data);
-  } catch {
+  } catch (error) {
     // Si no se puede cachear, devolvemos el cálculo igualmente.
+    reportError(error, { scope: "src/shared/lib/healthConnect.ts" });
   }
 
   return data;

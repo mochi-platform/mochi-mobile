@@ -1,10 +1,10 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { useEffect, useState } from "react";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { StreakRecoveryPlan } from "@mochi/supabase/types";
 
 export function useStreakRecovery(userId: string | undefined) {
-  const [activeRecoveryPlan, setActiveRecoveryPlan] =
-    useState<StreakRecoveryPlan | null>(null);
+  const [activeRecoveryPlan, setActiveRecoveryPlan] = useState<StreakRecoveryPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -33,13 +33,8 @@ export function useStreakRecovery(userId: string | undefined) {
       setActiveRecoveryPlan((data as StreakRecoveryPlan) ?? null);
       setError(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Error fetching recovery plan"),
-      );
-      console.error(
-        "[useStreakRecovery] error cargando plan de recuperación:",
-        err instanceof Error ? err.message : String(err),
-      );
+      setError(err instanceof Error ? err : new Error("Error fetching recovery plan"));
+      reportError(err, { scope: "useStreakRecovery" });
     } finally {
       setIsLoading(false);
     }
@@ -47,6 +42,7 @@ export function useStreakRecovery(userId: string | undefined) {
 
   useEffect(() => {
     void fetchActiveRecoveryPlan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- las dependencias omitidas son estables o se excluyen a propósito para no reiniciar el efecto
   }, [userId]);
 
   const createRecoveryPlan = async (userId: string) => {
@@ -55,14 +51,12 @@ export function useStreakRecovery(userId: string | undefined) {
       const recoveryTasks = [
         {
           day: 1,
-          description:
-            "Haz una pequeña actividad: 15 min de estudio o una rutina corta",
+          description: "Haz una pequeña actividad: 15 min de estudio o una rutina corta",
           difficulty: "easy" as const,
         },
         {
           day: 2,
-          description:
-            "Completa una meta diaria: 30 min de estudio o una rutina completa",
+          description: "Completa una meta diaria: 30 min de estudio o una rutina completa",
           difficulty: "medium" as const,
         },
         {
@@ -88,10 +82,7 @@ export function useStreakRecovery(userId: string | undefined) {
       setActiveRecoveryPlan(newPlan);
       return newPlan;
     } catch (err) {
-      console.error(
-        "[useStreakRecovery] error creando plan de recuperación:",
-        err instanceof Error ? err.message : String(err),
-      );
+      reportError(err, { scope: "useStreakRecovery" });
       throw err;
     }
   };
@@ -117,10 +108,7 @@ export function useStreakRecovery(userId: string | undefined) {
       // Refresh plan
       void fetchActiveRecoveryPlan();
     } catch (err) {
-      console.error(
-        "[useStreakRecovery] error completando tarea de recuperación:",
-        err instanceof Error ? err.message : String(err),
-      );
+      reportError(err, { scope: "useStreakRecovery" });
       throw err;
     }
   };
@@ -136,10 +124,7 @@ export function useStreakRecovery(userId: string | undefined) {
 
       setActiveRecoveryPlan(null);
     } catch (err) {
-      console.error(
-        "[useStreakRecovery] error descartando plan de recuperación:",
-        err instanceof Error ? err.message : String(err),
-      );
+      reportError(err, { scope: "useStreakRecovery" });
       throw err;
     }
   };

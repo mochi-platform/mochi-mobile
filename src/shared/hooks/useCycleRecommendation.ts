@@ -1,18 +1,9 @@
 import { useMemo } from "react";
 import { useCycle } from "@/src/core/providers/CycleContext";
-import {
-  getCyclePersonality,
-  type MochiCyclePersonality,
-} from "@/src/shared/lib/cyclePersonality";
+import { getCyclePersonality, type MochiCyclePersonality } from "@/src/shared/lib/cyclePersonality";
 import type { CyclePhase } from "@/src/shared/lib/healthConnect";
 
-type RecommendationContext =
-  | "study"
-  | "exercise"
-  | "cooking"
-  | "habit"
-  | "mood"
-  | "general";
+type RecommendationContext = "study" | "exercise" | "cooking" | "habit" | "mood" | "general";
 
 export function useCycleRecommendation(context: RecommendationContext): {
   tip: string | null;

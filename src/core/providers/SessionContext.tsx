@@ -9,6 +9,8 @@ import {
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
+import { clearOnboardingDraft } from "@/src/features/onboarding/draft";
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
 
 type SessionContextValue = {
@@ -19,9 +21,7 @@ type SessionContextValue = {
   refreshProfile: () => Promise<void>;
 };
 
-const SessionContext = createContext<SessionContextValue | undefined>(
-  undefined,
-);
+const SessionContext = createContext<SessionContextValue | undefined>(undefined);
 
 type SessionProviderProps = {
   children: ReactNode;
@@ -30,16 +30,17 @@ type SessionProviderProps = {
 async function fetchOnboardingStatus(userId: string): Promise<boolean> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, age_group")
     .eq("id", userId)
     .single();
   if (error) throw error;
-  return !data?.full_name?.trim();
+  // Hay onboarding pendiente si falta el nombre o la verificación de edad.
+  return !data?.full_name?.trim() || !data?.age_group;
 }
 
 export function SessionProvider({ children }: SessionProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [requiresOnboarding, setRequiresOnboarding] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -51,21 +52,24 @@ export function SessionProvider({ children }: SessionProviderProps) {
       setRequiresOnboarding(needsOnboarding);
       setProfileError(null);
     } catch (error) {
-      setProfileError(
-        error instanceof Error ? error.message : "Error cargando perfil",
-      );
+      setProfileError(error instanceof Error ? error.message : "Error cargando perfil");
     }
   }, [session?.user.id]);
 
   // ─── Inicialización y listener de auth ───────────────────────────────────────
   useEffect(() => {
     let mounted = true;
+    let statusKnown = false;
     let authSubscription: { unsubscribe: () => void } | null = null;
     let appStateSubscription: { remove: () => void } | null = null;
 
+    // Conserva la misma referencia si es la misma sesión: refrescarla al volver a la app
+    // no debe disparar efectos que dependan de ella.
     const applySessionState = (nextSession: Session | null) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+      setSession((prev) =>
+        prev && nextSession && prev.access_token === nextSession.access_token ? prev : nextSession,
+      );
+      setUser((prev) => (prev?.id === nextSession?.user.id ? prev : (nextSession?.user ?? null)));
     };
 
     async function updateOnboardingState(nextSession: Session | null) {
@@ -80,15 +84,16 @@ export function SessionProvider({ children }: SessionProviderProps) {
       try {
         const needsOnboarding = await fetchOnboardingStatus(nextSession.user.id);
         if (mounted) {
+          statusKnown = true;
           setRequiresOnboarding(needsOnboarding);
           setProfileError(null);
         }
       } catch (error) {
-        if (mounted) {
-          setProfileError(
-            error instanceof Error ? error.message : "Error cargando perfil",
-          );
-        }
+        if (!mounted) return;
+        // Una recarga en segundo plano (volver de un permiso, sin red) no debe desmontar la app:
+        // si ya había un estado conocido, se conserva y solo se reporta.
+        if (statusKnown) reportError(error, { scope: "session/refresh-status" });
+        else setProfileError(error instanceof Error ? error.message : "Error cargando perfil");
       }
     }
 
@@ -113,13 +118,17 @@ export function SessionProvider({ children }: SessionProviderProps) {
             applySessionState(null);
             setRequiresOnboarding(false);
             setProfileError(null);
+            statusKnown = false;
+            void clearOnboardingDraft();
             return;
           }
 
           if (
             event === "SIGNED_IN" ||
             event === "TOKEN_REFRESHED" ||
-            event === "INITIAL_SESSION"
+            event === "INITIAL_SESSION" ||
+            event === "PASSWORD_RECOVERY" ||
+            event === "USER_UPDATED"
           ) {
             applySessionState(nextSession);
             await updateOnboardingState(nextSession);
@@ -141,19 +150,14 @@ export function SessionProvider({ children }: SessionProviderProps) {
           await updateOnboardingState(activeSession);
         };
 
-        appStateSubscription = AppState.addEventListener(
-          "change",
-          (state) => {
-            void handleAppStateChange(state);
-          },
-        );
+        appStateSubscription = AppState.addEventListener("change", (state) => {
+          void handleAppStateChange(state);
+        });
       } catch (error) {
         if (mounted) {
           applySessionState(null);
           setRequiresOnboarding(false);
-          setProfileError(
-            error instanceof Error ? error.message : "Error cargando sesión",
-          );
+          setProfileError(error instanceof Error ? error.message : "Error cargando sesión");
         }
       } finally {
         if (mounted) setLoading(false);
@@ -180,9 +184,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     [session, loading, requiresOnboarding, profileError, refreshProfile],
   );
 
-  return (
-    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
-  );
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
 export function useSession() {

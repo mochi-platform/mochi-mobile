@@ -1,3 +1,6 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { generateRecoveryPlanSuggestions } from "@/src/shared/lib/ai";
+import { toLocalISODate } from "@/src/shared/lib/dates";
 import { supabase } from "@/src/shared/lib/supabase";
 import { getMochiLevel } from "@mochi/supabase/levels";
 
@@ -60,7 +63,7 @@ export async function trackEngagementEvent({
       },
     )
     .select("id")
-    .returns<Array<{ id: string }>>();
+    .returns<{ id: string }[]>();
 
   if (error) {
     throw error;
@@ -71,10 +74,21 @@ export async function trackEngagementEvent({
 
 // ─── Puntos ───────────────────────────────────────────────────────────────────
 
+export type PointEvent =
+  | "routine_completed"
+  | "recipe_completed"
+  | "study_session"
+  | "goal_completed"
+  | "exam_logged"
+  | "cooking_session"
+  | "gratitude_entry";
+
+/** El servidor decide cuántos puntos vale cada evento (tabla point_rules). */
 export async function addPoints(
   userId: string,
-  points: number,
+  event: PointEvent,
   onLevelUp?: OnUnlock,
+  ref?: string,
 ): Promise<void> {
   const { data: beforeProfile } = await supabase
     .from("profiles")
@@ -85,7 +99,11 @@ export async function addPoints(
   const previousPoints = beforeProfile?.total_points ?? 0;
   const previousLevel = getMochiLevel(previousPoints);
 
-  await supabase.rpc("increment_points", { user_id: userId, points });
+  const { data: awarded } = await supabase.rpc("award_points", {
+    p_event: event,
+    p_ref: ref ?? null,
+  });
+  const points = typeof awarded === "number" ? awarded : 0;
 
   const { data: afterProfile } = await supabase
     .from("profiles")
@@ -140,7 +158,7 @@ export async function unlockAchievement(
       { onConflict: "user_id,achievement_id", ignoreDuplicates: true },
     )
     .select("id")
-    .returns<Array<{ id: string }>>();
+    .returns<{ id: string }[]>();
 
   if (insertError) return null;
 
@@ -162,29 +180,35 @@ export async function unlockAchievement(
  * Crea un plan de recuperación de racha cuando la racha se rompe (streak = 0).
  * Este plan sugiere 3 tareas para los próximos 3 días.
  */
-export async function createStreakRecoveryPlan(
-  userId: string,
-): Promise<string | null> {
+export async function createStreakRecoveryPlan(userId: string): Promise<string | null> {
   try {
-    const recoveryTasks = [
-      {
-        day: 1,
-        description:
-          "Haz una pequeña actividad: 15 min de estudio o una rutina corta",
-        difficulty: "easy" as const,
+    // Plan personalizado con IA (con plan base si falla): materias y ejercicios que más usa.
+    const [{ data: sessions }, { data: exercises }] = await Promise.all([
+      supabase
+        .from("study_sessions")
+        .select("subject")
+        .eq("user_id", userId)
+        .order("completed_at", { ascending: false })
+        .limit(20)
+        .returns<{ subject: string }[]>(),
+      supabase
+        .from("exercises")
+        .select("name")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(5)
+        .returns<{ name: string }[]>(),
+    ]);
+    const unique = (values: (string | undefined)[]) =>
+      [...new Set(values.filter((v): v is string => Boolean(v)))].slice(0, 3);
+
+    const recoveryTasks = await generateRecoveryPlanSuggestions({
+      userId,
+      context: {
+        favoriteStudySubjects: unique((sessions ?? []).map((row) => row.subject)),
+        favoriteExercises: unique((exercises ?? []).map((row) => row.name)),
       },
-      {
-        day: 2,
-        description:
-          "Completa una meta diaria: 30 min de estudio o una rutina completa",
-        difficulty: "medium" as const,
-      },
-      {
-        day: 3,
-        description: "Vuelve a tu rutina normal con toda la energía",
-        difficulty: "hard" as const,
-      },
-    ];
+    });
 
     const { data, error } = await supabase
       .from("streak_recovery_plans")
@@ -195,22 +219,16 @@ export async function createStreakRecoveryPlan(
         completed_tasks: 0,
       })
       .select("id")
-      .returns<Array<{ id: string }>>();
+      .returns<{ id: string }[]>();
 
     if (error) {
-      console.error(
-        "[Gamification] error creando plan de recuperación:",
-        error instanceof Error ? error.message : String(error),
-      );
+      reportError(error, { scope: "gamification/recovery-plan" });
       return null;
     }
 
     return (data?.[0] as { id: string })?.id ?? null;
   } catch (err) {
-    console.error(
-      "[Gamification] error creando plan de recuperación:",
-      err instanceof Error ? err.message : String(err),
-    );
+    reportError(err, { scope: "gamification/recovery-plan" });
     return null;
   }
 }
@@ -220,21 +238,14 @@ export async function createStreakRecoveryPlan(
 /**
  * Desbloquea y notifica si fue nuevo.
  */
-async function tryUnlock(
-  userId: string,
-  key: string,
-  onUnlock?: OnUnlock,
-): Promise<void> {
+async function tryUnlock(userId: string, key: string, onUnlock?: OnUnlock): Promise<void> {
   const result = await unlockAchievement(userId, key);
   if (result && onUnlock) onUnlock(result);
 }
 
 // ─── Checks por categoría ─────────────────────────────────────────────────────
 
-export async function checkStudyAchievements(
-  userId: string,
-  onUnlock?: OnUnlock,
-): Promise<void> {
+export async function checkStudyAchievements(userId: string, onUnlock?: OnUnlock): Promise<void> {
   const { count } = await supabase
     .from("study_sessions")
     .select("*", { count: "exact", head: true })
@@ -252,8 +263,7 @@ export async function checkExerciseAchievements(
     .from("routine_logs")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId);
-  if ((totalCount ?? 0) >= 1)
-    await tryUnlock(userId, "first_routine", onUnlock);
+  if ((totalCount ?? 0) >= 1) await tryUnlock(userId, "first_routine", onUnlock);
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -265,10 +275,7 @@ export async function checkExerciseAchievements(
   if ((weekCount ?? 0) >= 7) await tryUnlock(userId, "routine_7", onUnlock);
 }
 
-export async function checkStreakAchievements(
-  userId: string,
-  onUnlock?: OnUnlock,
-): Promise<void> {
+export async function checkStreakAchievements(userId: string, onUnlock?: OnUnlock): Promise<void> {
   const { data } = await supabase
     .from("streaks")
     .select("current_streak")
@@ -308,8 +315,7 @@ export async function checkCookingSessionAchievements(
     .eq("user_id", userId)
     .eq("is_finished", true);
 
-  if ((totalSessions ?? 0) >= 1)
-    await tryUnlock(userId, "first_cook", onUnlock);
+  if ((totalSessions ?? 0) >= 1) await tryUnlock(userId, "first_cook", onUnlock);
 
   const { data: distinctRecipes } = await supabase
     .from("recipe_cook_sessions")
@@ -317,11 +323,8 @@ export async function checkCookingSessionAchievements(
     .eq("user_id", userId)
     .eq("is_finished", true);
 
-  const uniqueRecipes = new Set(
-    (distinctRecipes ?? []).map((s) => s.recipe_id),
-  );
-  if (uniqueRecipes.size >= 3)
-    await tryUnlock(userId, "cook_streak_3", onUnlock);
+  const uniqueRecipes = new Set((distinctRecipes ?? []).map((s) => s.recipe_id));
+  if (uniqueRecipes.size >= 3) await tryUnlock(userId, "cook_streak_3", onUnlock);
 }
 
 export async function checkPerfectRecipeAchievement(
@@ -353,10 +356,10 @@ export async function checkFavoriteRecipeAchievement(
 // ─── Streak ───────────────────────────────────────────────────────────────────
 
 export async function updateStreak(userId: string): Promise<void> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate(new Date());
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  const yesterdayStr = toLocalISODate(yesterday);
 
   const { data: existing } = await supabase
     .from("streaks")

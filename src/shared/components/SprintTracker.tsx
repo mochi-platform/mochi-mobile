@@ -1,3 +1,5 @@
+import { tc } from "@/src/shared/theme/colors";
+import { toLocalISODate } from "@/src/shared/lib/dates";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, View, ScrollView, TouchableOpacity } from "react-native";
 import { useExamSprintProgress } from "@/src/shared/hooks/useExamSprintProgress";
@@ -12,10 +14,8 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
 
   if (isLoading) {
     return (
-      <View className="bg-white rounded-2xl p-4">
-        <Text className="text-center text-slate-500 text-sm">
-          Cargando progreso...
-        </Text>
+      <View className="rounded-2xl bg-white p-4 dark:bg-surface">
+        <Text className="text-center text-sm text-slate-500">Cargando progreso...</Text>
       </View>
     );
   }
@@ -25,20 +25,17 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
   const endDate = new Date(sprint.end_date);
   const totalDays = Math.max(
     1,
-    Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) +
-      1,
+    Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1,
   );
 
   // Calculate completed days
-  const completedDays = progressEntries.filter(
-    (p) => p.is_day_completed,
-  ).length;
+  const completedDays = progressEntries.filter((p) => p.is_day_completed).length;
 
   // Generate array of days
   const days = Array.from({ length: totalDays }, (_, i) => {
     const date = new Date(startDate);
     date.setDate(date.getDate() + i);
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = toLocalISODate(date);
 
     const entry = progressEntries.find((p) => p.progress_date === dateStr);
     return {
@@ -51,19 +48,19 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
   });
 
   return (
-    <View className="bg-white rounded-2xl p-4 border border-purple-100">
+    <View className="rounded-2xl border border-purple-100 bg-white p-4 dark:border-purple-900 dark:bg-surface">
       {/* Header */}
       <View className="mb-4">
-        <View className="flex-row items-center justify-between mb-2">
-          <Text className="font-bold text-slate-800 text-base">
+        <View className="mb-2 flex-row items-center justify-between">
+          <Text className="text-base font-bold text-slate-800 dark:text-slate-200">
             Progreso: {completedDays}/{totalDays} días
           </Text>
         </View>
 
         {/* Progress Bar */}
-        <View className="bg-slate-200 rounded-full h-2 overflow-hidden">
+        <View className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
           <View
-            className="bg-green-500 h-full"
+            className="h-full bg-green-500"
             style={{ width: `${(completedDays / totalDays) * 100}%` }}
           />
         </View>
@@ -76,39 +73,34 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
             <TouchableOpacity
               key={day.dayNumber}
               activeOpacity={0.85}
-              className={`items-center justify-center rounded-lg w-12 h-12 border-2 ${
+              className={`h-12 w-12 items-center justify-center rounded-lg border-2 ${
                 day.completed
-                  ? "bg-green-100 border-green-400"
-                  : "bg-slate-50 border-slate-200"
+                  ? "border-green-400 bg-green-100 dark:bg-green-900"
+                  : "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950"
               }`}
             >
-              <Text className="font-semibold text-center text-xs">
-                {day.dayNumber}
-              </Text>
-              {day.completed && (
-                <Ionicons name="checkmark" size={16} color="#16a34a" />
-              )}
+              <Text className="text-center text-xs font-semibold">{day.dayNumber}</Text>
+              {day.completed && <Ionicons name="checkmark" size={16} color={tc("#16a34a")} />}
             </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
 
       {/* Stats */}
-      <View className="border-t border-slate-200 mt-4 pt-3">
+      <View className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-800">
         <View className="flex-row justify-between">
           <View>
-            <Text className="text-xs text-slate-600">Horas promedio</Text>
-            <Text className="font-bold text-slate-800 text-sm">
+            <Text className="text-xs text-slate-600 dark:text-slate-400">Horas promedio</Text>
+            <Text className="text-sm font-bold text-slate-800 dark:text-slate-200">
               {(
-                progressEntries.reduce((sum, p) => sum + p.hours_studied, 0) /
-                (completedDays || 1)
+                progressEntries.reduce((sum, p) => sum + p.hours_studied, 0) / (completedDays || 1)
               ).toFixed(1)}
               h
             </Text>
           </View>
           <View>
-            <Text className="text-xs text-slate-600">Meta diaria</Text>
-            <Text className="font-bold text-slate-800 text-sm">
+            <Text className="text-xs text-slate-600 dark:text-slate-400">Meta diaria</Text>
+            <Text className="text-sm font-bold text-slate-800 dark:text-slate-200">
               {sprint.daily_target_hours}h
             </Text>
           </View>

@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
 
@@ -40,20 +33,16 @@ type ModuleVisibilityContextValue = {
   moduleVisibilityLoaded: boolean;
 };
 
-const ModuleVisibilityContext =
-  createContext<ModuleVisibilityContextValue | null>(null);
+const ModuleVisibilityContext = createContext<ModuleVisibilityContextValue | null>(null);
 
 type ModuleVisibilityProviderProps = {
   children: ReactNode;
 };
 
-export function ModuleVisibilityProvider({
-  children,
-}: ModuleVisibilityProviderProps) {
+export function ModuleVisibilityProvider({ children }: ModuleVisibilityProviderProps) {
   const { session } = useSession();
-  const [moduleVisibility, setModuleVisibility] = useState<ModuleVisibility>(
-    defaultModuleVisibility,
-  );
+  const [moduleVisibility, setModuleVisibility] =
+    useState<ModuleVisibility>(defaultModuleVisibility);
   const [moduleVisibilityLoaded, setModuleVisibilityLoaded] = useState(false);
 
   useEffect(() => {
@@ -108,9 +97,7 @@ export function ModuleVisibilityProvider({
   );
 
   return (
-    <ModuleVisibilityContext.Provider value={value}>
-      {children}
-    </ModuleVisibilityContext.Provider>
+    <ModuleVisibilityContext.Provider value={value}>{children}</ModuleVisibilityContext.Provider>
   );
 }
 
@@ -118,9 +105,7 @@ export function useModuleVisibility() {
   const context = useContext(ModuleVisibilityContext);
 
   if (!context) {
-    throw new Error(
-      "useModuleVisibility debe usarse dentro de ModuleVisibilityProvider",
-    );
+    throw new Error("useModuleVisibility debe usarse dentro de ModuleVisibilityProvider");
   }
 
   return context;

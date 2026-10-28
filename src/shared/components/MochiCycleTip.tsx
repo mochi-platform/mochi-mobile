@@ -1,3 +1,5 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { tc } from "@/src/shared/theme/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
@@ -13,10 +15,7 @@ interface MochiCycleTipProps {
   storageKey?: string;
 }
 
-const styleClassMap: Record<
-  NonNullable<MochiCycleTipProps["style"]>,
-  string
-> = {
+const styleClassMap: Record<NonNullable<MochiCycleTipProps["style"]>, string> = {
   banner: "rounded-2xl border px-3 py-3 flex-row items-center",
   inline: "rounded-2xl border px-3 py-2 flex-row items-center",
   card: "rounded-3xl border px-4 py-4",
@@ -30,9 +29,7 @@ export function MochiCycleTip({
 }: MochiCycleTipProps) {
   const { tip, personality } = useCycleRecommendation(context);
   const [dismissed, setDismissed] = useState(false);
-  const [loadedPreference, setLoadedPreference] = useState(
-    !dismissible || !storageKey,
-  );
+  const [loadedPreference, setLoadedPreference] = useState(!dismissible || !storageKey);
 
   useEffect(() => {
     if (!dismissible || !storageKey) return;
@@ -73,32 +70,30 @@ export function MochiCycleTip({
     if (dismissible && storageKey) {
       try {
         await AsyncStorage.setItem(storageKey, "1");
-      } catch {
+      } catch (error) {
         // No interrumpimos la experiencia si AsyncStorage falla.
+        reportError(error, { scope: "src/shared/components/MochiCycleTip.tsx" });
       }
     }
   };
 
   return (
     <Animated.View entering={FadeInDown.duration(350)} className={className}>
-      <MochiCharacter
-        mood={personality.mochiMood}
-        size={style === "inline" ? 40 : 48}
-      />
+      <MochiCharacter mood={personality.mochiMood} size={style === "inline" ? 40 : 48} />
       <View className="ml-2 flex-1">
-        <Text className="text-xs font-extrabold text-slate-800">
+        <Text className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
           {personality.phaseLabel}
         </Text>
-        <Text className="mt-0.5 text-xs font-semibold text-slate-700">
+        <Text className="mt-0.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
           {tip}
         </Text>
       </View>
       {dismissible && (
         <TouchableOpacity
           onPress={() => void handleDismiss()}
-          className="ml-2 rounded-full bg-white/80 p-1.5"
+          className="ml-2 rounded-full bg-white/80 p-1.5 dark:bg-surface/80"
         >
-          <Ionicons name="close" size={14} color="#334155" />
+          <Ionicons name="close" size={14} color={tc("#334155")} />
         </TouchableOpacity>
       )}
     </Animated.View>

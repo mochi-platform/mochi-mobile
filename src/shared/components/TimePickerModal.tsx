@@ -1,120 +1,148 @@
-import { Text, View, TouchableOpacity, Modal, FlatList } from "react-native";
-import { useEffect, useMemo, useRef, useState } from "react";
+import * as Haptics from "expo-haptics";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AccessibilityInfo,
+  FlatList,
+  Modal,
+  Pressable,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { Button } from "@/src/shared/ui";
+import {
+  buildRange,
+  formatTime,
+  indexFromOffset,
+  minuteOptions,
+  pad2,
+  parseTime,
+  periodOfDay,
+} from "./timePicker/utils";
 
 type TimePickerModalProps = {
   visible: boolean;
+  /** "HH:MM" */
   time: string;
   onConfirm: (time: string) => void;
   onCancel: () => void;
   label: string;
+  /** Paso de los minutos. 5 por defecto; con `hoursOnly` los minutos quedan en 00. */
+  minuteStep?: number;
+  hoursOnly?: boolean;
 };
 
-const ITEM_HEIGHT = 36;
-const VISIBLE_ITEMS = 3;
-const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
+const ITEM_HEIGHT = 52;
+const VISIBLE_ITEMS = 5; // la fila central es la seleccionada
+const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
+const SIDE_PADDING = ITEM_HEIGHT * Math.floor(VISIBLE_ITEMS / 2);
 
-function ColumnPicker({
-  data,
-  value,
-  onChange,
-}: {
+function tick() {
+  void Haptics.selectionAsync().catch(() => {});
+}
+
+type WheelProps = {
   data: number[];
   value: number;
-  onChange: (v: number) => void;
-}) {
-  const ref = useRef<FlatList>(null);
+  onChange: (value: number) => void;
+  label: string;
+};
 
-  useEffect(() => {
-    const index = data.indexOf(value);
-    if (index >= 0) {
-      setTimeout(() => {
-        ref.current?.scrollToOffset({
-          offset: index * ITEM_HEIGHT,
-          animated: true,
-        });
-      }, 80);
+/** Rueda con ajuste a la fila central. Más cerca del centro = más grande y más opaca. */
+function Wheel({ data, value, onChange, label }: WheelProps) {
+  const ref = useRef<FlatList<number>>(null);
+  const [live, setLive] = useState(() => Math.max(0, data.indexOf(value)));
+  const liveRef = useRef(live);
+
+  const goTo = useCallback((index: number, animated: boolean) => {
+    ref.current?.scrollToOffset({ offset: index * ITEM_HEIGHT, animated });
+  }, []);
+
+  const settle = (offsetY: number) => {
+    const index = indexFromOffset(offsetY, ITEM_HEIGHT, data.length);
+    if (index !== liveRef.current) {
+      liveRef.current = index;
+      setLive(index);
     }
-  }, [value]);
+    onChange(data[index]);
+  };
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = indexFromOffset(e.nativeEvent.contentOffset.y, ITEM_HEIGHT, data.length);
+    if (index !== liveRef.current) {
+      liveRef.current = index;
+      setLive(index);
+      tick();
+      onChange(data[index]); // la lectura grande sigue a la rueda mientras gira
+    }
+  };
+
+  const step = (delta: number) => {
+    const next = Math.min(data.length - 1, Math.max(0, liveRef.current + delta));
+    goTo(next, true);
+  };
 
   return (
     <View
-      style={{
-        height: PICKER_HEIGHT,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: "#e5d4ff",
-        backgroundColor: "#faf5ff",
-        overflow: "hidden",
-      }}
+      accessible
+      accessibilityRole="adjustable"
+      accessibilityLabel={label}
+      accessibilityValue={{ text: pad2(data[live] ?? 0) }}
+      accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
+      onAccessibilityAction={(e) => step(e.nativeEvent.actionName === "increment" ? 1 : -1)}
+      style={{ height: WHEEL_HEIGHT }}
+      className="flex-1"
     >
       <FlatList
         ref={ref}
         data={data}
-        keyExtractor={(i) => i.toString()}
+        keyExtractor={(item) => String(item)}
         showsVerticalScrollIndicator={false}
+        initialScrollIndex={Math.max(0, data.indexOf(value))}
         snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
-        getItemLayout={(_, index) => ({
-          length: ITEM_HEIGHT,
-          offset: ITEM_HEIGHT * index,
-          index,
-        })}
-        contentContainerStyle={{
-          paddingVertical: ITEM_HEIGHT,
+        scrollEventThrottle={16}
+        onScroll={onScroll}
+        onMomentumScrollEnd={(e) => settle(e.nativeEvent.contentOffset.y)}
+        onScrollEndDrag={(e) => {
+          // Si no hay inercia, ajusta en el acto.
+          const v = e.nativeEvent.velocity?.y ?? 0;
+          if (Math.abs(v) < 0.05) settle(e.nativeEvent.contentOffset.y);
         }}
-        onMomentumScrollEnd={(e) => {
-          const index = Math.round(
-            e.nativeEvent.contentOffset.y / ITEM_HEIGHT,
-          );
-          const clamped = Math.max(0, Math.min(data.length - 1, index));
-          onChange(data[clamped]);
-        }}
-        renderItem={({ item }) => {
-          const selected = item === value;
-
+        getItemLayout={(_, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
+        contentContainerStyle={{ paddingVertical: SIDE_PADDING }}
+        extraData={live}
+        initialNumToRender={VISIBLE_ITEMS + 4}
+        renderItem={({ item, index }) => {
+          const distance = Math.abs(index - live);
           return (
-            <View
-              style={{
-                height: ITEM_HEIGHT,
-                justifyContent: "center",
-                alignItems: "center",
-                paddingHorizontal: 8,
-              }}
+            <Pressable
+              accessible={false}
+              onPress={() => goTo(index, true)}
+              style={{ height: ITEM_HEIGHT, justifyContent: "center", alignItems: "center" }}
             >
               <Text
+                allowFontScaling={false}
+                className={distance === 0 ? "text-ink" : "text-ink-muted"}
                 style={{
-                  fontSize: selected ? 17 : 15,
-                  fontWeight: "700",
-                  color: selected ? "#6d28d9" : "#a78bfa",
+                  fontSize: distance === 0 ? 30 : distance === 1 ? 24 : 19,
+                  fontWeight: distance === 0 ? "800" : "600",
+                  opacity: distance === 0 ? 1 : distance === 1 ? 0.55 : 0.25,
+                  fontVariant: ["tabular-nums"],
                 }}
-                numberOfLines={1}
               >
-                {String(item).padStart(2, "0")}
+                {pad2(item)}
               </Text>
-            </View>
+            </Pressable>
           );
-        }}
-      />
-
-      {/* highlight center */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          top: ITEM_HEIGHT,
-          left: 0,
-          right: 0,
-          height: ITEM_HEIGHT,
-          borderTopWidth: 1,
-          borderBottomWidth: 1,
-          borderColor: "#a855f7",
-          opacity: 0.25,
         }}
       />
     </View>
@@ -127,110 +155,150 @@ export function TimePickerModal({
   onConfirm,
   onCancel,
   label,
+  minuteStep = 5,
+  hoursOnly = false,
 }: TimePickerModalProps) {
+  const step = hoursOnly ? 60 : minuteStep;
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
+  const [openMinutes, setOpenMinutes] = useState(0);
+  // 0 = cerrado; cada apertura usa una clave nueva para montar las ruedas ya en su valor.
+  const [resetKey, setResetKey] = useState(0);
+  const reduceMotion = useReducedMotion();
 
-  const scale = useSharedValue(0.9);
+  const hoursData = useMemo(() => buildRange(24), []);
+  const minutesData = useMemo(() => minuteOptions(step, openMinutes), [step, openMinutes]);
+
+  const scale = useSharedValue(0.94);
   const opacity = useSharedValue(0);
 
-  const hoursArray = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
-  const minutesArray = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
-
   useEffect(() => {
-    if (!visible) return;
-
-    const [h, m] = time.split(":");
-    setHours(Number(h) || 0);
-    setMinutes(Number(m) || 0);
-  }, [time, visible]);
-
-  useEffect(() => {
-    if (visible) {
-      scale.value = 0.92;
-      opacity.value = 0;
-
-      scale.value = withSpring(1, { damping: 14 });
-      opacity.value = withTiming(1, { duration: 160 });
-    } else {
-      opacity.value = withTiming(0, { duration: 120 });
+    if (!visible) {
+      setResetKey(0);
+      return;
     }
-  }, [visible]);
+    const parsed = parseTime(time);
+    setHours(parsed.hours);
+    setMinutes(hoursOnly ? 0 : parsed.minutes);
+    setOpenMinutes(hoursOnly ? 0 : parsed.minutes);
+    setResetKey((k) => k + 1);
+    void AccessibilityInfo.announceForAccessibility?.(label);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `label` solo se anuncia al abrir
+  }, [visible, time, step, hoursOnly]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  useEffect(() => {
+    if (!visible) {
+      opacity.value = 0;
+      return;
+    }
+    if (reduceMotion) {
+      scale.value = 1;
+      opacity.value = 1;
+      return;
+    }
+    scale.value = 0.94;
+    opacity.value = 0;
+    scale.value = withSpring(1, { damping: 16, stiffness: 220 });
+    opacity.value = withTiming(1, { duration: 160 });
+  }, [visible, reduceMotion, opacity, scale]);
+
+  const cardStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
     transform: [{ scale: scale.value }],
   }));
 
-  const selectedTime = `${String(hours).padStart(2, "0")}:${String(
-    minutes,
-  ).padStart(2, "0")}`;
-
   return (
-    <Modal transparent visible={visible} animationType="fade">
-      <View className="flex-1 items-center justify-center bg-black/40 px-6">
-        <Animated.View
-          style={animatedStyle}
-          className="w-full max-w-xs rounded-2xl bg-white p-4"
-        >
-          {/* header */}
-          <Text className="text-base font-bold text-purple-900">
-            {label}
-          </Text>
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
+      <Pressable
+        accessible={false}
+        onPress={onCancel}
+        className="flex-1 items-center justify-center bg-black/50 px-6"
+      >
+        {/* Pressable interior: tocar la tarjeta no cierra el modal. */}
+        <Pressable accessible={false} className="w-full max-w-sm">
+          <Animated.View
+            style={cardStyle}
+            className="rounded-card border border-line bg-surface p-5"
+          >
+            <Text className="text-center text-sm font-bold text-ink-muted">{label}</Text>
 
-          <Text className="mb-3 text-sm text-slate-400">
-            {selectedTime}
-          </Text>
-
-          {/* pickers */}
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              <Text className="mb-1.5 text-center text-xs font-bold text-purple-600">
-                Hora
+            <View className="mt-1 items-center">
+              <Text
+                accessibilityLiveRegion="polite"
+                allowFontScaling={false}
+                className="text-ink"
+                style={{ fontSize: 44, fontWeight: "800", fontVariant: ["tabular-nums"] }}
+              >
+                {formatTime(hours, minutes)}
               </Text>
-
-              <ColumnPicker
-                data={hoursArray}
-                value={hours}
-                onChange={setHours}
-              />
+              <Text className="text-xs font-bold uppercase tracking-wide text-accent">
+                {periodOfDay(hours)}
+              </Text>
             </View>
 
-            <View className="flex-1">
-              <Text className="mb-1.5 text-center text-xs font-bold text-purple-600">
-                Min
-              </Text>
-
-              <ColumnPicker
-                data={minutesArray.filter((m) => m % 5 === 0)}
-                value={minutes}
-                onChange={setMinutes}
+            <View className="mt-4" style={{ height: WHEEL_HEIGHT }}>
+              {/* Banda de la fila seleccionada, detrás de las ruedas. */}
+              <View
+                pointerEvents="none"
+                className="absolute left-0 right-0 rounded-control bg-accent-soft"
+                style={{ top: SIDE_PADDING, height: ITEM_HEIGHT }}
               />
+              {resetKey > 0 ? (
+                <View className="flex-row items-center">
+                  <Wheel
+                    key={`h-${resetKey}`}
+                    data={hoursData}
+                    value={hours}
+                    onChange={setHours}
+                    label="Hora"
+                  />
+                  <Text
+                    allowFontScaling={false}
+                    className="text-ink"
+                    style={{ fontSize: 30, fontWeight: "800", marginHorizontal: 2 }}
+                  >
+                    :
+                  </Text>
+                  {hoursOnly ? (
+                    <View className="flex-1 items-center" style={{ height: WHEEL_HEIGHT }}>
+                      <View style={{ height: SIDE_PADDING }} />
+                      <View style={{ height: ITEM_HEIGHT, justifyContent: "center" }}>
+                        <Text
+                          allowFontScaling={false}
+                          className="text-ink"
+                          style={{ fontSize: 30, fontWeight: "800" }}
+                        >
+                          00
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <Wheel
+                      key={`m-${resetKey}`}
+                      data={minutesData}
+                      value={minutes}
+                      onChange={setMinutes}
+                      label="Minutos"
+                    />
+                  )}
+                </View>
+              ) : null}
             </View>
-          </View>
 
-          {/* actions */}
-          <View className="mt-4 flex-row gap-2">
-            <TouchableOpacity
-              onPress={onCancel}
-              className="flex-1 rounded-xl border border-purple-200 py-2.5"
-            >
-              <Text className="text-center text-sm font-bold text-purple-700">
-                Cancelar
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => onConfirm(selectedTime)}
-              className="flex-1 rounded-xl bg-purple-600 py-2.5"
-            >
-              <Text className="text-center text-sm font-bold text-white">
-                Confirmar
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </View>
+            <View className="mt-5 flex-row gap-3">
+              <View className="flex-1">
+                <Button title="Cancelar" variant="outline" onPress={onCancel} />
+              </View>
+              <View className="flex-1">
+                <Button
+                  title="Confirmar"
+                  onPress={() => onConfirm(formatTime(hours, hoursOnly ? 0 : minutes))}
+                />
+              </View>
+            </View>
+          </Animated.View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

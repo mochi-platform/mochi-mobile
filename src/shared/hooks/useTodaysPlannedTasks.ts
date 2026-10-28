@@ -1,3 +1,4 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { useEffect, useState } from "react";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { MergedTask } from "@/src/shared/lib/plannerLogic";
@@ -55,8 +56,7 @@ export function useTodaysPlannedTasks(): UseTodaysPlannedTasksResult {
         }
 
         // Filter routines by today's day of week
-        const todaysRoutines =
-          routines?.filter((r) => r.days.includes(today)) ?? [];
+        const todaysRoutines = routines?.filter((r) => r.days.includes(today)) ?? [];
 
         // Fetch goals
         const { data: goals, error: goalsError } = await supabase
@@ -110,13 +110,8 @@ export function useTodaysPlannedTasks(): UseTodaysPlannedTasksResult {
         setTasks(mergedTasks);
         setError(null);
       } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error("Error al cargar tareas"),
-        );
-        console.error(
-          "[useTodaysPlannedTasks] error cargando tareas:",
-          err instanceof Error ? err.message : String(err),
-        );
+        setError(err instanceof Error ? err : new Error("Error al cargar tareas"));
+        reportError(err, { scope: "useTodaysPlannedTasks" });
       } finally {
         setIsLoading(false);
       }

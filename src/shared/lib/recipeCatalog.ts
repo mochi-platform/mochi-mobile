@@ -8,13 +8,9 @@ const generationTypeValues: RecipeGenerationType[] = [
   "alta_proteina",
 ];
 
-export function getRecipeGenerationTypeFromPrompt(
-  userPrompt: string | null,
-): RecipeGenerationType {
+export function getRecipeGenerationTypeFromPrompt(userPrompt: string | null): RecipeGenerationType {
   const match = userPrompt?.match(/Tipo:\s*([a-z_]+)/i);
-  const candidate = match?.[1]?.toLowerCase() as
-    | RecipeGenerationType
-    | undefined;
+  const candidate = match?.[1]?.toLowerCase() as RecipeGenerationType | undefined;
 
   if (!candidate || !generationTypeValues.includes(candidate)) {
     return "normal";

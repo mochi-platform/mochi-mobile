@@ -10,12 +10,7 @@ export function getBottomNavPaddingBottom(insetBottom: number): number {
 }
 
 export function getBottomNavHeight(insetBottom: number): number {
-  return (
-    insetBottom +
-    BOTTOM_NAV_TOP_PADDING +
-    BOTTOM_NAV_BOTTOM_PADDING +
-    BOTTOM_NAV_TAB_HEIGHT
-  );
+  return insetBottom + BOTTOM_NAV_TOP_PADDING + BOTTOM_NAV_BOTTOM_PADDING + BOTTOM_NAV_TAB_HEIGHT;
 }
 
 export function getFabBottomOffset(insetBottom: number): number {

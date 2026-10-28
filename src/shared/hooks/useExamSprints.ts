@@ -1,9 +1,7 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { useEffect, useState } from "react";
 import { supabase } from "@/src/shared/lib/supabase";
-import type {
-  ExamPrepSprint,
-  ExamSprintMilestone,
-} from "@mochi/supabase/types";
+import type { ExamPrepSprint, ExamSprintMilestone } from "@mochi/supabase/types";
 
 interface SprintWithMilestones extends ExamPrepSprint {
   milestones: ExamSprintMilestone[];
@@ -43,12 +41,11 @@ export function useExamSprints(userId: string | undefined) {
       // Fetch milestones for each sprint
       const sprintsWithMilestones: SprintWithMilestones[] = await Promise.all(
         typedSprints.map(async (sprint: ExamPrepSprint) => {
-          const { data: milestonesData, error: milestonesError } =
-            await supabase
-              .from("exam_sprint_milestones")
-              .select("*")
-              .eq("sprint_id", sprint.id)
-              .order("milestone_number", { ascending: true });
+          const { data: milestonesData, error: milestonesError } = await supabase
+            .from("exam_sprint_milestones")
+            .select("*")
+            .eq("sprint_id", sprint.id)
+            .order("milestone_number", { ascending: true });
 
           if (milestonesError && milestonesError.code !== "PGRST116") {
             throw milestonesError;
@@ -64,13 +61,8 @@ export function useExamSprints(userId: string | undefined) {
       setSprints(sprintsWithMilestones);
       setError(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Error fetching sprints"),
-      );
-      console.error(
-        "[useExamSprints] error cargando sprints:",
-        err instanceof Error ? err.message : String(err),
-      );
+      setError(err instanceof Error ? err : new Error("Error fetching sprints"));
+      reportError(err, { scope: "useExamSprints" });
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +70,7 @@ export function useExamSprints(userId: string | undefined) {
 
   useEffect(() => {
     void fetchSprints();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- las dependencias omitidas son estables o se excluyen a propósito para no reiniciar el efecto
   }, [userId]);
 
   const createSprint = async (
@@ -109,53 +102,35 @@ export function useExamSprints(userId: string | undefined) {
 
       return data?.[0] as ExamPrepSprint;
     } catch (err) {
-      console.error(
-        "[useExamSprints] error creando sprint:",
-        err instanceof Error ? err.message : String(err),
-      );
+      reportError(err, { scope: "useExamSprints" });
       throw err;
     }
   };
 
-  const updateSprint = async (
-    sprintId: string,
-    updates: Partial<ExamPrepSprint>,
-  ) => {
+  const updateSprint = async (sprintId: string, updates: Partial<ExamPrepSprint>) => {
     try {
-      const { error } = await supabase
-        .from("exam_prep_sprints")
-        .update(updates)
-        .eq("id", sprintId);
+      const { error } = await supabase.from("exam_prep_sprints").update(updates).eq("id", sprintId);
 
       if (error) throw error;
 
       // Refresh sprints list
       void fetchSprints();
     } catch (err) {
-      console.error(
-        "[useExamSprints] error actualizando sprint:",
-        err instanceof Error ? err.message : String(err),
-      );
+      reportError(err, { scope: "useExamSprints" });
       throw err;
     }
   };
 
   const deleteSprint = async (sprintId: string) => {
     try {
-      const { error } = await supabase
-        .from("exam_prep_sprints")
-        .delete()
-        .eq("id", sprintId);
+      const { error } = await supabase.from("exam_prep_sprints").delete().eq("id", sprintId);
 
       if (error) throw error;
 
       // Refresh sprints list
       void fetchSprints();
     } catch (err) {
-      console.error(
-        "[useExamSprints] error eliminando sprint:",
-        err instanceof Error ? err.message : String(err),
-      );
+      reportError(err, { scope: "useExamSprints" });
       throw err;
     }
   };

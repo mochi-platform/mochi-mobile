@@ -1,4 +1,6 @@
-import * as Calendar from "expo-calendar";
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { tc } from "@/src/shared/theme/colors";
+import * as Calendar from "expo-calendar/legacy";
 import { Platform } from "react-native";
 
 export type CreateDeviceCalendarEventInput = {
@@ -38,7 +40,7 @@ function buildMochiCalendarInput(source: Calendar.Source): Partial<Calendar.Cale
   return {
     title: "Mochi",
     name: "Mochi",
-    color: "#7c3aed",
+    color: tc("#7c3aed"),
     entityType: Calendar.EntityTypes.EVENT,
     source,
     sourceId: source.id,
@@ -54,8 +56,9 @@ async function resolveWritableCalendarId(): Promise<string | null> {
       if (defaultCalendar?.id) {
         return defaultCalendar.id;
       }
-    } catch {
+    } catch (error) {
       // Fallback below.
+      reportError(error, { scope: "src/shared/lib/deviceCalendar.ts" });
     }
   }
 
@@ -63,8 +66,7 @@ async function resolveWritableCalendarId(): Promise<string | null> {
   const mochiCalendar = calendars.find(
     (calendar) =>
       calendar.title === "Mochi" &&
-      ((calendar as { allowsModifications?: boolean }).allowsModifications ??
-        true),
+      ((calendar as { allowsModifications?: boolean }).allowsModifications ?? true),
   );
 
   if (mochiCalendar?.id) {
@@ -72,8 +74,7 @@ async function resolveWritableCalendarId(): Promise<string | null> {
   }
 
   const writableCalendar = calendars.find(
-    (calendar) =>
-      (calendar as { allowsModifications?: boolean }).allowsModifications ?? true,
+    (calendar) => (calendar as { allowsModifications?: boolean }).allowsModifications ?? true,
   );
 
   if (writableCalendar?.id) {
@@ -89,9 +90,7 @@ async function resolveWritableCalendarId(): Promise<string | null> {
     );
 
     if (sourceCalendar?.source) {
-      return Calendar.createCalendarAsync(
-        buildMochiCalendarInput(sourceCalendar.source),
-      );
+      return Calendar.createCalendarAsync(buildMochiCalendarInput(sourceCalendar.source));
     }
   }
 

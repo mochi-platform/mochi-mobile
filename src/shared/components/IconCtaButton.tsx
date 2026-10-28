@@ -1,3 +1,4 @@
+import { tc } from "@/src/shared/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { ReactNode } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
@@ -27,11 +28,11 @@ export function IconCtaButton({
   label,
   onPress,
   iconName,
-  iconColor = "#0f172a",
+  iconColor = tc("#0f172a"),
   iconSize = 14,
   icon,
   trailingIconName,
-  trailingIconColor = "#0f172a",
+  trailingIconColor = tc("#0f172a"),
   trailingIconSize = 14,
   trailingIcon,
   containerClassName = "",
@@ -40,21 +41,16 @@ export function IconCtaButton({
   iconContainerClassName = "",
   disabled = false,
   loading = false,
-  loadingColor = "#0f172a",
+  loadingColor = tc("#0f172a"),
   activeOpacity = 0.85,
 }: IconCtaButtonProps) {
   const leftIconNode =
-    icon ??
-    (iconName ? <Ionicons name={iconName} size={iconSize} color={iconColor} /> : null);
+    icon ?? (iconName ? <Ionicons name={iconName} size={iconSize} color={iconColor} /> : null);
 
   const rightIconNode =
     trailingIcon ??
     (trailingIconName ? (
-      <Ionicons
-        name={trailingIconName}
-        size={trailingIconSize}
-        color={trailingIconColor}
-      />
+      <Ionicons name={trailingIconName} size={trailingIconSize} color={trailingIconColor} />
     ) : null);
 
   return (
@@ -69,12 +65,8 @@ export function IconCtaButton({
           <ActivityIndicator size="small" color={loadingColor} />
         </View>
       ) : (
-        <View
-          className={`max-w-full flex-row items-center justify-center ${contentClassName}`}
-        >
-          {leftIconNode ? (
-            <View className={iconContainerClassName}>{leftIconNode}</View>
-          ) : null}
+        <View className={`max-w-full flex-row items-center justify-center ${contentClassName}`}>
+          {leftIconNode ? <View className={iconContainerClassName}>{leftIconNode}</View> : null}
           <Text
             className={`shrink text-center text-sm font-bold ${leftIconNode ? "ml-1.5" : ""} ${rightIconNode ? "mr-1.5" : ""} ${textClassName}`}
           >

@@ -35,16 +35,16 @@ export async function getAiCreditBalance(): Promise<AiCreditBalance | null> {
   };
 }
 
-export async function requestAiUsage(params: {
-  reason: string;
+/**
+ * Comprobación previa, sin consumo: el crédito lo cobra el gateway de IA al
+ * procesar cada petición. Los parámetros se conservan por compatibilidad.
+ */
+export async function requestAiUsage(_params?: {
+  reason?: string;
   sourceRef?: string | null;
   metadata?: Record<string, unknown> | null;
 }): Promise<AiUsageResult> {
-  const { data, error } = await supabase.rpc("apply_plan_limits_for_ai", {
-    p_reason: params.reason,
-    p_source_ref: params.sourceRef ?? null,
-    p_metadata: params.metadata ?? null,
-  });
+  const { data, error } = await supabase.rpc("check_ai_allowance");
 
   if (error) throw error;
 
@@ -65,32 +65,15 @@ export async function requestAiUsage(params: {
   };
 }
 
-export async function claimAiCreditFromAd(params: {
-  rewardEventId: string;
-  adNetwork?: string | null;
-  adUnitId?: string | null;
-}): Promise<AiCreditBalance | null> {
-  const { data, error } = await supabase.rpc("claim_ai_credit_from_ad", {
-    p_reward_event_id: params.rewardEventId,
-    p_ad_network: params.adNetwork ?? null,
-    p_ad_unit_id: params.adUnitId ?? null,
-  });
-
-  if (error) throw error;
-
-  const payload = (data ?? {}) as {
-    balance?: number;
-    daily_limit?: number;
-    claimed_today?: number;
-    remaining_today?: number;
-  };
-
-  return {
-    balance: payload.balance ?? 0,
-    dailyLimit: payload.daily_limit ?? 0,
-    claimedToday: payload.claimed_today ?? 0,
-    remainingToday: payload.remaining_today ?? 0,
-  };
+/** El crédito lo otorga el servidor al verificar el anuncio (admob-ssv); aquí solo se espera y se relee el saldo. */
+export async function waitForAdCredit(previousBalance: number): Promise<AiCreditBalance | null> {
+  let latest: AiCreditBalance | null = null;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    latest = await getAiCreditBalance();
+    if (latest && latest.balance > previousBalance) return latest;
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+  return latest;
 }
 
 export function buildAiLimitMessage(reason?: string | null): string {

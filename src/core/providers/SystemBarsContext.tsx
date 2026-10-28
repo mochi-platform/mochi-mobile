@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
 type SystemBarsTheme = {
   statusBarStyle: "light" | "dark";
@@ -28,15 +22,10 @@ const SystemBarsContext = createContext<SystemBarsContextValue>({
 
 export function SystemBarsProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<SystemBarsTheme>(defaultTheme);
-  const setTheme = useCallback(
-    (next: SystemBarsTheme) => setThemeState(next),
-    [],
-  );
+  const setTheme = useCallback((next: SystemBarsTheme) => setThemeState(next), []);
 
   return (
-    <SystemBarsContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </SystemBarsContext.Provider>
+    <SystemBarsContext.Provider value={{ theme, setTheme }}>{children}</SystemBarsContext.Provider>
   );
 }
 

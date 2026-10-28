@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { AchievementToast } from "@/src/shared/components/AchievementToast";
 
 type AchievementToastData = {
@@ -25,7 +19,7 @@ const AchievementContext = createContext<AchievementContextValue>({
 export function AchievementProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<AchievementToastData | null>(null);
   // Cola para no perder logros si se desbloquean varios seguidos
-  const [queue, setQueue] = useState<AchievementToastData[]>([]);
+  const [, setQueue] = useState<AchievementToastData[]>([]);
 
   const showAchievement = useCallback((data: AchievementToastData) => {
     setCurrent((prev) => {

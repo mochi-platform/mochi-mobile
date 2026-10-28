@@ -1,3 +1,4 @@
+import { tc } from "@/src/shared/theme/colors";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Modal, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
@@ -32,12 +33,12 @@ function getButtonStyles(style: CustomAlertButtonStyle | undefined) {
   if (style === "cancel") {
     return {
       buttonStyle: {
-        backgroundColor: "#ffffff",
+        backgroundColor: tc("#ffffff"),
         borderWidth: 2,
-        borderColor: "#e9d5ff",
+        borderColor: tc("#e9d5ff"),
       },
       textStyle: {
-        color: "#7e22ce",
+        color: tc("#7e22ce"),
       },
     };
   }
@@ -45,32 +46,27 @@ function getButtonStyles(style: CustomAlertButtonStyle | undefined) {
   if (style === "destructive") {
     return {
       buttonStyle: {
-        backgroundColor: "#dc2626",
+        backgroundColor: tc("#dc2626"),
         borderWidth: 2,
-        borderColor: "#b91c1c",
+        borderColor: tc("#b91c1c"),
       },
       textStyle: {
-        color: "#ffffff",
+        color: tc("#ffffff"),
       },
     };
   }
 
   return {
     buttonStyle: {
-      backgroundColor: "#a855f7",
+      backgroundColor: tc("#a855f7"),
     },
     textStyle: {
-      color: "#ffffff",
+      color: tc("#ffffff"),
     },
   };
 }
 
-export function CustomAlert({
-  visible,
-  title,
-  message,
-  buttons,
-}: CustomAlertProps) {
+export function CustomAlert({ visible, title, message, buttons }: CustomAlertProps) {
   const scale = useSharedValue(0.85);
   const isDualAction = buttons.length === 2;
 
@@ -93,21 +89,16 @@ export function CustomAlert({
   }));
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => undefined}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => undefined}>
       <View className="flex-1 items-center justify-center bg-black/30 px-6">
         <Animated.View
           style={cardAnimatedStyle}
-          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-surface"
         >
-          <Text className="text-center text-2xl font-extrabold text-purple-700">
+          <Text className="text-center text-2xl font-extrabold text-purple-700 dark:text-purple-300">
             {title}
           </Text>
-          <Text className="mt-3 text-center text-base font-semibold leading-6 text-slate-600">
+          <Text className="mt-3 text-center text-base font-semibold leading-6 text-slate-600 dark:text-slate-400">
             {message}
           </Text>
 
@@ -147,15 +138,9 @@ export function useCustomAlert() {
   }, []);
 
   const showAlert = useCallback(
-    ({
-      title: nextTitle,
-      message: nextMessage,
-      buttons: nextButtons,
-    }: ShowAlertParams) => {
+    ({ title: nextTitle, message: nextMessage, buttons: nextButtons }: ShowAlertParams) => {
       const buttonsWithClose = (
-        nextButtons.length > 0
-          ? nextButtons
-          : [{ text: "Aceptar", style: "default" as const }]
+        nextButtons.length > 0 ? nextButtons : [{ text: "Aceptar", style: "default" as const }]
       ).map((button) => ({
         ...button,
         onPress: () => {
@@ -173,14 +158,7 @@ export function useCustomAlert() {
   );
 
   const alertElement = useMemo(
-    () => (
-      <CustomAlert
-        visible={visible}
-        title={title}
-        message={message}
-        buttons={buttons}
-      />
-    ),
+    () => <CustomAlert visible={visible} title={title} message={message} buttons={buttons} />,
     [visible, title, message, buttons],
   );
 

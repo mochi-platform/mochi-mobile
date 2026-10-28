@@ -1,4 +1,5 @@
 import { createWidget } from "expo-widgets";
+import type { MochiSummaryWidgetProps } from "./widgetProps";
 import { HStack, Text, VStack } from "@expo/ui/swift-ui";
 import {
   background,
@@ -7,13 +8,6 @@ import {
   frame,
   padding,
 } from "@expo/ui/swift-ui/modifiers";
-
-export type MochiSummaryWidgetProps = {
-  points: number;
-  streak: number;
-  nextBlock: string;
-  updatedAtLabel: string;
-};
 
 function MochiSummaryWidgetView(props: MochiSummaryWidgetProps) {
   "widget";
@@ -54,7 +48,9 @@ function MochiSummaryWidgetView(props: MochiSummaryWidgetProps) {
           ]}
         >
           <Text modifiers={[foregroundStyle("#7c3aed")]}>Racha</Text>
-          <Text modifiers={[foregroundStyle("#312e81")]}>{`${Math.max(0, props.streak)} días`}</Text>
+          <Text
+            modifiers={[foregroundStyle("#312e81")]}
+          >{`${Math.max(0, props.streak)} días`}</Text>
         </VStack>
       </HStack>
 
@@ -63,7 +59,9 @@ function MochiSummaryWidgetView(props: MochiSummaryWidgetProps) {
         modifiers={[padding({ all: 10 }), background("#ffffff"), cornerRadius(12)]}
       >
         <Text modifiers={[foregroundStyle("#7c3aed")]}>Bloque del día</Text>
-        <Text modifiers={[foregroundStyle("#312e81")]}>{props.nextBlock || "Sin bloque programado"}</Text>
+        <Text modifiers={[foregroundStyle("#312e81")]}>
+          {props.nextBlock || "Sin bloque programado"}
+        </Text>
       </VStack>
 
       <Text modifiers={[foregroundStyle("#6d28d9")]}>{`Actualizado ${props.updatedAtLabel}`}</Text>

@@ -1,8 +1,6 @@
+import { reportError } from "@/src/shared/lib/observability/reportError";
 import { useState } from "react";
-import {
-  AIError,
-  convertNoteToAction as convertNoteToActionAI,
-} from "@mochi/ai/index";
+import { AIError, convertNoteToAction as convertNoteToActionAI } from "@mochi/ai/index";
 import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
 
 export interface ActionConversionResult {
@@ -51,13 +49,11 @@ export function useActionConversion() {
   const [convertingNote, setConvertingNote] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const convertNoteToAction = async (
-    note: string,
-  ): Promise<ActionConversionResult | null> => {
+  const convertNoteToAction = async (note: string): Promise<ActionConversionResult | null> => {
     setConvertingNote(true);
     setError(null);
 
-    const payloadNote = `Contexto: student_productivity_app. Idioma requerido: español. Nota: ${note}`;
+    const payloadNote = note;
 
     try {
       const usage = await requestAiUsage({
@@ -74,9 +70,6 @@ export function useActionConversion() {
       const result = await withTimeout(
         convertNoteToActionAI({
           note: payloadNote,
-          context: {
-            currentGoals: ["student_productivity_app"],
-          },
         }),
         15000,
       );
@@ -103,9 +96,6 @@ export function useActionConversion() {
           const retryResult = await withTimeout(
             convertNoteToActionAI({
               note: payloadNote,
-              context: {
-                currentGoals: ["student_productivity_app"],
-              },
             }),
             15000,
           );
@@ -130,26 +120,16 @@ export function useActionConversion() {
             reasoning: retryResult.reasoning || "",
           };
         } catch (retryErr) {
-          const retryError =
-            retryErr instanceof Error
-              ? retryErr
-              : new Error("Error desconocido");
+          const retryError = retryErr instanceof Error ? retryErr : new Error("Error desconocido");
           setError(retryError);
-          console.error(
-            "[useActionConversion] Error en reintento:",
-            retryError,
-          );
+          reportError(retryError, { scope: "useActionConversion" });
           return null;
         }
       }
 
-      const conversionError =
-        err instanceof Error ? err : new Error("Error desconocido");
+      const conversionError = err instanceof Error ? err : new Error("Error desconocido");
       setError(conversionError);
-      console.error(
-        "[useActionConversion] Error de conversion:",
-        conversionError,
-      );
+      reportError(conversionError, { scope: "useActionConversion" });
       return null;
     } finally {
       setConvertingNote(false);

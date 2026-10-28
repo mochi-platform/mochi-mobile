@@ -1,7 +1,12 @@
-const UNSPLASH_KEY = process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY || "";
+import { reportError } from "@/src/shared/lib/observability/reportError";
+import { supabase } from "@/src/shared/lib/supabase";
 
 const imageCache = new Map<string, string>();
 
+/**
+ * Busca una imagen a través de la Edge Function `unsplash-image` (la clave de Unsplash
+ * vive en el servidor, que además cachea resultados por 30 días).
+ */
 export async function searchUnsplashImage(
   query: string,
   orientation: "landscape" | "portrait" | "squarish" = "landscape",
@@ -13,37 +18,16 @@ export async function searchUnsplashImage(
   const cached = imageCache.get(cacheKey);
   if (cached) return cached;
 
-  if (!UNSPLASH_KEY) return null;
-
   try {
-    const params = new URLSearchParams({
-      query,
-      per_page: "1",
-      orientation,
+    const { data, error } = await supabase.functions.invoke("unsplash-image", {
+      body: { query: normalizedQuery, orientation },
     });
-
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Client-ID ${UNSPLASH_KEY}`,
-        },
-      },
-    );
-
-    if (!response.ok) return null;
-
-    const json = (await response.json()) as {
-      results?: Array<{ urls?: { small?: string } }>;
-    };
-
-    const imageUrl = json.results?.[0]?.urls?.small ?? null;
-    if (imageUrl) {
-      imageCache.set(cacheKey, imageUrl);
-    }
-
-    return imageUrl;
-  } catch {
+    if (error) throw error;
+    const url = (data as { url?: string | null } | null)?.url ?? null;
+    if (url) imageCache.set(cacheKey, url);
+    return url;
+  } catch (error) {
+    reportError(error, { scope: "unsplash/search" });
     return null;
   }
 }

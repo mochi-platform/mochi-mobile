@@ -2,11 +2,8 @@ import { createSupabaseClient } from "@mochi/supabase/client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppState } from "react-native";
 
-const supabaseUrl =
-  process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() ||
-  "https://invalid.supabase.co";
-const supabaseAnonKey =
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() || "invalid-anon-key";
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() || "https://invalid.supabase.co";
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() || "invalid-anon-key";
 
 if (
   !process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() ||
@@ -17,18 +14,15 @@ if (
   );
 }
 
-export const supabase = createSupabaseClient(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    auth: {
-      storage: AsyncStorage,
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-    },
+export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+    flowType: "pkce",
   },
-);
+});
 
 // Supabase debe pausar/reanudar el auto-refresh según el ciclo de vida de la app.
 AppState.addEventListener("change", (state) => {

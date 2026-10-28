@@ -35,8 +35,7 @@ export function scoreTodaysTasks(
       }
 
       // Streak component (35% weight)
-      const streakScore =
-        currentStreak === 0 ? -50 : currentStreak < 3 ? 0 : 50;
+      const streakScore = currentStreak === 0 ? -50 : currentStreak < 3 ? 0 : 50;
       score += streakScore * 0.35;
       reason += `Racha: ${streakScore}pt. `;
 
@@ -79,9 +78,7 @@ function typeScoreByCycle(phase: CyclePhase): number {
     case "unknown":
       return 0;
     default:
-      {
-        const _exhaustive: never = phase;
-        return 0;
-      }
+      phase satisfies never;
+      return 0;
   }
 }
