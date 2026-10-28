@@ -1,101 +1,105 @@
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { type AnimatedStyle } from "react-native-reanimated";
-import { Text, TouchableOpacity, View } from "react-native";
-import type { ViewStyle } from "react-native";
-import { colorBorderMap, colorMap, formatTime } from "@/src/features/study/timer/helpers";
+import type { AnimatedStyle } from "react-native-reanimated";
+import { Text, View, type ViewStyle } from "react-native";
+import { formatTime } from "@/src/features/study/timer/helpers";
 import type { PomodoroPhase, TimerMode } from "@/src/features/study/timer/types";
+import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { COLORS } from "@/src/shared/theme/tokens";
+import {
+  ACCENT_GLOW,
+  Button,
+  Caption,
+  Eyebrow,
+  PressableScale,
+  ProgressRing,
+  Title,
+} from "@/src/shared/ui";
 
 type StudyTimerViewProps = {
   specificTopic: string;
   timerMode: TimerMode;
   pomodoroCycle: number;
   pomodoroPhase: PomodoroPhase;
-  blockColor: string;
+  /** Se conserva por compatibilidad; el color ya no cambia por bloque (un solo acento). */
+  blockColor?: string;
   timeLeft: number;
   activeTimerDuration: number;
-  progressStyle: AnimatedStyle<ViewStyle>;
+  /** Se conserva por compatibilidad: el anillo calcula el avance a partir del tiempo. */
+  progressStyle?: AnimatedStyle<ViewStyle>;
   isRunning: boolean;
   isCompleting: boolean;
   onToggleRunning: () => void;
   onComplete: () => void;
 };
 
+/** Sesión en curso: Mochi acompaña, el anillo se llena y un solo botón grande pausa o sigue. */
 export function StudyTimerView({
   specificTopic,
   timerMode,
   pomodoroCycle,
   pomodoroPhase,
-  blockColor,
   timeLeft,
   activeTimerDuration,
-  progressStyle,
   isRunning,
   isCompleting,
   onToggleRunning,
   onComplete,
 }: StudyTimerViewProps) {
-  return (
-    <>
-      <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
-        <Text className="text-xs font-bold uppercase text-purple-700 dark:text-purple-300">
-          Tema actual
-        </Text>
-        <Text className="mt-1 text-base font-extrabold text-purple-900 dark:text-purple-100">
-          {specificTopic}
-        </Text>
-      </View>
+  const onBreak = timerMode === "pomodoro" && pomodoroPhase !== "focus";
+  const progress = activeTimerDuration > 0 ? 1 - timeLeft / activeTimerDuration : 0;
 
-      <View className="mt-5 items-center">
-        {timerMode === "pomodoro" ? (
-          <View className="mb-3 rounded-full bg-emerald-100 px-4 py-1.5 dark:bg-emerald-900">
-            <Text className="text-xs font-extrabold text-emerald-700 dark:text-emerald-300">
-              Pomodoro · Ciclo {pomodoroCycle} · {pomodoroPhase === "focus" ? "Foco" : "Descanso"}
-            </Text>
-          </View>
-        ) : null}
-        <View
-          className={`h-52 w-52 items-center justify-center rounded-full border-8 ${colorBorderMap[blockColor] ?? "border-purple-300 dark:border-purple-700"} ${colorMap[blockColor] ?? "bg-purple-100 dark:bg-purple-900"}`}
+  return (
+    <View className="items-center">
+      <Eyebrow className="mt-4">{onBreak ? "Descanso" : "Estudiando"}</Eyebrow>
+      <Title className="mt-1 text-center text-[22px] leading-[27px]" numberOfLines={2}>
+        {specificTopic}
+      </Title>
+      {timerMode === "pomodoro" ? (
+        <View className="mt-2 rounded-full bg-accent-soft px-3.5 py-1">
+          <Text className="font-body-extrabold text-xs text-accent-strong">
+            Pomodoro · ciclo {pomodoroCycle} · {onBreak ? "descanso" : "foco"}
+          </Text>
+        </View>
+      ) : null}
+
+      <View className="mt-6 items-center justify-center">
+        <ProgressRing
+          progress={progress}
+          size={248}
+          stroke={14}
+          color={onBreak ? COLORS.positive : COLORS.accent}
+          accessibilityLabel={`Quedan ${formatTime(timeLeft)}`}
         >
-          <Text className="text-5xl font-extrabold text-purple-900 dark:text-purple-100">
+          <MochiCharacter
+            expression={onBreak ? "sleepy" : isRunning ? "focused" : "happy"}
+            size={92}
+            shadow={false}
+          />
+          <Text className="font-display text-[44px] leading-[48px] text-ink">
             {formatTime(timeLeft)}
           </Text>
-          <Text className="mt-1 text-sm font-semibold text-purple-500">restante</Text>
-        </View>
+          <Caption>de {formatTime(activeTimerDuration)}</Caption>
+        </ProgressRing>
       </View>
 
-      <View className="mt-6">
-        <View className="h-3 w-full overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900">
-          <Animated.View style={progressStyle} className="h-3 rounded-full bg-purple-500" />
-        </View>
-        <View className="mt-2 flex-row justify-between">
-          <Text className="text-xs font-semibold text-purple-400">0:00</Text>
-          <Text className="text-xs font-semibold text-purple-400">
-            {formatTime(activeTimerDuration)}
-          </Text>
-        </View>
-      </View>
-
-      <View className="mt-8 items-center">
-        <TouchableOpacity
-          className="h-16 w-16 items-center justify-center rounded-full bg-purple-500"
-          onPress={() => onToggleRunning()}
-        >
-          <Ionicons name={isRunning ? "pause" : "play"} size={28} color="white" />
-        </TouchableOpacity>
-        <Text className="mt-3 text-sm font-semibold text-purple-500">
-          {isRunning ? "Pausar" : "Iniciar"}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        className={`mb-24 mt-8 items-center rounded-2xl border-2 border-purple-200 py-3 dark:border-purple-800 ${isCompleting ? "bg-purple-100 dark:bg-purple-900" : "bg-white dark:bg-surface"}`}
-        onPress={() => onComplete()}
-        disabled={isCompleting}
+      <PressableScale
+        onPress={onToggleRunning}
+        accessibilityLabel={isRunning ? "Pausar" : "Seguir"}
+        className="mt-8 h-[72px] w-[72px] items-center justify-center rounded-full bg-accent"
+        style={ACCENT_GLOW}
       >
-        <Text className="font-bold text-purple-700 dark:text-purple-300">
-          {isCompleting ? "Guardando..." : "Marcar como completado"}
-        </Text>
-      </TouchableOpacity>
-    </>
+        <Ionicons name={isRunning ? "pause" : "play"} size={32} color={COLORS.accentInk} />
+      </PressableScale>
+      <Caption className="mt-2">{isRunning ? "Pausar" : "Seguir"}</Caption>
+
+      <View className="mb-10 mt-8 self-stretch">
+        <Button
+          title={isCompleting ? "Guardando…" : "Terminé la sesión"}
+          variant="outline"
+          loading={isCompleting}
+          onPress={onComplete}
+        />
+      </View>
+    </View>
   );
 }

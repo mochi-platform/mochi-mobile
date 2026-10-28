@@ -1,15 +1,13 @@
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { track } from "@/src/shared/lib/observability/analytics";
-import { tc } from "@/src/shared/theme/colors";
+import { COLORS } from "@/src/shared/theme/tokens";
+import { Button, Caption, ErrorState, PressableScale, Screen, Surface } from "@/src/shared/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AppState, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { AppState, Text, View } from "react-native";
 import { useAchievement } from "@/src/core/providers/AchievementContext";
 import { useSession } from "@/src/core/providers/SessionContext";
-import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import {
   askStudyCompanion,
@@ -91,7 +89,6 @@ export function StudyTimerScreen() {
   timeLeftRef.current = timeLeft;
   const completionMutexRef = useRef(false);
   const sessionPersistedRef = useRef(false);
-  const progress = useSharedValue(1);
 
   const activeTimerDuration = useMemo(() => {
     if (timerMode !== "pomodoro") {
@@ -101,7 +98,6 @@ export function StudyTimerScreen() {
     return pomodoroPhase === "focus" ? POMODORO_FOCUS_SECONDS : POMODORO_BREAK_SECONDS;
   }, [pomodoroPhase, timerMode, totalSeconds]);
 
-  const blockColor = block?.color ?? "purple";
   const summaryText = useMemo(() => summarizeSession(specificTopic), [specificTopic]);
 
   useEffect(() => {
@@ -127,7 +123,6 @@ export function StudyTimerScreen() {
         setBlock(data);
         setTotalSeconds(safeDuration);
         setTimeLeft(safeDuration);
-        progress.value = 1;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error cargando bloque");
       } finally {
@@ -136,7 +131,7 @@ export function StudyTimerScreen() {
     }
 
     void loadBlock();
-  }, [blockId, progress]);
+  }, [blockId]);
 
   useEffect(() => {
     if (!isRunning || phase !== "studying") {
@@ -171,18 +166,6 @@ export function StudyTimerScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- las dependencias omitidas son estables o se excluyen a propósito para no reiniciar el efecto
   }, [isRunning, phase, timerMode]);
 
-  useEffect(() => {
-    if (activeTimerDuration > 0) {
-      progress.value = withTiming(timeLeft / activeTimerDuration, {
-        duration: 900,
-        easing: Easing.linear,
-      });
-    }
-  }, [activeTimerDuration, progress, timeLeft]);
-
-  const progressStyle = useAnimatedStyle(() => ({
-    width: `${progress.value * 100}%` as `${number}%`,
-  }));
 
   async function ensureDiscipline(): Promise<string> {
     const subject = block?.subject ?? "Estudio";
@@ -493,29 +476,19 @@ export function StudyTimerScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-purple-50 dark:bg-purple-950">
-        <MochiCharacter mood="thinking" size={96} />
-        <Text className="mt-4 text-sm font-semibold text-purple-700 dark:text-purple-300">
-          Cargando bloque...
-        </Text>
-      </SafeAreaView>
+      <View className="flex-1 items-center justify-center bg-canvas">
+        <MochiCharacter expression="thinking" size={120} />
+        <Caption className="mt-3">Preparando tu bloque…</Caption>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-purple-50 px-6 dark:bg-purple-950">
-        <MochiCharacter mood="sleepy" size={80} />
-        <Text className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
-          {error}
-        </Text>
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-purple-500 px-6 py-3"
-          onPress={() => router.back()}
-        >
-          <Text className="font-bold text-white">Volver</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      <View className="flex-1 justify-center bg-canvas px-6">
+        <ErrorState message={error} />
+        <Button title="Volver" variant="soft" onPress={() => router.back()} />
+      </View>
     );
   }
 
@@ -533,86 +506,74 @@ export function StudyTimerScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-canvas px-6 dark:bg-purple-950">
-        <TouchableOpacity className="mt-2 flex-row items-center" onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color={tc("#7c3aed")} />
-          <Text className="ml-1 font-bold text-purple-700 dark:text-purple-300">Volver</Text>
-        </TouchableOpacity>
-
-        {gamificationWarning ? (
-          <View className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950">
-            <Text className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-              {gamificationWarning}
-            </Text>
-          </View>
-        ) : null}
-
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
-            <Text className="text-xl font-extrabold text-purple-900 dark:text-purple-100">
-              {block?.subject}
-            </Text>
-            <Text className="mt-1 text-xs font-semibold text-purple-600 dark:text-purple-400">
-              {block?.start_time} - {block?.end_time} · {formatDurationMinutes(totalSeconds)} min
-            </Text>
-            {discipline ? (
-              <View className="mt-3 self-start rounded-full bg-purple-100 px-3 py-1 dark:bg-purple-900">
-                <Text className="text-xs font-bold text-purple-700 dark:text-purple-300">
-                  Disciplina: {discipline}
-                </Text>
-              </View>
+      <Screen
+        withTabBar={false}
+        headerRight={
+          <View className="flex-row items-center gap-2">
+            {phase === "studying" ? (
+              <PressableScale
+                onPress={() => setShowCompanion(true)}
+                accessibilityLabel="Preguntarle a Mochi"
+                className="h-10 flex-row items-center gap-1.5 rounded-full bg-accent-soft px-3.5"
+              >
+                <Ionicons name="sparkles" size={15} color={COLORS.accentStrong} />
+                <Text className="font-body-extrabold text-sm text-accent-strong">Preguntar</Text>
+              </PressableScale>
             ) : null}
+            <PressableScale
+              onPress={() => router.back()}
+              accessibilityLabel="Volver"
+              className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+            >
+              <Ionicons name="close" size={20} color={COLORS.inkMuted} />
+            </PressableScale>
           </View>
-
-          {phase === "setup" ? (
-            <StudySetupView
-              timerMode={timerMode}
-              onTimerModeChange={handleTimerModeChange}
-              specificTopic={specificTopic}
-              onSpecificTopicChange={setSpecificTopic}
-              setupAttachment={setupAttachment}
-              onPickCamera={() => void pickImageFromCamera(setSetupAttachment, setError)}
-              onPickGallery={() => void pickImageFromGallery(setSetupAttachment, setError)}
-              onPickDocument={() => void pickDocument(setSetupAttachment)}
-              onRemoveAttachment={() => setSetupAttachment(null)}
-              planning={planning}
-              planError={planError}
-              studyPlan={studyPlan}
-              onGeneratePlan={() => void handleGeneratePlan()}
-              onStartSession={() => void handleStartSession()}
-            />
-          ) : (
-            <StudyTimerView
-              specificTopic={specificTopic}
-              timerMode={timerMode}
-              pomodoroCycle={pomodoroCycle}
-              pomodoroPhase={pomodoroPhase}
-              blockColor={blockColor}
-              timeLeft={timeLeft}
-              activeTimerDuration={activeTimerDuration}
-              progressStyle={progressStyle}
-              isRunning={isRunning}
-              isCompleting={isCompleting}
-              onToggleRunning={() => setIsRunning((r) => !r)}
-              onComplete={() => void handleComplete()}
-            />
-          )}
-        </ScrollView>
-
-        {phase === "studying" ? (
-          <View className="absolute bottom-8 right-6">
-            <IconCtaButton
-              label="Preguntarle a Mochi"
-              onPress={() => setShowCompanion(true)}
-              iconName="sparkles"
-              iconColor={tc("#ffffff")}
-              iconSize={16}
-              containerClassName="w-auto rounded-full bg-purple-600 px-4 py-3"
-              textClassName="text-white"
-            />
-          </View>
+        }
+        title={phase === "setup" ? (block?.subject ?? "Estudio") : undefined}
+        eyebrow={
+          phase === "setup" && block
+            ? `${block.start_time.slice(0, 5)} – ${block.end_time.slice(0, 5)} · ${formatDurationMinutes(totalSeconds)} min${discipline ? ` · ${discipline}` : ""}`
+            : undefined
+        }
+      >
+        {gamificationWarning ? (
+          <Surface tone="sunken" className="mt-2 p-3">
+            <Caption>{gamificationWarning}</Caption>
+          </Surface>
         ) : null}
-      </SafeAreaView>
+
+        {phase === "setup" ? (
+          <StudySetupView
+            timerMode={timerMode}
+            onTimerModeChange={handleTimerModeChange}
+            specificTopic={specificTopic}
+            onSpecificTopicChange={setSpecificTopic}
+            setupAttachment={setupAttachment}
+            onPickCamera={() => void pickImageFromCamera(setSetupAttachment, setError)}
+            onPickGallery={() => void pickImageFromGallery(setSetupAttachment, setError)}
+            onPickDocument={() => void pickDocument(setSetupAttachment)}
+            onRemoveAttachment={() => setSetupAttachment(null)}
+            planning={planning}
+            planError={planError}
+            studyPlan={studyPlan}
+            onGeneratePlan={() => void handleGeneratePlan()}
+            onStartSession={() => void handleStartSession()}
+          />
+        ) : (
+          <StudyTimerView
+            specificTopic={specificTopic}
+            timerMode={timerMode}
+            pomodoroCycle={pomodoroCycle}
+            pomodoroPhase={pomodoroPhase}
+            timeLeft={timeLeft}
+            activeTimerDuration={activeTimerDuration}
+            isRunning={isRunning}
+            isCompleting={isCompleting}
+            onToggleRunning={() => setIsRunning((r) => !r)}
+            onComplete={() => void handleComplete()}
+          />
+        )}
+      </Screen>
 
       <StudyCompanionModal
         visible={showCompanion}

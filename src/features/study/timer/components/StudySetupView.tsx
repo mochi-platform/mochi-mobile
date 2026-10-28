@@ -1,7 +1,16 @@
-import { tc } from "@/src/shared/theme/colors";
-import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { getAttachmentLabel } from "@/src/features/study/timer/helpers";
 import type { StudyAttachment, TimerMode } from "@/src/features/study/timer/types";
+import {
+  Button,
+  Caption,
+  Chip,
+  ELEVATION,
+  Input,
+  MochiBubble,
+  PressableScale,
+  Surface,
+} from "@/src/shared/ui";
 
 type StudySetupViewProps = {
   timerMode: TimerMode;
@@ -20,6 +29,7 @@ type StudySetupViewProps = {
   onStartSession: () => void;
 };
 
+/** Antes de empezar: modo, tema, adjunto opcional y un plan de Mochi si se pide. */
 export function StudySetupView({
   timerMode,
   onTimerModeChange,
@@ -36,156 +46,95 @@ export function StudySetupView({
   onGeneratePlan,
   onStartSession,
 }: StudySetupViewProps) {
+  const ready = Boolean(specificTopic.trim());
   return (
-    <View className="mt-4 rounded-3xl border-2 border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-surface">
-      <Text className="text-xs font-bold uppercase text-purple-700 dark:text-purple-300">
-        Modo de sesion
-      </Text>
-      <View className="mt-2 flex-row gap-2">
-        <TouchableOpacity
-          className={`flex-1 rounded-xl border px-3 py-2 ${
-            timerMode === "regular"
-              ? "border-purple-500 bg-purple-500"
-              : "border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950"
-          }`}
-          onPress={() => onTimerModeChange("regular")}
-        >
-          <Text
-            className={`text-center text-xs font-bold ${
-              timerMode === "regular" ? "text-white" : "text-purple-700 dark:text-purple-300"
-            }`}
-          >
-            Regular
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className={`flex-1 rounded-xl border px-3 py-2 ${
-            timerMode === "pomodoro"
-              ? "border-emerald-500 bg-emerald-500"
-              : "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950"
-          }`}
-          onPress={() => onTimerModeChange("pomodoro")}
-        >
-          <Text
-            className={`text-center text-xs font-bold ${
-              timerMode === "pomodoro" ? "text-white" : "text-emerald-700 dark:text-emerald-300"
-            }`}
-          >
-            Pomodoro 25/5
-          </Text>
-        </TouchableOpacity>
+    <View className="mt-4">
+      <View className="flex-row rounded-control bg-surface-muted p-1" accessibilityRole="tablist">
+        {(
+          [
+            { value: "regular", label: "Regular" },
+            { value: "pomodoro", label: "Pomodoro 25/5" },
+          ] as const
+        ).map((m) => {
+          const on = timerMode === m.value;
+          return (
+            <PressableScale
+              key={m.value}
+              haptics="selection"
+              onPress={() => onTimerModeChange(m.value)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              className={`flex-1 items-center rounded-[14px] py-2.5 ${on ? "bg-surface" : ""}`}
+              style={on ? ELEVATION[1] : undefined}
+            >
+              <Text className={`font-body-extrabold text-sm ${on ? "text-ink" : "text-ink-muted"}`}>
+                {m.label}
+              </Text>
+            </PressableScale>
+          );
+        })}
       </View>
       {timerMode === "pomodoro" ? (
-        <Text className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-          Alterna foco y descanso con aviso automatico en cada cambio de fase.
-        </Text>
+        <Caption className="ml-1 mt-2">
+          Alterna 25 minutos de foco y 5 de descanso, con aviso en cada cambio.
+        </Caption>
       ) : null}
 
-      <Text className="mt-4 text-sm font-bold text-purple-800 dark:text-purple-200">
-        ¿Qué vas a estudiar específicamente hoy?
-      </Text>
-      <TextInput
-        className="mt-2 rounded-2xl border-2 border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-purple-800 dark:bg-purple-950 dark:text-slate-200"
-        placeholder="Ej: Integrales por sustitución y ejercicios tipo examen"
-        placeholderTextColor={tc("#a78bfa")}
-        value={specificTopic}
-        onChangeText={onSpecificTopicChange}
-        multiline
-      />
-
-      <Text className="mt-4 text-xs font-bold uppercase text-purple-700 dark:text-purple-300">
-        Adjunto opcional
-      </Text>
-      <View className="mt-2 flex-row flex-wrap gap-2">
-        <TouchableOpacity
-          className="rounded-xl bg-purple-100 px-3 py-2 dark:bg-purple-900"
-          onPress={() => onPickCamera()}
-        >
-          <Text className="text-xs font-bold text-purple-800 dark:text-purple-200">Cámara</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="rounded-xl bg-purple-100 px-3 py-2 dark:bg-purple-900"
-          onPress={() => onPickGallery()}
-        >
-          <Text className="text-xs font-bold text-purple-800 dark:text-purple-200">Galería</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="rounded-xl bg-purple-100 px-3 py-2 dark:bg-purple-900"
-          onPress={() => onPickDocument()}
-        >
-          <Text className="text-xs font-bold text-purple-800 dark:text-purple-200">Archivo</Text>
-        </TouchableOpacity>
-        {setupAttachment ? (
-          <TouchableOpacity
-            className="rounded-xl bg-red-100 px-3 py-2 dark:bg-red-900"
-            onPress={() => onRemoveAttachment()}
-          >
-            <Text className="text-xs font-bold text-red-700 dark:text-red-300">Quitar</Text>
-          </TouchableOpacity>
-        ) : null}
+      <View className="mt-5">
+        <Input
+          label="¿Qué vas a estudiar hoy?"
+          placeholder="Integrales por sustitución y ejercicios tipo examen"
+          value={specificTopic}
+          onChangeText={onSpecificTopicChange}
+          multiline
+        />
       </View>
 
+      <Text className="mb-2 ml-1 font-body-bold text-sm text-ink">Adjunto (opcional)</Text>
+      <View className="flex-row flex-wrap gap-2">
+        <Chip icon="camera" label="Cámara" onPress={onPickCamera} />
+        <Chip icon="images" label="Galería" onPress={onPickGallery} />
+        <Chip icon="document" label="Archivo" onPress={onPickDocument} />
+        {setupAttachment ? <Chip icon="close" label="Quitar" onPress={onRemoveAttachment} /> : null}
+      </View>
       {setupAttachment ? (
-        <View className="mt-3 rounded-2xl border border-purple-200 bg-purple-50 p-3 dark:border-purple-800 dark:bg-purple-950">
+        <Surface className="mt-3 p-3">
           {setupAttachment.previewUri ? (
             <Image
               source={{ uri: setupAttachment.previewUri }}
-              className="h-24 w-full rounded-xl"
+              className="h-28 w-full rounded-[14px]"
               resizeMode="cover"
             />
           ) : (
-            <View className="h-16 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900">
-              <Text className="text-xs font-bold text-purple-700 dark:text-purple-300">
+            <View className="h-16 items-center justify-center rounded-[14px] bg-surface-muted">
+              <Text className="font-body-bold text-xs text-ink-muted">
                 {getAttachmentLabel(setupAttachment.mimeType)}
               </Text>
             </View>
           )}
-          <Text
-            className="mt-2 text-xs font-semibold text-purple-700 dark:text-purple-300"
-            numberOfLines={1}
-          >
+          <Caption className="mt-2" numberOfLines={1}>
             {setupAttachment.name}
-          </Text>
-        </View>
+          </Caption>
+        </Surface>
       ) : null}
 
-      <TouchableOpacity
-        className={`mt-4 items-center rounded-2xl py-3 ${planning ? "bg-purple-200 dark:bg-purple-800" : "bg-purple-500"}`}
-        onPress={() => onGeneratePlan()}
-        disabled={planning || !specificTopic.trim()}
-      >
-        {planning ? (
-          <View className="flex-row items-center">
-            <ActivityIndicator color="white" />
-            <Text className="ml-2 font-bold text-white">Creando plan...</Text>
-          </View>
-        ) : (
-          <Text className="font-bold text-white">Pedir plan a Mochi</Text>
-        )}
-      </TouchableOpacity>
-
+      <View className="mt-5">
+        <Button
+          title={planning ? "Mochi está armando tu plan…" : "Pedir plan a Mochi"}
+          variant="soft"
+          loading={planning}
+          disabled={!ready}
+          onPress={onGeneratePlan}
+        />
+      </View>
       {planError ? (
-        <Text className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">
-          {planError}
-        </Text>
+        <Text className="ml-1 mt-2 font-body-bold text-xs text-danger">{planError}</Text>
       ) : null}
+      {studyPlan ? <MochiBubble className="mt-4" tail="none" text={studyPlan} /> : null}
 
-      {studyPlan ? (
-        <View className="mt-4 rounded-2xl border border-purple-200 bg-purple-50 p-3 dark:border-purple-800 dark:bg-purple-950">
-          <Text className="text-sm font-semibold leading-5 text-purple-900 dark:text-purple-100">
-            {studyPlan}
-          </Text>
-        </View>
-      ) : null}
-
-      <TouchableOpacity
-        className={`mt-4 items-center rounded-2xl py-3 ${specificTopic.trim() ? "bg-emerald-500" : "bg-emerald-200 dark:bg-emerald-800"}`}
-        disabled={!specificTopic.trim()}
-        onPress={() => onStartSession()}
-      >
-        <Text className="font-bold text-white">Empezar sesión</Text>
-      </TouchableOpacity>
+      <View className="mt-4">
+        <Button title="Empezar sesión" disabled={!ready} onPress={onStartSession} />
+      </View>
     </View>
   );
 }
