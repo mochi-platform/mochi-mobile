@@ -1,14 +1,10 @@
-import { COLORS } from "@/src/shared/theme/tokens";
 import { toLocalISODate } from "@/src/shared/lib/dates";
-import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { router, useFocusEffect } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useCallback, useState } from "react";
+import { View } from "react-native";
+import { useFocusEffect } from "expo-router";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useCycle } from "@/src/core/providers/CycleContext";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
-import { IconCtaButton } from "@/src/shared/components/IconCtaButton";
 import {
   generateStudyBlockSuggestions,
   predictWellnessRisk,
@@ -17,6 +13,19 @@ import {
 } from "@/src/shared/lib/ai";
 import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
 import { supabase } from "@/src/shared/lib/supabase";
+import {
+  Body,
+  Button,
+  Caption,
+  Eyebrow,
+  IconTile,
+  ListGroup,
+  ListRow,
+  Screen,
+  SectionHeader,
+  Skeleton,
+  Surface,
+} from "@/src/shared/ui";
 
 type PlannerExamItem = {
   subject: string;
@@ -212,10 +221,6 @@ export function WeeklyPlannerScreen() {
   const [suggestions, setSuggestions] = useState<PlannerSuggestionItem[]>([]);
   const [wellness, setWellness] = useState<PredictWellnessRiskOutput | null>(null);
 
-  const riskTone = useMemo(
-    () => getRiskTone(wellness?.riskPercentage ?? 0),
-    [wellness?.riskPercentage],
-  );
 
   const generatePlanner = useCallback(async () => {
     const userId = session?.user.id;
@@ -477,159 +482,96 @@ export function WeeklyPlannerScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted">
-        <ActivityIndicator size="small" color={COLORS.accent} />
-        <Text className="mt-3 text-sm font-semibold text-ink">
-          Preparando tu planner semanal...
-        </Text>
-      </SafeAreaView>
+      <Screen title="Planear mi semana" withTabBar={false} closable>
+        <View className="mt-4 gap-3">
+          <Skeleton height={120} className="rounded-card" />
+          <Skeleton height={200} className="rounded-card" />
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <TouchableOpacity
-          className="mt-4 flex-row items-center"
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="chevron-back" size={22} color={COLORS.accent} />
-          <Text className="ml-1 text-sm font-bold text-ink">Volver</Text>
-        </TouchableOpacity>
-
-        <View className="mt-5 rounded-3xl bg-surface p-5">
-          <View className="flex-row items-start justify-between">
-            <View className="flex-1 pr-3">
-              <Text className="text-2xl font-extrabold text-ink">Mochi Weekly Planner</Text>
-              <Text className="mt-1 text-sm font-semibold text-ink">
-                Sugerencias proactivas segun examenes, ciclo y habitos recientes.
-              </Text>
-            </View>
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-tint-study">
-              <Ionicons name="sparkles" size={20} color={COLORS.accent} />
-            </View>
-          </View>
-
-          <View className="mt-4 flex-row gap-2">
-            <IconCtaButton
-              label="Regenerar plan"
-              onPress={() => {
-                void generatePlanner();
-              }}
-              iconName="refresh"
-              iconColor={COLORS.accentInk}
-              iconSize={14}
-              loading={generating}
-              loadingColor={COLORS.accentInk}
-              containerClassName="flex-1 rounded-2xl bg-accent px-3 py-3"
-              textClassName="text-xs text-white"
-            />
-
-            <IconCtaButton
-              label="Guardar bloques"
-              onPress={() => {
-                void handleSaveSuggestions();
-              }}
-              iconName="save"
-              iconColor={COLORS.accentInk}
-              iconSize={14}
-              loading={saving}
-              loadingColor={COLORS.accentInk}
-              disabled={suggestions.length === 0}
-              containerClassName={`flex-1 rounded-2xl px-3 py-3 ${saving ? "bg-tint-ok" : "bg-positive"}`}
-              textClassName="text-xs text-white"
-            />
-          </View>
-
-          {saveMessage ? (
-            <View className="mt-3 rounded-2xl bg-surface-muted px-3 py-2">
-              <Text className="text-xs font-bold text-positive">{saveMessage}</Text>
-            </View>
-          ) : null}
-
-          {error ? (
-            <View className="mt-3 rounded-2xl bg-surface-muted px-3 py-2">
-              <Text className="text-xs font-bold text-danger">{error}</Text>
-            </View>
-          ) : null}
+    <Screen
+      title="Planear mi semana"
+      subtitle="Mochi propone bloques según tus exámenes, tu ciclo y tus hábitos."
+      withTabBar={false}
+      closable
+    >
+      <View className="mt-3 flex-row gap-2">
+        <View className="flex-1">
+          <Button
+            title="Proponer"
+            variant="soft"
+            icon="sparkles"
+            loading={generating}
+            onPress={() => void generatePlanner()}
+          />
         </View>
+        <View className="flex-1">
+          <Button
+            title="Guardar"
+            icon="checkmark"
+            loading={saving}
+            disabled={suggestions.length === 0}
+            onPress={() => void handleSaveSuggestions()}
+          />
+        </View>
+      </View>
+      {saveMessage ? <Caption className="ml-1 mt-2 text-positive">{saveMessage}</Caption> : null}
+      {error ? <Caption className="ml-1 mt-2 text-danger">{error}</Caption> : null}
 
-        {wellness ? (
-          <View className={`mt-4 rounded-3xl border-2 p-4 ${riskTone.cardClass}`}>
-            <View className="flex-row items-center justify-between">
-              <Text className={`text-base font-extrabold ${riskTone.textClass}`}>
-                Riesgo de sobrecarga
-              </Text>
-              <View className={`rounded-full px-3 py-1 ${riskTone.badgeClass}`}>
-                <Text className="text-xs font-extrabold text-white">
-                  {Math.round(wellness.riskPercentage)}%
-                </Text>
-              </View>
-            </View>
-
-            <Text className={`mt-1 text-xs font-semibold ${riskTone.textClass}`}>
-              Confianza del modelo: {Math.round(wellness.confidence * 100)}%
-            </Text>
-
-            <View className="mt-3 gap-2">
+      {wellness ? (
+        <>
+          <SectionHeader
+            title="Riesgo de sobrecarga"
+            actionLabel={`${Math.round(wellness.riskPercentage)}%`}
+          />
+          <Surface className="p-4">
+            <Caption>Confianza: {Math.round(wellness.confidence * 100)}%</Caption>
+            <View className="mt-2 gap-2">
               {wellness.recommendations.slice(0, 3).map((recommendation, index) => (
                 <View
                   key={`${recommendation.type}-${index}`}
-                  className="rounded-2xl border border-white/60 bg-white/80 p-3"
+                  className="rounded-[16px] bg-surface-muted p-3"
                 >
-                  <Text className="text-xs font-bold uppercase text-ink-muted">
+                  <Eyebrow>
                     {recommendation.urgency === "high"
                       ? "Prioridad alta"
                       : recommendation.urgency === "medium"
                         ? "Prioridad media"
                         : "Prioridad baja"}
-                  </Text>
-                  <Text className="mt-1 text-sm font-semibold text-ink">{recommendation.text}</Text>
+                  </Eyebrow>
+                  <Body className="mt-1">{recommendation.text}</Body>
                 </View>
               ))}
             </View>
-          </View>
-        ) : null}
+          </Surface>
+        </>
+      ) : null}
 
-        <View className="mb-8 mt-4 rounded-3xl bg-surface p-4">
-          <Text className="text-base font-extrabold text-ink">
-            Bloques sugeridos para esta semana
-          </Text>
-
-          {suggestions.length === 0 ? (
-            <View className="mt-4 items-center rounded-2xl bg-surface-muted p-5">
-              <MochiCharacter mood="thinking" size={84} />
-              <Text className="mt-3 text-center text-sm font-bold text-ink">
-                Aun no hay sugerencias disponibles
-              </Text>
-              <Text className="mt-1 text-center text-xs font-semibold text-ink">
-                Regenera el plan y Mochi te propondra bloques concretos.
-              </Text>
-            </View>
-          ) : (
-            <View className="mt-3 gap-2">
-              {suggestions.map((suggestion) => (
-                <View key={suggestion.key} className="rounded-2xl bg-surface-muted p-3">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-sm font-extrabold text-ink">{suggestion.subject}</Text>
-                    <Text className="text-xs font-bold text-ink">
-                      {DAY_LABELS[suggestion.day_of_week]}
-                    </Text>
-                  </View>
-
-                  <Text className="mt-1 text-xs font-semibold text-ink">
-                    {suggestion.start_time} - {suggestion.end_time}
-                  </Text>
-
-                  <Text className="mt-2 text-xs font-semibold text-ink">{suggestion.reason}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <SectionHeader title="Bloques sugeridos" />
+      {suggestions.length === 0 ? (
+        <Surface tone="sunken" className="flex-row items-center gap-3 p-4">
+          <MochiCharacter expression="thinking" size={64} animated={false} shadow={false} />
+          <Caption className="flex-1">
+            Toca «Proponer» y te armo bloques concretos para esta semana.
+          </Caption>
+        </Surface>
+      ) : (
+        <ListGroup>
+          {suggestions.map((suggestion) => (
+            <ListRow
+              key={suggestion.key}
+              title={suggestion.subject}
+              subtitle={`${DAY_LABELS[suggestion.day_of_week]} · ${suggestion.start_time} – ${suggestion.end_time}\n${suggestion.reason}`}
+              multiline
+              leading={<IconTile icon="time" tint="study" />}
+            />
+          ))}
+        </ListGroup>
+      )}
+    </Screen>
   );
 }
 
