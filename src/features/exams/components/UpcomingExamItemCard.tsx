@@ -1,7 +1,6 @@
-import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
 import {
   CALM_ORDER,
   MISSION_ORDER,
@@ -18,6 +17,8 @@ import type {
   MissionStepKey,
   UpcomingExamItem,
 } from "@/src/features/exams/types";
+import { COLORS } from "@/src/shared/theme/tokens";
+import { Button, Caption, Eyebrow, PressableScale, Strong, Surface, Title } from "@/src/shared/ui";
 
 type UpcomingExamItemCardProps = {
   exam: UpcomingExamItem;
@@ -28,6 +29,38 @@ type UpcomingExamItemCardProps = {
   onToggleMissionStep: (step: MissionStepKey) => void;
   onRegisterResult: () => void;
 };
+
+function CheckRow({
+  label,
+  checked,
+  onPress,
+}: {
+  label: string;
+  checked: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <PressableScale
+      haptics="selection"
+      onPress={onPress}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel={label}
+      className="min-h-[40px] flex-row items-center gap-3"
+    >
+      <Ionicons
+        name={checked ? "checkmark-circle" : "ellipse-outline"}
+        size={22}
+        color={checked ? COLORS.positive : COLORS.inkFaint}
+      />
+      <Text
+        className={`flex-1 font-body text-[14.5px] ${checked ? "text-ink-muted line-through" : "text-ink"}`}
+      >
+        {label}
+      </Text>
+    </PressableScale>
+  );
+}
 
 export function UpcomingExamItemCard({
   exam,
@@ -43,106 +76,79 @@ export function UpcomingExamItemCard({
   const calmActive = getDaysUntil(exam.exam_date, todayISO) <= 1;
 
   return (
-    <View className="mb-3 rounded-2xl bg-surface-muted p-3">
-      <View className="flex-row items-center justify-between">
-        <Text className="text-sm font-extrabold text-ink">{exam.subject}</Text>
-        <View className="rounded-full bg-tint-kitchen px-2 py-1">
-          <Text className="text-xs font-bold text-ink">
+    <Surface className="p-4">
+      <View className="flex-row items-start gap-3">
+        <View className="min-w-0 flex-1">
+          <Title numberOfLines={2}>{exam.subject}</Title>
+          <Caption className="mt-0.5">
+            {formatExamDate(exam.exam_date)} · Aviso {formatReminderDays(reminderDays ?? [1])}
+          </Caption>
+        </View>
+        <View className="rounded-full bg-tint-me px-3 py-1">
+          <Text className="font-body-extrabold text-xs text-tint-me-ink">
             {getUpcomingLabel(exam.exam_date, todayISO)}
           </Text>
         </View>
       </View>
-      <Text className="mt-1 text-xs font-semibold uppercase text-ink-muted">
-        {formatExamDate(exam.exam_date)}
-      </Text>
-      <Text className="mt-1 text-[11px] font-bold text-ink">
-        Recordatorios: {formatReminderDays(reminderDays ?? [1])}
-      </Text>
-      {exam.preparation_notes ? (
-        <Text className="mt-1 text-xs font-semibold text-ink">{exam.preparation_notes}</Text>
-      ) : null}
+      {exam.preparation_notes ? <Caption className="mt-2">{exam.preparation_notes}</Caption> : null}
 
       {calmActive ? (
-        <View className="mt-3 rounded-2xl bg-surface-muted p-3">
-          <Text className="text-xs font-bold text-positive">Cofre de Calma activo</Text>
-          {CALM_ORDER.map((item) => {
-            const checked = preparation.calm[item.key];
-
-            return (
-              <TouchableOpacity
-                key={`${exam.id}-${item.key}`}
-                className="mt-2 flex-row items-center"
-                onPress={() => {
-                  onToggleCalmStep(item.key);
-                }}
-              >
-                <Ionicons
-                  name={checked ? "checkmark-circle" : "ellipse"}
-                  size={18}
-                  color={checked ? COLORS.positive : COLORS.inkMuted}
-                />
-                <Text className="ml-2 text-xs font-semibold text-ink">{item.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+        <View className="mt-4 rounded-[18px] bg-tint-ok p-3.5">
+          <Eyebrow className="text-tint-ok-ink">Calma para mañana</Eyebrow>
+          <View className="mt-1">
+            {CALM_ORDER.map((item) => (
+              <CheckRow
+                key={item.key}
+                label={item.label}
+                checked={preparation.calm[item.key]}
+                onPress={() => onToggleCalmStep(item.key)}
+              />
+            ))}
+          </View>
         </View>
       ) : null}
 
-      <View className="mt-3 rounded-2xl bg-surface-muted p-3">
-        <Text className="text-xs font-bold text-ink">Misión Parcial Perfecto</Text>
-        <Text className="mt-1 text-xs font-semibold text-ink">Progreso: {missionProgress}%</Text>
-        <View className="mt-2 h-2 w-full overflow-hidden rounded-full bg-tint-study">
-          <View className="h-2 rounded-full bg-accent" style={{ width: `${missionProgress}%` }} />
+      <View className="mt-4">
+        <View className="flex-row items-center justify-between">
+          <Strong>Plan de repaso</Strong>
+          <Caption>{missionProgress}%</Caption>
         </View>
-        <Text className="mt-2 text-xs font-semibold text-ink">
-          Siguiente paso recomendado: {nextMissionStep}
-        </Text>
-
-        {MISSION_ORDER.map((step) => {
-          const completed = preparation.mission[step.key];
-
-          return (
-            <TouchableOpacity
-              key={`${exam.id}-${step.key}`}
-              className="mt-2 flex-row items-center"
-              onPress={() => {
-                onToggleMissionStep(step.key);
-              }}
-            >
-              <Ionicons
-                name={completed ? "checkmark-circle" : "ellipse"}
-                size={18}
-                color={completed ? COLORS.accent : COLORS.inkMuted}
-              />
-              <Text className="ml-2 text-xs font-semibold text-ink">{step.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        <View className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted">
+          <View
+            className="h-full rounded-full bg-accent"
+            style={{ width: `${missionProgress}%` }}
+          />
+        </View>
+        <Caption className="mt-2">Siguiente: {nextMissionStep}</Caption>
+        <View className="mt-1">
+          {MISSION_ORDER.map((step) => (
+            <CheckRow
+              key={step.key}
+              label={step.label}
+              checked={preparation.mission[step.key]}
+              onPress={() => onToggleMissionStep(step.key)}
+            />
+          ))}
+        </View>
       </View>
 
-      <TouchableOpacity
-        className="mt-2 self-start rounded-xl bg-surface px-3 py-1"
-        onPress={() => {
-          onRegisterResult();
-        }}
-      >
-        <Text className="text-xs font-bold text-ink">Registrar resultado</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        className="mt-2 self-start rounded-xl bg-tint-ok px-3 py-1"
-        onPress={() => {
-          router.push({
-            pathname: "/exam-sprint-progress",
-            params: {
-              examId: exam.id,
-              subject: exam.subject,
-            },
-          });
-        }}
-      >
-        <Text className="text-xs font-bold text-positive">Crear Sprint</Text>
-      </TouchableOpacity>
-    </View>
+      <View className="mt-3 flex-row gap-2">
+        <View className="flex-1">
+          <Button
+            title="Crear sprint"
+            variant="soft"
+            onPress={() =>
+              router.push({
+                pathname: "/exam-sprint-progress",
+                params: { examId: exam.id, subject: exam.subject },
+              })
+            }
+          />
+        </View>
+        <View className="flex-1">
+          <Button title="Ya lo di" variant="soft" onPress={onRegisterResult} />
+        </View>
+      </View>
+    </Surface>
   );
 }

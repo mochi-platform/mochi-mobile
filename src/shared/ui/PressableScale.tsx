@@ -77,7 +77,10 @@ export function PressableScale({
           : undefined
       }
     >
-      <Animated.View className={inner} style={[SIZED.test(outer) ? FILL : null, style, press.style]}>
+      <Animated.View
+        className={inner}
+        style={[SIZED.test(outer) ? FILL : null, style, press.style]}
+      >
         {children}
       </Animated.View>
     </Pressable>

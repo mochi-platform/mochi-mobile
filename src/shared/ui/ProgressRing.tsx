@@ -1,10 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { View } from "react-native";
-import Animated, {
-  useAnimatedProps,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import { COLORS } from "@/src/shared/theme/tokens";
 import { DURATION, EASE_OUT, REDUCE } from "./motion";
@@ -39,7 +35,9 @@ export function ProgressRing({
   const value = useSharedValue(0);
 
   useEffect(() => {
-    value.set(withTiming(clamped, { duration: DURATION.slow, easing: EASE_OUT, reduceMotion: REDUCE }));
+    value.set(
+      withTiming(clamped, { duration: DURATION.slow, easing: EASE_OUT, reduceMotion: REDUCE }),
+    );
   }, [clamped, value]);
 
   const animatedProps = useAnimatedProps(() => ({
@@ -58,7 +56,14 @@ export function ProgressRing({
       className="items-center justify-center"
     >
       <Svg width={size} height={size} style={{ position: "absolute" }}>
-        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={trackColor} strokeWidth={stroke} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={trackColor}
+          strokeWidth={stroke}
+          fill="none"
+        />
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}

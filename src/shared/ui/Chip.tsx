@@ -40,7 +40,9 @@ export function Chip({ label, selected = false, onPress, icon, onSurface = false
         {icon ? (
           <Ionicons name={icon} size={17} color={selected ? COLORS.accentInk : COLORS.accent} />
         ) : null}
-        <Text className={`font-body-extrabold text-[14.5px] ${selected ? "text-accent-ink" : "text-ink"}`}>
+        <Text
+          className={`font-body-extrabold text-[14.5px] ${selected ? "text-accent-ink" : "text-ink"}`}
+        >
           {label}
         </Text>
       </Animated.View>

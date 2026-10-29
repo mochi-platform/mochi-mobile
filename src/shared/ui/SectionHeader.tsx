@@ -10,7 +10,12 @@ type SectionHeaderProps = {
 };
 
 /** Título de sección con acción opcional a la derecha ("Ver todo", "Editar"). */
-export function SectionHeader({ title, actionLabel, onAction, className = "" }: SectionHeaderProps) {
+export function SectionHeader({
+  title,
+  actionLabel,
+  onAction,
+  className = "",
+}: SectionHeaderProps) {
   return (
     <View className={`mb-2.5 mt-6 flex-row items-baseline justify-between px-1 ${className}`}>
       <Title>{title}</Title>

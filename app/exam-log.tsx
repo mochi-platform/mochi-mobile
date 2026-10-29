@@ -1,17 +1,6 @@
-import { COLORS } from "@/src/shared/theme/tokens";
 import { reportError } from "@/src/shared/lib/observability/reportError";
-import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useRef, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { router, useFocusEffect } from "expo-router";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { useAchievement } from "@/src/core/providers/AchievementContext";
@@ -25,13 +14,13 @@ import { useUpcomingReminderMap } from "@/src/features/exams/hooks/useUpcomingRe
 import { ExamResultsTab } from "@/src/features/exams/components/ExamResultsTab";
 import { UpcomingExamsList } from "@/src/features/exams/components/UpcomingExamsList";
 import { UpcomingExamForm } from "@/src/features/exams/components/UpcomingExamForm";
+import { Caption, Screen, Segmented, Surface } from "@/src/shared/ui";
 
 export function ExamLogScreen() {
-  const insets = useSafeAreaInsets();
   const { session } = useSession();
   const { showAchievement } = useAchievement();
 
-  const [activeTab, setActiveTab] = useState<TabId>("results");
+  const [activeTab, setActiveTab] = useState<TabId>("upcoming");
 
   const [subject, setSubject] = useState("");
   const [grade, setGrade] = useState("");
@@ -360,119 +349,72 @@ export function ExamLogScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          className="flex-1 px-6"
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-        >
-          <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={22} color={COLORS.accent} />
-            <Text className="ml-1 font-bold text-ink">Volver</Text>
-          </TouchableOpacity>
+    <Screen title="Exámenes" subtitle={today} withTabBar={false} closable keyboard>
+      <Segmented
+        className="mt-2"
+        options={[
+          { value: "upcoming", label: "Próximos" },
+          { value: "results", label: "Resultados" },
+        ]}
+        value={activeTab}
+        onChange={setActiveTab}
+      />
 
-          <View className="mt-6">
-            <Text className="text-2xl font-extrabold text-ink">Exámenes</Text>
-            <Text className="mt-1 text-sm font-semibold capitalize text-ink-muted">{today}</Text>
-          </View>
+      {[error, prepError].filter(Boolean).map((message) => (
+        <Surface key={message} tone="sunken" className="mt-4 p-3.5">
+          <Caption className="text-danger">{message}</Caption>
+        </Surface>
+      ))}
+      {gamificationWarning ? (
+        <Surface tone="sunken" className="mt-4 p-3.5">
+          <Caption>{gamificationWarning}</Caption>
+        </Surface>
+      ) : null}
 
-          <View className="mt-4 flex-row rounded-2xl bg-surface p-1">
-            <TouchableOpacity
-              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "results" ? "bg-accent" : "bg-surface"}`}
-              onPress={() => setActiveTab("results")}
-            >
-              <Text
-                className={`text-sm font-bold ${activeTab === "results" ? "text-white" : "text-ink"}`}
-              >
-                Registrar resultado
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`flex-1 items-center rounded-xl py-2 ${activeTab === "upcoming" ? "bg-accent" : "bg-surface"}`}
-              onPress={() => setActiveTab("upcoming")}
-            >
-              <Text
-                className={`text-sm font-bold ${activeTab === "upcoming" ? "text-white" : "text-ink"}`}
-              >
-                Próximos exámenes
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {error ? (
-            <View className="mt-4 rounded-2xl bg-surface-muted p-3">
-              <Text className="text-sm font-semibold text-danger">{error}</Text>
-            </View>
-          ) : null}
-
-          {gamificationWarning ? (
-            <View className="mt-4 rounded-2xl bg-surface-muted p-3">
-              <Text className="text-sm font-semibold text-ink">{gamificationWarning}</Text>
-            </View>
-          ) : null}
-
-          {prepError ? (
-            <View className="mt-4 rounded-2xl bg-surface-muted p-3">
-              <Text className="text-sm font-semibold text-danger">{prepError}</Text>
-            </View>
-          ) : null}
-
-          {activeTab === "results" ? (
-            <ExamResultsTab
-              loading={loading}
-              examHistory={examHistory}
-              selectedUpcomingId={selectedUpcomingId}
-              subject={subject}
-              onSubjectChange={setSubject}
-              grade={grade}
-              onGradeChange={setGrade}
-              notes={notes}
-              onNotesChange={setNotes}
-              saving={saving}
-              onSave={() => {
-                void handleSaveResult();
-              }}
-            />
-          ) : (
-            <>
-              <UpcomingExamsList
-                loading={loading}
-                todayISO={todayISO}
-                upcomingExams={upcomingExams}
-                upcomingReminderMap={upcomingReminderMap}
-                prepLoading={prepLoading}
-                getPrepState={getPrepState}
-                onToggleCalmStep={toggleCalmStep}
-                onToggleMissionStep={toggleMissionStep}
-                onRegisterResult={openResultFromUpcoming}
-              />
-
-              <UpcomingExamForm
-                subject={upcomingSubject}
-                onSubjectChange={setUpcomingSubject}
-                date={upcomingDate}
-                onDateChange={setUpcomingDate}
-                notes={upcomingNotes}
-                onNotesChange={setUpcomingNotes}
-                selectedReminderDays={selectedReminderDays}
-                onToggleReminderDay={toggleReminderDay}
-                addToCalendar={addUpcomingToCalendar}
-                onToggleCalendar={() => setAddUpcomingToCalendar((prev) => !prev)}
-                saving={savingUpcoming}
-                onSave={() => {
-                  void handleSaveUpcoming();
-                }}
-              />
-            </>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      {activeTab === "results" ? (
+        <ExamResultsTab
+          loading={loading}
+          examHistory={examHistory}
+          selectedUpcomingId={selectedUpcomingId}
+          subject={subject}
+          onSubjectChange={setSubject}
+          grade={grade}
+          onGradeChange={setGrade}
+          notes={notes}
+          onNotesChange={setNotes}
+          saving={saving}
+          onSave={() => void handleSaveResult()}
+        />
+      ) : (
+        <>
+          <UpcomingExamsList
+            loading={loading}
+            todayISO={todayISO}
+            upcomingExams={upcomingExams}
+            upcomingReminderMap={upcomingReminderMap}
+            prepLoading={prepLoading}
+            getPrepState={getPrepState}
+            onToggleCalmStep={toggleCalmStep}
+            onToggleMissionStep={toggleMissionStep}
+            onRegisterResult={openResultFromUpcoming}
+          />
+          <UpcomingExamForm
+            subject={upcomingSubject}
+            onSubjectChange={setUpcomingSubject}
+            date={upcomingDate}
+            onDateChange={setUpcomingDate}
+            notes={upcomingNotes}
+            onNotesChange={setUpcomingNotes}
+            selectedReminderDays={selectedReminderDays}
+            onToggleReminderDay={toggleReminderDay}
+            addToCalendar={addUpcomingToCalendar}
+            onToggleCalendar={() => setAddUpcomingToCalendar((prev) => !prev)}
+            saving={savingUpcoming}
+            onSave={() => void handleSaveUpcoming()}
+          />
+        </>
+      )}
+    </Screen>
   );
 }
 

@@ -1,5 +1,4 @@
-import { COLORS } from "@/src/shared/theme/tokens";
-import { ActivityIndicator, Text, View } from "react-native";
+import { View } from "react-native";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import type {
   CalmChecklistState,
@@ -8,6 +7,7 @@ import type {
   UpcomingExamItem,
 } from "@/src/features/exams/types";
 import { UpcomingExamItemCard } from "@/src/features/exams/components/UpcomingExamItemCard";
+import { Caption, SectionHeader, Skeleton, Surface } from "@/src/shared/ui";
 
 type UpcomingExamsListProps = {
   loading: boolean;
@@ -33,31 +33,20 @@ export function UpcomingExamsList({
   onRegisterResult,
 }: UpcomingExamsListProps) {
   return (
-    <View className="mt-6 rounded-3xl bg-surface p-4">
-      <Text className="text-lg font-extrabold text-ink">Próximos exámenes</Text>
-
+    <>
+      <SectionHeader title="Próximos" />
       {loading ? (
-        <View className="items-center py-6">
-          <ActivityIndicator size="small" color={COLORS.accent} />
-        </View>
+        <Skeleton height={160} className="rounded-card" />
       ) : upcomingExams.length === 0 ? (
-        <View className="items-center py-6">
-          <MochiCharacter mood="thinking" size={70} />
-          <Text className="mt-3 text-sm font-semibold text-ink">
-            No hay exámenes próximos registrados
-          </Text>
-        </View>
+        <Surface tone="sunken" className="flex-row items-center gap-3 p-4">
+          <MochiCharacter expression="thinking" size={64} animated={false} shadow={false} />
+          <Caption className="flex-1">
+            No tienes exámenes próximos. Agrega uno abajo y te ayudo a prepararte.
+          </Caption>
+        </Surface>
       ) : (
-        <View className="mt-4">
-          {prepLoading ? (
-            <View className="items-center py-4">
-              <ActivityIndicator size="small" color={COLORS.accent} />
-              <Text className="mt-2 text-xs font-semibold text-ink">
-                Cargando progreso de misión...
-              </Text>
-            </View>
-          ) : null}
-
+        <View className="gap-3">
+          {prepLoading ? <Caption className="ml-1">Cargando tu progreso…</Caption> : null}
           {upcomingExams.map((exam) => (
             <UpcomingExamItemCard
               key={exam.id}
@@ -65,19 +54,13 @@ export function UpcomingExamsList({
               todayISO={todayISO}
               preparation={getPrepState(exam.id)}
               reminderDays={upcomingReminderMap[exam.id]}
-              onToggleCalmStep={(step) => {
-                onToggleCalmStep(exam.id, step);
-              }}
-              onToggleMissionStep={(step) => {
-                onToggleMissionStep(exam.id, step);
-              }}
-              onRegisterResult={() => {
-                onRegisterResult(exam);
-              }}
+              onToggleCalmStep={(step) => onToggleCalmStep(exam.id, step)}
+              onToggleMissionStep={(step) => onToggleMissionStep(exam.id, step)}
+              onRegisterResult={() => onRegisterResult(exam)}
             />
           ))}
         </View>
       )}
-    </View>
+    </>
   );
 }

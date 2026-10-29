@@ -5,7 +5,10 @@ type TypoProps = Omit<TextProps, "children"> & { children: ReactNode; className?
 
 const SIZE = /^text-(xs|sm|base|lg|xl|[2-9]xl|\[[\d.]+px\])$/;
 const LEADING = /^leading-/;
-const isColor = (token: string) => token.startsWith("text-") && !SIZE.test(token) && !/^text-(left|center|right|justify)$/.test(token);
+const isColor = (token: string) =>
+  token.startsWith("text-") &&
+  !SIZE.test(token) &&
+  !/^text-(left|center|right|justify)$/.test(token);
 
 /**
  * Une las clases base con las de `className`: si `className` trae su propio tamaño, interlineado
@@ -22,7 +25,9 @@ export function mergeTextClasses(base: string, extra: string): string {
     .filter(Boolean)
     .filter(
       (t) =>
-        !(overrideSize && SIZE.test(t)) && !(overrideLeading && LEADING.test(t)) && !(overrideColor && isColor(t)),
+        !(overrideSize && SIZE.test(t)) &&
+        !(overrideLeading && LEADING.test(t)) &&
+        !(overrideColor && isColor(t)),
     );
   return [...kept, ...extraTokens].join(" ");
 }
@@ -47,7 +52,9 @@ export const Display = make("font-display text-[30px] leading-[34px] text-ink", 
   accessibilityRole: "header",
 });
 /** Títulos de sección y de tarjetas destacadas (Fredoka 20). */
-export const Title = make("font-display text-xl leading-6 text-ink", { accessibilityRole: "header" });
+export const Title = make("font-display text-xl leading-6 text-ink", {
+  accessibilityRole: "header",
+});
 /** Texto principal (Nunito 15.5). */
 export const Body = make("font-body text-[15.5px] leading-[21px] text-ink");
 /** Texto principal resaltado: nombres de elementos de lista (Nunito ExtraBold). */

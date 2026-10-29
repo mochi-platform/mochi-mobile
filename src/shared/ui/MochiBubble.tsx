@@ -17,7 +17,13 @@ type MochiBubbleProps = {
 };
 
 /** Globo de diálogo de Mochi. Se anuncia como texto de Mochi para lectores de pantalla. */
-export function MochiBubble({ text, tail = "up", children, className = "", size = "md" }: MochiBubbleProps) {
+export function MochiBubble({
+  text,
+  tail = "up",
+  children,
+  className = "",
+  size = "md",
+}: MochiBubbleProps) {
   return (
     <View className={`relative ${className}`}>
       {tail !== "none" ? (

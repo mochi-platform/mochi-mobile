@@ -55,7 +55,9 @@ export function Toggle({ label, value, onValueChange, description }: ToggleProps
         <View className="flex-1 pr-3">
           <Text className="font-body-extrabold text-[15px] text-ink">{label}</Text>
           {description ? (
-            <Text className="mt-0.5 font-body text-[13px] leading-[18px] text-ink-muted">{description}</Text>
+            <Text className="mt-0.5 font-body text-[13px] leading-[18px] text-ink-muted">
+              {description}
+            </Text>
           ) : null}
         </View>
         <View
