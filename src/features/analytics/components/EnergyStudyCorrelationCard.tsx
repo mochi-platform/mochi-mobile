@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { buildPairs, describeCorrelation, pearson } from "../correlation";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
-import { Card } from "@/src/shared/ui";
+import {
+  Body,
+  Caption,
+  IconTile,
+  ListGroup,
+  ListRow,
+  SectionHeader,
+  Surface,
+} from "@/src/shared/ui";
 
 type Props = { allowed: boolean };
 
@@ -52,33 +59,29 @@ export function EnergyStudyCorrelationCard({ allowed }: Props) {
 
   if (!allowed) {
     return (
-      <TouchableOpacity
-        accessibilityRole="button"
-        className="mt-4"
-        onPress={() => router.push("/premium")}
-      >
-        <Card>
-          <Text className="text-base font-extrabold text-ink">Energía y estudio</Text>
-          <Text className="mt-1 text-xs font-semibold text-ink-muted">
-            Con Premium ves cómo se relacionan tu energía y tus horas de estudio. Conoce Premium.
-          </Text>
-        </Card>
-      </TouchableOpacity>
+      <>
+        <SectionHeader title="Energía y estudio" />
+        <ListGroup>
+          <ListRow
+            title="Descubre cómo se relacionan"
+            subtitle="Con Premium ves si estudias más en tus días de energía alta."
+            multiline
+            leading={<IconTile icon="lock-closed" tint="me" />}
+            onPress={() => router.push("/premium")}
+          />
+        </ListGroup>
+      </>
     );
   }
 
   return (
-    <View className="mt-4">
-      <Card>
-        <Text className="text-base font-extrabold text-ink">Energía y estudio</Text>
-        <Text className="mt-1 text-sm font-semibold text-ink-muted">
-          {describeCorrelation(r, pairs.length)}
-        </Text>
-        <Text className="mt-2 text-xs font-semibold text-ink-muted">
-          Basado en {pairs.length} días con energía registrada.
-        </Text>
-      </Card>
-    </View>
+    <>
+      <SectionHeader title="Energía y estudio" />
+      <Surface className="p-4">
+        <Body>{describeCorrelation(r, pairs.length)}</Body>
+        <Caption className="mt-2">Basado en {pairs.length} días con energía registrada.</Caption>
+      </Surface>
+    </>
   );
 }
 

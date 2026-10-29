@@ -4,20 +4,21 @@ import { usePlan } from "@/src/shared/hooks/usePlan";
 import { toLocalISODate } from "@/src/shared/lib/dates";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Dimensions,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Dimensions, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Bar, CartesianChart, Line } from "victory-native";
 import { useSession } from "@/src/core/providers/SessionContext";
-import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { supabase } from "@/src/shared/lib/supabase";
+import {
+  Caption,
+  ErrorState,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Skeleton,
+  Stat,
+  Surface,
+} from "@/src/shared/ui";
 
 type WeeklyStudyPoint = {
   weekKey: string;
@@ -131,7 +132,7 @@ export function AnalyticsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>(createEmptyAnalyticsData);
 
-  const chartWidth = useMemo(() => Math.max(320, Dimensions.get("window").width - 48), []);
+  const chartWidth = useMemo(() => Math.max(280, Dimensions.get("window").width - 72), []);
 
   const loadAnalytics = useCallback(async () => {
     const userId = session?.user.id;
@@ -359,200 +360,160 @@ export function AnalyticsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted">
-        <ActivityIndicator size="small" color={COLORS.accent} />
-        <Text className="mt-3 text-sm font-semibold text-ink">Cargando analiticas...</Text>
-      </SafeAreaView>
+      <Screen title="Tus avances" withTabBar={false} closable>
+        <View className="mt-4 gap-3">
+          <Skeleton height={110} className="rounded-card" />
+          <Skeleton height={260} className="rounded-card" />
+        </View>
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted px-6">
-        <MochiCharacter mood="sleepy" size={78} />
-        <Text className="mt-4 text-center text-sm font-semibold text-danger">{error}</Text>
-        <TouchableOpacity
-          className="mt-6 rounded-2xl bg-accent px-6 py-3"
-          onPress={() => {
-            void loadAnalytics();
-          }}
-        >
-          <Text className="font-extrabold text-white">Reintentar</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      <Screen title="Tus avances" withTabBar={false} closable>
+        <ErrorState message={error} onRetry={() => void loadAnalytics()} />
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <TouchableOpacity className="mt-4 flex-row items-center" onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color={COLORS.accent} />
-          <Text className="ml-1 font-bold text-ink">Volver</Text>
-        </TouchableOpacity>
+    <Screen
+      title="Tus avances"
+      subtitle="Tu avance real, para ajustar tu semana."
+      withTabBar={false}
+      closable
+    >
+      <Surface elevation={2} className="mt-3 flex-row p-4">
+        <Stat className="flex-1" value={`${totalWeeklyHours.toFixed(1)}h`} label="en 8 semanas" />
+        <Stat
+          className="flex-1"
+          value={String(analyticsData.currentStreak)}
+          label={analyticsData.currentStreak === 1 ? "día de racha" : "días de racha"}
+        />
+      </Surface>
 
-        <View className="mt-6 rounded-3xl bg-surface p-5">
-          <Text className="text-2xl font-extrabold text-ink">Analiticas personales</Text>
-          <Text className="mt-1 text-sm font-semibold text-ink">
-            Visualiza tu avance real y ajusta tu plan semanal.
-          </Text>
+      <EnergyStudyCorrelationCard allowed={plan.features.analytics_correlation} />
 
-          <View className="mt-4 flex-row gap-3">
-            <View className="flex-1 rounded-2xl bg-surface-muted px-3 py-3">
-              <Text className="text-xs font-bold uppercase text-ink">Horas (8 sem)</Text>
-              <Text className="mt-1 text-xl font-extrabold text-ink">
-                {totalWeeklyHours.toFixed(1)}h
-              </Text>
+      <SectionHeader title="Horas por semana" />
+      <Surface className="p-4">
+        {!plan.features.analytics_history ? (
+          <PressableScale
+            onPress={() => router.push("/premium")}
+            accessibilityLabel="Conoce Premium"
+            className="mb-3 flex-row items-center gap-2.5 rounded-[16px] bg-accent-soft px-3.5 py-3"
+          >
+            <Ionicons name="sparkles" size={16} color={COLORS.accentStrong} />
+            <Text className="flex-1 font-body-bold text-[13px] text-accent-strong">
+              Con Premium ves las 8 semanas completas.
+            </Text>
+          </PressableScale>
+        ) : null}
+        {weeklyChartData.length === 0 ? (
+          <Caption>Aún no hay horas de estudio para mostrar.</Caption>
+        ) : (
+          <>
+            <View style={{ width: chartWidth, height: 230 }}>
+              <CartesianChart
+                data={weeklyChartData}
+                xKey="x"
+                yKeys={["hours"]}
+                domainPadding={{ left: 18, right: 18, top: 24, bottom: 10 }}
+                padding={{ left: 8, right: 8, top: 12, bottom: 12 }}
+              >
+                {({ points, chartBounds }) => (
+                  <Bar
+                    points={points.hours}
+                    chartBounds={chartBounds}
+                    color={COLORS.accent}
+                    roundedCorners={{ topLeft: 6, topRight: 6 }}
+                  />
+                )}
+              </CartesianChart>
             </View>
-            <View className="flex-1 rounded-2xl bg-tint-study px-3 py-3">
-              <Text className="text-xs font-bold uppercase text-ink">Racha actual</Text>
-              <Text className="mt-1 text-xl font-extrabold text-ink">
-                {analyticsData.currentStreak} dias
-              </Text>
+            <View className="mt-2 flex-row justify-between px-1">
+              {weeklyChartData.map((point) => (
+                <Caption key={`week-label-${point.x}`} className="text-[10.5px]">
+                  {point.label}
+                </Caption>
+              ))}
             </View>
-          </View>
-        </View>
+          </>
+        )}
+      </Surface>
 
-        <EnergyStudyCorrelationCard allowed={plan.features.analytics_correlation} />
+      <SectionHeader title="Hábitos por mes" />
+      <Surface className="p-4">
+        {monthlyChartData.length === 0 ? (
+          <Caption>Aún no hay hábitos registrados para mostrar.</Caption>
+        ) : (
+          <>
+            <View style={{ width: chartWidth, height: 230 }}>
+              <CartesianChart
+                data={monthlyChartData}
+                xKey="x"
+                yKeys={["completed"]}
+                domainPadding={{ left: 18, right: 18, top: 24, bottom: 10 }}
+                padding={{ left: 8, right: 8, top: 12, bottom: 12 }}
+              >
+                {({ points, chartBounds }) => (
+                  <Bar
+                    points={points.completed}
+                    chartBounds={chartBounds}
+                    color={COLORS.positive}
+                    roundedCorners={{ topLeft: 6, topRight: 6 }}
+                  />
+                )}
+              </CartesianChart>
+            </View>
+            <View className="mt-2 flex-row justify-between px-2">
+              {monthlyChartData.map((point) => (
+                <Caption key={`month-label-${point.x}`} className="text-[10.5px]">
+                  {point.label}
+                </Caption>
+              ))}
+            </View>
+          </>
+        )}
+      </Surface>
 
-        <View className="mt-4 rounded-3xl bg-surface p-4">
-          <Text className="text-base font-extrabold text-ink">Horas de estudio por semana</Text>
-          {!plan.features.analytics_history ? (
-            <TouchableOpacity
-              accessibilityRole="button"
-              className="mt-2 min-h-[44px] justify-center rounded-2xl bg-tint-kitchen px-3"
-              onPress={() => router.push("/premium")}
-            >
-              <Text className="text-xs font-extrabold text-ink">
-                Con Premium ves el histórico de 8 semanas. Conoce Premium
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-          {weeklyChartData.length === 0 ? (
-            <Text className="mt-2 text-xs font-semibold text-ink">
-              Aun no hay datos de estudio para mostrar.
-            </Text>
-          ) : (
-            <>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ width: chartWidth, height: 230 }}>
-                  <CartesianChart
-                    data={weeklyChartData}
-                    xKey="x"
-                    yKeys={["hours"]}
-                    domainPadding={{ left: 18, right: 18, top: 24, bottom: 10 }}
-                    padding={{ left: 8, right: 8, top: 12, bottom: 12 }}
-                  >
-                    {({ points, chartBounds }) => (
-                      <Bar
-                        points={points.hours}
-                        chartBounds={chartBounds}
-                        color={COLORS.accent}
-                        roundedCorners={{ topLeft: 6, topRight: 6 }}
-                      />
-                    )}
-                  </CartesianChart>
-                </View>
-              </ScrollView>
-              <View className="mt-2 flex-row justify-between px-1">
-                {weeklyChartData.map((point) => (
-                  <Text key={`week-label-${point.x}`} className="text-[10px] font-bold text-ink">
-                    {point.label}
-                  </Text>
-                ))}
-              </View>
-            </>
-          )}
-        </View>
-
-        <View className="mt-4 rounded-3xl bg-surface p-4">
-          <Text className="text-base font-extrabold text-positive">
-            Habitos completados por mes
-          </Text>
-          {monthlyChartData.length === 0 ? (
-            <Text className="mt-2 text-xs font-semibold text-positive">
-              Aun no hay registros de habitos para mostrar.
-            </Text>
-          ) : (
-            <>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ width: chartWidth, height: 230 }}>
-                  <CartesianChart
-                    data={monthlyChartData}
-                    xKey="x"
-                    yKeys={["completed"]}
-                    domainPadding={{ left: 18, right: 18, top: 24, bottom: 10 }}
-                    padding={{ left: 8, right: 8, top: 12, bottom: 12 }}
-                  >
-                    {({ points, chartBounds }) => (
-                      <Bar
-                        points={points.completed}
-                        chartBounds={chartBounds}
-                        color={COLORS.positive}
-                        roundedCorners={{ topLeft: 6, topRight: 6 }}
-                      />
-                    )}
-                  </CartesianChart>
-                </View>
-              </ScrollView>
-              <View className="mt-2 flex-row justify-between px-2">
-                {monthlyChartData.map((point) => (
-                  <Text
-                    key={`month-label-${point.x}`}
-                    className="text-[10px] font-bold text-positive"
-                  >
-                    {point.label}
-                  </Text>
-                ))}
-              </View>
-            </>
-          )}
-        </View>
-
-        <View className="mb-8 mt-4 rounded-3xl bg-surface p-4">
-          <Text className="text-base font-extrabold text-ink">Evolucion de racha (30 dias)</Text>
-          {streakChartData.length === 0 ? (
-            <Text className="mt-2 text-xs font-semibold text-ink">
-              Aun no hay actividad suficiente para ver la evolucion de racha.
-            </Text>
-          ) : (
-            <>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ width: chartWidth, height: 240 }}>
-                  <CartesianChart
-                    data={streakChartData}
-                    xKey="x"
-                    yKeys={["streak"]}
-                    domainPadding={{ left: 12, right: 12, top: 24, bottom: 10 }}
-                    padding={{ left: 8, right: 8, top: 12, bottom: 12 }}
-                  >
-                    {({ points }) => (
-                      <Line
-                        points={points.streak}
-                        color={COLORS.accent}
-                        strokeWidth={2.6}
-                        curveType="monotoneX"
-                      />
-                    )}
-                  </CartesianChart>
-                </View>
-              </ScrollView>
-              <View className="mt-2 flex-row items-center justify-between px-1">
-                <Text className="text-[10px] font-bold text-ink">
-                  {streakChartData[0]?.label ?? ""}
-                </Text>
-                <Text className="text-[10px] font-bold text-ink">
-                  {streakChartData[Math.floor(streakChartData.length / 2)]?.label ?? ""}
-                </Text>
-                <Text className="text-[10px] font-bold text-ink">
-                  {streakChartData[streakChartData.length - 1]?.label ?? ""}
-                </Text>
-              </View>
-            </>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <SectionHeader title="Tu racha, 30 días" />
+      <Surface className="p-4">
+        {streakChartData.length === 0 ? (
+          <Caption>Aún no hay actividad suficiente para ver tu racha.</Caption>
+        ) : (
+          <>
+            <View style={{ width: chartWidth, height: 240 }}>
+              <CartesianChart
+                data={streakChartData}
+                xKey="x"
+                yKeys={["streak"]}
+                domainPadding={{ left: 12, right: 12, top: 24, bottom: 10 }}
+                padding={{ left: 8, right: 8, top: 12, bottom: 12 }}
+              >
+                {({ points }) => (
+                  <Line
+                    points={points.streak}
+                    color={COLORS.accent}
+                    strokeWidth={2.6}
+                    curveType="monotoneX"
+                  />
+                )}
+              </CartesianChart>
+            </View>
+            <View className="mt-2 flex-row items-center justify-between px-1">
+              <Caption className="text-[10.5px]">{streakChartData[0]?.label ?? ""}</Caption>
+              <Caption className="text-[10.5px]">
+                {streakChartData[Math.floor(streakChartData.length / 2)]?.label ?? ""}
+              </Caption>
+              <Caption className="text-[10.5px]">
+                {streakChartData[streakChartData.length - 1]?.label ?? ""}
+              </Caption>
+            </View>
+          </>
+        )}
+      </Surface>
+    </Screen>
   );
 }
 
