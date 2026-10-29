@@ -181,33 +181,6 @@ function buildPlannerContext(input: {
   ].join("\n");
 }
 
-function getRiskTone(risk: number): {
-  cardClass: string;
-  textClass: string;
-  badgeClass: string;
-} {
-  if (risk >= 70) {
-    return {
-      cardClass: "bg-surface-muted",
-      textClass: "text-danger",
-      badgeClass: "bg-danger",
-    };
-  }
-
-  if (risk >= 40) {
-    return {
-      cardClass: "bg-surface-muted",
-      textClass: "text-ink",
-      badgeClass: "bg-accent",
-    };
-  }
-
-  return {
-    cardClass: "bg-surface-muted",
-    textClass: "text-positive",
-    badgeClass: "bg-positive",
-  };
-}
 
 export function WeeklyPlannerScreen() {
   const { session } = useSession();
