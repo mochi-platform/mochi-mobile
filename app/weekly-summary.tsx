@@ -1,16 +1,31 @@
-import { COLORS } from "@/src/shared/theme/tokens";
 import { useCallback, useMemo, useRef, useState, type ComponentRef } from "react";
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, View } from "react-native";
 import * as Sharing from "expo-sharing";
 import { captureRef } from "react-native-view-shot";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
 import { generateWeeklySummaryMessage } from "@/src/shared/lib/ai";
-import { buildAiLimitMessage, requestAiUsage } from "@/src/shared/lib/aiCredits";
+import { requestAiUsage } from "@/src/shared/lib/aiCredits";
 import { toLocalISODate } from "@/src/shared/lib/dates";
 import { useFocusEffect } from "expo-router";
+import { MoodFace } from "@/src/features/today/MoodFace";
+import type { Mood } from "@/src/features/companion/lines";
+import {
+  Button,
+  Caption,
+  ErrorState,
+  ListGroup,
+  ListRow,
+  MochiBubble,
+  Screen,
+  SectionHeader,
+  Skeleton,
+  Stat,
+  Strong,
+  Surface,
+  Title,
+} from "@/src/shared/ui";
 
 type AtlasIntensity = "Baja" | "Media" | "Alta";
 
@@ -337,7 +352,8 @@ export function WeeklySummaryScreen() {
           });
 
           if (!usage.allowed) {
-            setMessage(buildAiLimitMessage(usage.reason));
+            // Sin créditos de IA, Mochi igual habla: nada de mandar a ver anuncios aquí.
+            setMessage(localWeekMessage(points, sessions));
           } else {
             const aiMessage = await generateWeeklySummaryMessage({
               studyHours: Number(studyHours.toFixed(1)),
@@ -399,181 +415,149 @@ export function WeeklySummaryScreen() {
     }
   };
 
-  const moodClass = (mood: number | null): string => {
-    if (mood === null) return "bg-surface-muted";
-    if (mood <= 2) return "bg-tint-kitchen";
-    if (mood === 3) return "bg-tint-kitchen";
-    return "bg-tint-ok";
-  };
-
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted">
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text className="mt-3 text-sm font-semibold text-ink">
-          Preparando tu resumen semanal...
-        </Text>
-      </SafeAreaView>
+      <Screen title="Tu semana" withTabBar={false} closable>
+        <View className="mt-4 gap-3">
+          <Skeleton height={150} className="rounded-card" />
+          <Skeleton height={180} className="rounded-card" />
+        </View>
+      </Screen>
     );
   }
 
   if (summaryError) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-muted px-6">
-        <View className="w-full rounded-2xl bg-surface-muted p-4">
-          <Text className="text-base font-extrabold text-danger">
-            No pudimos cargar tu resumen semanal
-          </Text>
-          <Text className="mt-2 text-sm font-semibold text-danger">{summaryError}</Text>
-          <Text className="mt-2 text-xs font-semibold text-danger">
-            Intenta abrir esta pantalla nuevamente en unos segundos.
-          </Text>
-        </View>
-      </SafeAreaView>
+      <Screen title="Tu semana" withTabBar={false} closable>
+        <ErrorState message="No pudimos cargar tu resumen. Intenta en unos segundos." />
+      </Screen>
     );
   }
 
   const moodCharacter = stats.points >= 60 ? "excited" : stats.points >= 25 ? "happy" : "thinking";
+  const rangeLabel = formatRange(range.startISO, range.endISO);
+  const moodValues = stats.moods.filter((m): m is number => m !== null);
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <View className="mt-4 rounded-3xl bg-surface p-4">
-          <Text className="text-lg font-extrabold text-ink">
-            Tu semana del {range.startISO} al {range.endISO}
-          </Text>
-          <View className="mt-3 items-center">
-            <MochiCharacter mood={moodCharacter} size={84} />
-            <Text className="mt-3 text-center text-sm font-semibold text-ink">{message}</Text>
-          </View>
+    <Screen title="Tu semana" subtitle={rangeLabel} withTabBar={false} closable>
+      <View className="mt-3 items-center">
+        <MochiCharacter mood={moodCharacter} size={120} />
+      </View>
+      {message ? <MochiBubble className="mt-1" text={message} /> : null}
+
+      <SectionHeader title="En números" />
+      <Surface className="p-4">
+        <View className="flex-row">
+          <Stat className="flex-1" value={`${stats.studyHours}h`} label="estudiando" />
+          <Stat className="flex-1" value={String(stats.sessions)} label="sesiones" />
+          <Stat className="flex-1" value={String(stats.routines)} label="rutinas" />
         </View>
-
-        <View className="mt-4 grid gap-3">
-          <View className="rounded-2xl bg-tint-study p-3">
-            <Text className="text-xs font-bold text-ink">Horas de estudio</Text>
-            <Text className="text-2xl font-black text-ink">{stats.studyHours}</Text>
-          </View>
-          <View className="rounded-2xl bg-surface-muted p-3">
-            <Text className="text-xs font-bold text-ink">Sesiones</Text>
-            <Text className="text-2xl font-black text-ink">{stats.sessions}</Text>
-          </View>
-          <View className="rounded-2xl bg-tint-ok p-3">
-            <Text className="text-xs font-bold text-positive">Rutinas</Text>
-            <Text className="text-2xl font-black text-positive">{stats.routines}</Text>
-          </View>
-          <View className="rounded-2xl bg-tint-ok p-3">
-            <Text className="text-xs font-bold text-positive">Hábitos</Text>
-            <Text className="text-2xl font-black text-positive">
-              {stats.habitsCompleted}/{stats.habitsTotal}
-            </Text>
-          </View>
-          <View className="rounded-2xl bg-tint-kitchen p-3">
-            <Text className="text-xs font-bold text-ink">Puntos ganados</Text>
-            <Text className="text-2xl font-black text-ink">{stats.points}</Text>
-          </View>
-          <View className="rounded-2xl bg-tint-kitchen p-3">
-            <Text className="text-xs font-bold text-ink">Racha más larga</Text>
-            <Text className="text-2xl font-black text-ink">{stats.streak}</Text>
-          </View>
+        <View className="my-4 h-px bg-line" />
+        <View className="flex-row">
+          <Stat
+            className="flex-1"
+            value={`${stats.habitsCompleted}/${stats.habitsTotal}`}
+            label="hábitos"
+          />
+          <Stat className="flex-1" value={String(stats.points)} label="puntos" />
+          <Stat className="flex-1" value={String(stats.streak)} label="mejor racha" />
         </View>
+      </Surface>
 
-        <View className="mt-4 rounded-2xl bg-surface p-3">
-          <Text className="text-sm font-bold text-ink">Ánimo semanal</Text>
-          <View className="mt-2 flex-row">
-            {stats.moods.map((mood, index) => (
-              <View
-                key={`${index}-${mood ?? "none"}`}
-                className={`mr-2 h-3 w-3 rounded-full ${moodClass(mood)}`}
-              />
-            ))}
+      <SectionHeader title="Cómo te sentiste" />
+      <Surface className="flex-row justify-between px-4 py-3.5">
+        {stats.moods.map((mood, index) => (
+          <View key={`${index}-${mood ?? "none"}`} className="items-center gap-1.5">
+            {mood ? (
+              <MoodFace mood={Math.min(5, Math.max(1, Math.round(mood))) as Mood} size={30} />
+            ) : (
+              <View className="h-[30px] w-[30px] rounded-full bg-surface-muted" />
+            )}
+            <Caption className="text-[11px]">{WEEK_LETTERS[index] ?? ""}</Caption>
           </View>
-        </View>
+        ))}
+      </Surface>
+      {moodValues.length === 0 ? (
+        <Caption className="ml-1 mt-2">Haz el check-in de Hoy y aquí verás tu semana.</Caption>
+      ) : null}
 
-        <View className="mt-4 rounded-2xl bg-surface p-3">
-          <Text className="text-base font-extrabold text-ink">Atlas de semestre</Text>
-          <Text className="mt-1 text-xs font-semibold text-ink">
-            16 semanas de carga y presión académica
-          </Text>
-
-          {atlasLoading ? (
-            <View className="items-center py-4">
-              <ActivityIndicator size="small" color={COLORS.accent} />
-              <Text className="mt-2 text-xs font-semibold text-ink">Cargando atlas...</Text>
-            </View>
-          ) : null}
-
-          {atlasError ? (
-            <View className="mt-3 rounded-xl bg-surface-muted p-2">
-              <Text className="text-xs font-semibold text-danger">{atlasError}</Text>
-            </View>
-          ) : null}
-
-          {!atlasLoading && !atlasError ? (
-            <View className="mt-3">
-              {atlasWeeks.map((week) => (
+      <SectionHeader title="Tu semestre" />
+      {atlasLoading ? (
+        <Skeleton height={120} className="rounded-card" />
+      ) : atlasError ? (
+        <Surface tone="sunken" className="p-4">
+          <Caption className="text-danger">{atlasError}</Caption>
+        </Surface>
+      ) : (
+        <ListGroup>
+          {atlasWeeks.slice(0, 6).map((week) => (
+            <ListRow
+              key={week.key}
+              title={`${week.isCurrentWeek ? "Esta semana · " : ""}${formatRange(week.startISO, week.endISO)}`}
+              subtitle={`${week.sessions} sesiones · ${week.exams} exámenes · ${week.recommendation}`}
+              multiline
+              trailing={
                 <View
-                  key={week.key}
-                  className={`mb-2 rounded-xl border p-2 ${week.isCurrentWeek ? "bg-surface-muted" : "bg-surface-muted"}`}
+                  className={`rounded-full px-2.5 py-1 ${week.intensity === "Alta" ? "bg-tint-me" : week.intensity === "Media" ? "bg-tint-kitchen" : "bg-tint-ok"}`}
                 >
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-xs font-bold text-ink">
-                      Semana {week.startISO} - {week.endISO}
-                    </Text>
-                    <View
-                      className={`rounded-full px-2 py-1 ${week.intensity === "Alta" ? "bg-tint-me" : week.intensity === "Media" ? "bg-tint-kitchen" : "bg-tint-ok"}`}
-                    >
-                      <Text className="text-[10px] font-bold text-ink">{week.intensity}</Text>
-                    </View>
-                  </View>
-
-                  <Text className="mt-1 text-[11px] font-semibold text-ink">
-                    Sesiones: {week.sessions} · Exámenes: {week.exams}
-                  </Text>
-                  <Text className="mt-1 text-[11px] font-semibold text-ink">
-                    {week.recommendation}
-                  </Text>
+                  <Text className="font-body-extrabold text-[11px] text-ink">{week.intensity}</Text>
                 </View>
-              ))}
-            </View>
-          ) : null}
-        </View>
+              }
+            />
+          ))}
+        </ListGroup>
+      )}
 
-        <View
-          ref={(node) => {
-            captureViewRef.current = node;
-          }}
-          collapsable={false}
-          className="mt-4 rounded-2xl bg-surface p-4"
-        >
-          <Text className="text-center text-base font-extrabold text-ink">Mi semana en Mochi</Text>
-          <Text className="mt-1 text-center text-xs font-semibold text-ink">
-            Semana: {range.startISO} - {range.endISO}
-          </Text>
-          <Text className="mt-2 text-center text-sm font-semibold text-ink">
-            {stats.studyHours}h estudio · {stats.sessions} sesiones · {stats.points} puntos
-          </Text>
-          <Text className="mt-2 text-center text-xs font-semibold text-ink">
-            Descarga Mochi en mochi.siramong.tech
-          </Text>
-        </View>
+      {/* Tarjeta que se captura como imagen para compartir. */}
+      <View
+        ref={(node) => {
+          captureViewRef.current = node;
+        }}
+        collapsable={false}
+        className="mt-6 items-center rounded-card bg-surface p-5"
+      >
+        <MochiCharacter expression="proud" size={84} animated={false} shadow={false} />
+        <Title className="mt-1 text-center">Mi semana en Mochi</Title>
+        <Caption className="mt-0.5 text-center">{rangeLabel}</Caption>
+        <Strong className="mt-2 text-center">
+          {stats.studyHours}h de estudio · {stats.sessions} sesiones · {stats.points} puntos
+        </Strong>
+        <Caption className="mt-2 text-center">mochi.siramong.tech</Caption>
+      </View>
 
-        <TouchableOpacity
-          className="mb-10 mt-4 items-center rounded-2xl bg-accent py-3"
-          onPress={() => {
-            void shareSummary();
-          }}
-        >
-          <Text className="font-bold text-white">Compartir resumen</Text>
-        </TouchableOpacity>
-
-        {shareError ? (
-          <View className="mb-10 rounded-2xl bg-surface-muted p-3">
-            <Text className="text-center text-sm font-semibold text-danger">{shareError}</Text>
-          </View>
-        ) : null}
-      </ScrollView>
-    </SafeAreaView>
+      <View className="mt-4">
+        <Button
+          title="Compartir mi semana"
+          icon="share-outline"
+          onPress={() => void shareSummary()}
+        />
+      </View>
+      {shareError ? <Caption className="mt-2 text-center text-danger">{shareError}</Caption> : null}
+    </Screen>
   );
+}
+
+const WEEK_LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
+
+/** «19 – 25 oct» (o «28 sep – 4 oct» si cambia de mes). */
+function formatRange(startISO: string, endISO: string): string {
+  const parse = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  };
+  const start = parse(startISO);
+  const end = parse(endISO);
+  const month = (date: Date) =>
+    new Intl.DateTimeFormat("es-EC", { month: "short" }).format(date).replace(".", "");
+  return start.getMonth() === end.getMonth()
+    ? `${start.getDate()} – ${end.getDate()} ${month(end)}`
+    : `${start.getDate()} ${month(start)} – ${end.getDate()} ${month(end)}`;
+}
+
+function localWeekMessage(points: number, sessions: number): string {
+  if (points >= 60) return "¡Qué semana! Se nota todo lo que te cuidaste. Estoy orgullosa de ti.";
+  if (sessions > 0) return "Avanzaste a tu ritmo y eso cuenta. La próxima semana seguimos juntas.";
+  return "Esta semana fue tranquila, y está bien. Empecemos con algo pequeño.";
 }
 
 export default WeeklySummaryScreen;
