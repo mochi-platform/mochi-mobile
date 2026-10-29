@@ -1,10 +1,11 @@
+import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { COLORS } from "@/src/shared/theme/tokens";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/src/shared/lib/supabase";
-import { Button, Input } from "@/src/shared/ui";
+import { Button, Caption, Display, Input } from "@/src/shared/ui";
 
 type Phase = "verifying" | "form" | "invalid" | "done";
 
@@ -49,17 +50,23 @@ export function ResetPasswordScreen() {
 
         {phase === "invalid" ? (
           <>
-            <Text className="text-xl font-extrabold text-ink">Enlace no válido</Text>
-            <Text className="mb-6 mt-2 text-sm text-ink-muted">
-              El enlace expiró o ya se usó. Pide uno nuevo desde "Olvidé mi contraseña".
-            </Text>
+            <View className="items-center">
+              <MochiCharacter expression="worried" size={130} />
+            </View>
+            <Display className="mt-2 text-center">Enlace no válido</Display>
+            <Caption className="mb-6 mt-2 text-center">
+              El enlace expiró o ya se usó. Pide uno nuevo desde «Olvidé mi contraseña».
+            </Caption>
             <Button title="Volver a iniciar sesión" onPress={() => router.replace("/login")} />
           </>
         ) : null}
 
         {phase === "form" ? (
           <>
-            <Text className="mb-4 text-xl font-extrabold text-ink">Nueva contraseña</Text>
+            <View className="items-center">
+              <MochiCharacter expression="happy" size={120} />
+            </View>
+            <Display className="mb-4 mt-2 text-center">Nueva contraseña</Display>
             <Input
               label="Contraseña"
               placeholder="Mínimo 8 caracteres"
@@ -80,7 +87,10 @@ export function ResetPasswordScreen() {
 
         {phase === "done" ? (
           <>
-            <Text className="mb-6 text-xl font-extrabold text-ink">Contraseña actualizada</Text>
+            <View className="items-center">
+              <MochiCharacter expression="celebrating" size={140} />
+            </View>
+            <Display className="mb-6 mt-2 text-center">¡Listo! Contraseña actualizada</Display>
             <Button title="Continuar" onPress={() => router.replace("/")} />
           </>
         ) : null}
