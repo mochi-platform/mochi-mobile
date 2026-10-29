@@ -1,16 +1,7 @@
 import { COLORS } from "@/src/shared/theme/tokens";
-import { Ionicons } from "@expo/vector-icons";
-import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
+import { ActivityIndicator, View } from "react-native";
 import type { StudyAttachment, StudyMessage } from "@/src/features/study/timer/types";
+import { Body, Button, Caption, Chip, Input, MochiBubble, Sheet } from "@/src/shared/ui";
 
 type StudyCompanionModalProps = {
   visible: boolean;
@@ -45,109 +36,66 @@ export function StudyCompanionModal({
   onRemoveAttachment,
   onSend,
 }: StudyCompanionModalProps) {
+  const canSend = Boolean(question.trim() || chatAttachment) && !asking;
   return (
-    <Modal statusBarTranslucent visible={visible} transparent animationType="slide" onRequestClose={() => onClose()}>
-      <View className="flex-1 justify-end bg-black/40">
-        <View className="max-h-[90%] rounded-t-3xl bg-surface px-5 pb-10 pt-5">
-          <View className="mb-2 h-1.5 w-16 self-center rounded-full bg-surface-muted" />
+    <Sheet visible={visible} onClose={() => onClose()} title="Pregúntale a Mochi">
+      <Caption className="-mt-2 mb-3" numberOfLines={1}>
+        {specificTopic}
+      </Caption>
 
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-base font-extrabold text-ink">Compañera de estudio</Text>
-              <Text className="text-xs font-semibold text-ink" numberOfLines={1}>
-                {specificTopic}
-              </Text>
+      {messages.length === 0 ? (
+        <MochiBubble text="Estoy lista para ayudarte con teoría, ejercicios, dudas o resúmenes." />
+      ) : (
+        <View className="gap-2">
+          {messages.map((message, index) => (
+            <View
+              key={`${message.role}-${index}`}
+              className={`max-w-[88%] rounded-[18px] px-3.5 py-2.5 ${message.role === "assistant" ? "self-start bg-accent-soft" : "self-end bg-surface-muted"}`}
+            >
+              <Body>{message.content}</Body>
             </View>
-            <TouchableOpacity onPress={() => onClose()}>
-              <Ionicons name="close" size={22} color={COLORS.inkMuted} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView className="mt-3 max-h-[45%]" showsVerticalScrollIndicator={false}>
-            {messages.length === 0 ? (
-              <View className="items-center rounded-2xl bg-surface-muted p-4">
-                <MochiCharacter mood="happy" size={56} />
-                <Text className="mt-2 text-center text-xs font-semibold text-ink">
-                  Estoy lista para ayudarte con teoría, ejercicios, dudas o resúmenes.
-                </Text>
-              </View>
-            ) : (
-              messages.map((message, index) => (
-                <View
-                  key={`${message.role}-${index}`}
-                  className={`mb-2 rounded-2xl p-3 ${message.role === "assistant" ? "bg-tint-study" : "bg-surface-muted"}`}
-                >
-                  <Text className="text-sm font-semibold text-ink">{message.content}</Text>
-                </View>
-              ))
-            )}
-            {asking ? (
-              <View className="mb-2 flex-row items-center rounded-2xl bg-tint-study p-3">
-                <ActivityIndicator color={COLORS.accent} />
-                <Text className="ml-2 text-xs font-semibold text-ink">Mochi está pensando...</Text>
-              </View>
-            ) : null}
-          </ScrollView>
-
-          <View className="mt-3 flex-row flex-wrap gap-2">
-            <TouchableOpacity
-              className="rounded-xl bg-tint-study px-3 py-2"
-              onPress={() => onPickCamera()}
-            >
-              <Text className="text-xs font-bold text-ink">Cámara</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="rounded-xl bg-tint-study px-3 py-2"
-              onPress={() => onPickGallery()}
-            >
-              <Text className="text-xs font-bold text-ink">Galería</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="rounded-xl bg-tint-study px-3 py-2"
-              onPress={() => onPickDocument()}
-            >
-              <Text className="text-xs font-bold text-ink">Archivo</Text>
-            </TouchableOpacity>
-            {chatAttachment ? (
-              <TouchableOpacity
-                className="rounded-xl bg-tint-me px-3 py-2"
-                onPress={() => onRemoveAttachment()}
-              >
-                <Text className="text-xs font-bold text-danger">Quitar</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-
-          {chatAttachment ? (
-            <View className="mt-2 rounded-xl bg-surface-muted px-3 py-2">
-              <Text className="text-xs font-semibold text-ink" numberOfLines={1}>
-                {chatAttachment.name}
-              </Text>
-            </View>
-          ) : null}
-
-          <TextInput
-            className="mt-3 rounded-2xl bg-surface-muted px-4 py-3 text-sm font-semibold text-ink"
-            placeholder="Escribe tu duda o pide un resumen..."
-            placeholderTextColor={COLORS.accent}
-            value={question}
-            onChangeText={onQuestionChange}
-            multiline
-          />
-
-          {chatError ? (
-            <Text className="mt-2 text-xs font-semibold text-danger">{chatError}</Text>
-          ) : null}
-
-          <TouchableOpacity
-            className={`mt-3 items-center rounded-2xl py-3 ${(question.trim() || chatAttachment) && !asking ? "bg-accent" : "bg-tint-study"}`}
-            onPress={() => onSend()}
-            disabled={!(question.trim() || chatAttachment) || asking}
-          >
-            <Text className="font-bold text-white">Enviar a Mochi</Text>
-          </TouchableOpacity>
+          ))}
         </View>
+      )}
+      {asking ? (
+        <View className="mt-2 flex-row items-center gap-2 self-start rounded-[18px] bg-accent-soft px-3.5 py-2.5">
+          <ActivityIndicator color={COLORS.accent} size="small" />
+          <Caption>Mochi está pensando…</Caption>
+        </View>
+      ) : null}
+
+      <View className="mt-4 flex-row flex-wrap gap-2">
+        <Chip icon="camera-outline" label="Cámara" onSurface onPress={() => onPickCamera()} />
+        <Chip icon="image-outline" label="Galería" onSurface onPress={() => onPickGallery()} />
+        <Chip icon="document-outline" label="Archivo" onSurface onPress={() => onPickDocument()} />
+        {chatAttachment ? (
+          <Chip icon="close" label="Quitar" onSurface onPress={() => onRemoveAttachment()} />
+        ) : null}
       </View>
-    </Modal>
+      {chatAttachment ? (
+        <Caption className="ml-1 mt-2" numberOfLines={1}>
+          Adjunto: {chatAttachment.name}
+        </Caption>
+      ) : null}
+
+      <View className="mt-3">
+        <Input
+          label="Tu pregunta"
+          placeholder="Escribe tu duda o pide un resumen…"
+          value={question}
+          onChangeText={onQuestionChange}
+          multiline
+          style={{ textAlignVertical: "top", minHeight: 72, paddingTop: 14 }}
+        />
+      </View>
+      {chatError ? <Caption className="mb-2 ml-1 text-danger">{chatError}</Caption> : null}
+      <Button
+        title="Enviar"
+        icon="send"
+        disabled={!canSend}
+        loading={asking}
+        onPress={() => onSend()}
+      />
+    </Sheet>
   );
 }

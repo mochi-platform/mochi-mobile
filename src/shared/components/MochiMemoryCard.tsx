@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-import { Card, Chip, Toggle } from "@/src/shared/ui";
+import { Text, View } from "react-native";
+import { Card, Chip, PressableScale, Toggle } from "@/src/shared/ui";
 import { getConsent, setConsent } from "@/src/shared/lib/consents";
 import { supabase } from "@/src/shared/lib/supabase";
 import { syncAnalyticsConsent } from "@/src/shared/lib/observability/analytics";
@@ -99,13 +99,14 @@ export function MochiMemoryCard() {
             )}
           </View>
 
-          <TouchableOpacity
-            accessibilityRole="button"
+          <PressableScale
+            haptics="warning"
+            accessibilityLabel="Olvidar todo"
             className="mt-3 min-h-[44px] items-center justify-center"
             onPress={() => void forget()}
           >
             <Text className="font-body-extrabold text-danger">Olvidar todo</Text>
-          </TouchableOpacity>
+          </PressableScale>
         </>
       ) : null}
 
