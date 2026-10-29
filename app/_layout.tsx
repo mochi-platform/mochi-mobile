@@ -5,7 +5,7 @@ import {
   unregisterWidgetRefresh,
 } from "@/src/shared/widgets/backgroundRefresh";
 import "../global.css";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Stack, router, usePathname, useSegments, type ErrorBoundaryProps } from "expo-router";
 import { AppState, useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
@@ -186,6 +186,21 @@ function RootLayoutNavigator() {
   const segments = useSegments();
   const notificationResponseListener = useRef<NotificationEventSubscription | null>(null);
 
+  // Un solo splash: el nativo sigue visible hasta que la sesión cargó (antes había una segunda
+  // pantalla de carga con Mochi en otro tamaño y se veían dos Mochis al cruzarse).
+  const [slowStart, setSlowStart] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      void SplashScreen.hideAsync().catch(() => {});
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSlowStart(true);
+      void SplashScreen.hideAsync().catch(() => {});
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
   // Con sesión, Android refresca los widgets en segundo plano (~30 min); sin sesión, se cancela.
   const signedIn = Boolean(session);
   useEffect(() => {
@@ -315,11 +330,16 @@ function RootLayoutNavigator() {
   }, [loading, moduleVisibility, moduleVisibilityLoaded, pathname, requiresOnboarding, session]);
 
   if (loading) {
+    // Detrás del splash nativo: solo se ve si la carga tarda más que el límite de abajo.
     return (
       <View className="flex-1 items-center justify-center bg-canvas px-6">
         <EdgeToEdgeSystemBars style={{ statusBar: "dark", navigationBar: "dark" }} />
-        <MochiCharacter expression="happy" size={150} />
-        <Caption className="mt-3">Despertando a Mochi…</Caption>
+        {slowStart ? (
+          <>
+            <MochiCharacter expression="happy" size={150} />
+            <Caption className="mt-3">Despertando a Mochi…</Caption>
+          </>
+        ) : null}
       </View>
     );
   }
@@ -396,9 +416,7 @@ export function RootLayout() {
   // Si la carga falla se sigue con la fuente del sistema en vez de bloquear la app.
   const [fontsLoaded, fontError] = useFonts(FONT_ASSETS);
   const fontsReady = fontsLoaded || Boolean(fontError);
-  useEffect(() => {
-    if (fontsReady) void SplashScreen.hideAsync().catch(() => {});
-  }, [fontsReady]);
+  // El splash nativo se oculta en RootLayoutNavigator, cuando la sesión ya cargó.
   if (!fontsReady) return null;
   return (
     // Con edge-to-edge Android ya no encoge la ventana al abrir el teclado: esto lo maneja.
