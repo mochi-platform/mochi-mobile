@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
+import { NavigationContext } from "@react-navigation/native";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
   cancelAnimation,
   Easing,
@@ -25,12 +26,34 @@ function nextBlinkDelay(): number {
 }
 
 /**
+ * Si la pantalla que contiene a Mochi está a la vista. Las pestañas siguen montadas al cambiar de
+ * pestaña y, sin esto, cada Mochi oculta seguía dibujando 120 cuadros por segundo. Fuera de un
+ * navegador (pantalla de carga) cuenta como visible.
+ */
+function useScreenFocused(): boolean {
+  const navigation = useContext(NavigationContext);
+  const [focused, setFocused] = useState(() => navigation?.isFocused() ?? true);
+  useEffect(() => {
+    if (!navigation) return;
+    setFocused(navigation.isFocused());
+    const offFocus = navigation.addListener("focus", () => setFocused(true));
+    const offBlur = navigation.addListener("blur", () => setFocused(false));
+    return () => {
+      offFocus();
+      offBlur();
+    };
+  }, [navigation]);
+  return focused;
+}
+
+/**
  * Estado animado de Mochi, todo en el hilo de UI: respiración, parpadeo, mirada,
  * aplastamiento, salto e inclinación. Con "reducir movimiento" solo parpadea.
  */
 export function useMochiRig(animated: boolean) {
   const reduceMotion = useReducedMotion();
-  const live = animated && !reduceMotion;
+  const focused = useScreenFocused();
+  const live = animated && !reduceMotion && focused;
 
   const breath = useSharedValue(0);
   const blink = useSharedValue(1);
@@ -55,7 +78,7 @@ export function useMochiRig(animated: boolean) {
 
   const blinkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!animated) return;
+    if (!animated || !focused) return;
     const schedule = () => {
       blinkTimer.current = setTimeout(() => {
         const close = withTiming(0.08, { duration: 70 });
@@ -72,7 +95,7 @@ export function useMochiRig(animated: boolean) {
     return () => {
       if (blinkTimer.current) clearTimeout(blinkTimer.current);
     };
-  }, [animated, blink]);
+  }, [animated, focused, blink]);
 
   const react = useCallback(
     (kind: MochiReaction) => {
