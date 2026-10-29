@@ -25,7 +25,13 @@ export type DuoSnapshot = {
 };
 
 export type DuoCheckin = { userId: string; mood: number; note: string | null };
-export type DuoNote = { id: string; authorId: string; content: string; createdAt: string; readAt: string | null };
+export type DuoNote = {
+  id: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+  readAt: string | null;
+};
 export type DuoVoucher = {
   id: string;
   title: string;
@@ -58,7 +64,9 @@ const EMPTY: Omit<DuoState, "space"> = {
 
 /** Error de "esto aún no existe en la base" (tabla, columna o función). */
 function isMissing(error: { code?: string } | null): boolean {
-  return Boolean(error && ["42P01", "42703", "PGRST202", "PGRST205", "PGRST204"].includes(error.code ?? ""));
+  return Boolean(
+    error && ["42P01", "42703", "PGRST202", "PGRST205", "PGRST204"].includes(error.code ?? ""),
+  );
 }
 
 function firstName(full: string | null | undefined, fallback: string): string {
@@ -87,7 +95,9 @@ export async function loadDuo(userId: string): Promise<DuoState> {
     inviteStatus: row.invite_status as DuoSpace["inviteStatus"],
     inviteCode: row.invite_code,
     owner: { id: row.owner_user_id, name: nameOf(row.owner_user_id, "Ella") },
-    partner: row.partner_user_id ? { id: row.partner_user_id, name: nameOf(row.partner_user_id, "Él") } : null,
+    partner: row.partner_user_id
+      ? { id: row.partner_user_id, name: nameOf(row.partner_user_id, "Él") }
+      : null,
     isOwner: row.owner_user_id === userId,
   };
   if (space.inviteStatus !== "accepted") return { space, ...EMPTY };
@@ -105,7 +115,11 @@ export async function loadDuo(userId: string): Promise<DuoState> {
       .select("id, title, progress, is_completed")
       .eq("space_id", space.id)
       .order("created_at", { ascending: false }),
-    supabase.from("partner_checkins").select("user_id, mood, note").eq("space_id", space.id).eq("day", today),
+    supabase
+      .from("partner_checkins")
+      .select("user_id, mood, note")
+      .eq("space_id", space.id)
+      .eq("day", today),
     supabase
       .from("partner_notes")
       .select("id, author_id, content, created_at, read_at")
@@ -176,7 +190,10 @@ export async function shareCheckin(spaceId: string, mood: number, note?: string)
 }
 
 export async function sendNote(spaceId: string, content: string): Promise<void> {
-  const { error } = await supabase.rpc("send_partner_note", { p_space_id: spaceId, p_content: content });
+  const { error } = await supabase.rpc("send_partner_note", {
+    p_space_id: spaceId,
+    p_content: content,
+  });
   if (error) throw error;
 }
 
@@ -192,7 +209,11 @@ export async function redeemVoucher(voucherId: string): Promise<void> {
 
 /** Modo de la app; si la columna aún no existe en el servidor, «personal». */
 export async function fetchAppMode(userId: string): Promise<"personal" | "partner"> {
-  const { data, error } = await supabase.from("profiles").select("app_mode").eq("id", userId).maybeSingle();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("app_mode")
+    .eq("id", userId)
+    .maybeSingle();
   if (error || !data) return "personal";
   return data.app_mode === "partner" ? "partner" : "personal";
 }

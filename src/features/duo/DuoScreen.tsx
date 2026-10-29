@@ -8,6 +8,7 @@ import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { energyProfileFromPhase } from "@/src/shared/lib/ai";
 import { toLocalISODate } from "@/src/shared/lib/dates";
 import { saveDuoWidget } from "@/src/shared/lib/homeWidgetSummary";
+import { duoWidgetFrom } from "./widget";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import {
   Button,
@@ -67,7 +68,9 @@ function Avatar({ name, tone }: { name: string; tone: "me" | "study" }) {
     <View
       className={`h-10 w-10 items-center justify-center rounded-full border-[3px] border-canvas ${tone === "me" ? "bg-tint-me" : "bg-tint-study"}`}
     >
-      <Text className={`font-display text-base ${tone === "me" ? "text-tint-me-ink" : "text-tint-study-ink"}`}>
+      <Text
+        className={`font-display text-base ${tone === "me" ? "text-tint-me-ink" : "text-tint-study-ink"}`}
+      >
         {name.charAt(0).toUpperCase()}
       </Text>
     </View>
@@ -90,15 +93,7 @@ export function DuoScreen() {
     try {
       const next = await loadDuo(userId);
       setState(next);
-      const partner = next.space ? (next.space.isOwner ? next.space.partner : next.space.owner) : null;
-      const lastNote = next.notes.find((n) => n.authorId !== userId);
-      const theirMood = next.checkins.find((c) => c.userId !== userId)?.mood ?? 0;
-      void saveDuoWidget({
-        hasPartner: Boolean(partner && next.space?.inviteStatus === "accepted"),
-        partnerName: partner?.name ?? "tu pareja",
-        note: lastNote?.content ?? "",
-        mood: theirMood,
-      });
+      void saveDuoWidget(duoWidgetFrom(next, userId));
       if (next.space && next.partnerModeReady) void markNotesRead(next.space.id).catch(() => {});
     } catch (error) {
       reportError(error, { scope: "duo/load" });
@@ -123,7 +118,10 @@ export function DuoScreen() {
     haptic("success");
     setState({
       ...state,
-      checkins: [...state.checkins.filter((c) => c.userId !== userId), { userId: userId ?? "", mood, note: myCheckin?.note ?? null }],
+      checkins: [
+        ...state.checkins.filter((c) => c.userId !== userId),
+        { userId: userId ?? "", mood, note: myCheckin?.note ?? null },
+      ],
     });
     shareCheckin(space.id, mood).catch((error) => {
       reportError(error, { scope: "duo/checkin" });
@@ -142,7 +140,10 @@ export function DuoScreen() {
       void load();
     } catch (error) {
       reportError(error, { scope: "duo/note" });
-      Alert.alert("No se pudo enviar", error instanceof Error ? error.message : "Intenta de nuevo.");
+      Alert.alert(
+        "No se pudo enviar",
+        error instanceof Error ? error.message : "Intenta de nuevo.",
+      );
     } finally {
       setSending(false);
     }
@@ -163,7 +164,10 @@ export function DuoScreen() {
             })
             .catch((error) => {
               reportError(error, { scope: "duo/redeem" });
-              Alert.alert("No se pudo canjear", error instanceof Error ? error.message : "Intenta de nuevo.");
+              Alert.alert(
+                "No se pudo canjear",
+                error instanceof Error ? error.message : "Intenta de nuevo.",
+              );
             }),
       },
     ]);
@@ -235,7 +239,9 @@ export function DuoScreen() {
                     : "Aún no cuenta cómo está"}
                 </Strong>
                 {theirCheckin?.note ? (
-                  <MochiQuote className="mt-1 text-[15.5px] leading-[21px]">“{theirCheckin.note}”</MochiQuote>
+                  <MochiQuote className="mt-1 text-[15.5px] leading-[21px]">
+                    “{theirCheckin.note}”
+                  </MochiQuote>
                 ) : null}
               </View>
             </Surface>
@@ -249,7 +255,9 @@ export function DuoScreen() {
                   </Title>
                 </View>
                 <MochiCharacter
-                  expression={energy === "baja" ? "sleepy" : energy === "alta" ? "excited" : "happy"}
+                  expression={
+                    energy === "baja" ? "sleepy" : energy === "alta" ? "excited" : "happy"
+                  }
                   size={84}
                   animated={false}
                   shadow={false}
@@ -287,27 +295,36 @@ export function DuoScreen() {
               </View>
               <Caption className="ml-1 mt-2">{other.name} verá cómo estás hoy.</Caption>
 
-              <SectionHeader title="Notas" actionLabel="Escribir" onAction={() => setNoteOpen(true)} />
+              <SectionHeader
+                title="Notas"
+                actionLabel="Escribir"
+                onAction={() => setNoteOpen(true)}
+              />
               {state.notes.length === 0 ? (
                 <Surface tone="sunken" className="p-4">
                   <Caption>Aún no hay notas. Escríbele algo bonito a {other.name}.</Caption>
                 </Surface>
               ) : (
                 <View className="gap-2">
-                  {[...state.notes].slice(0, 4).reverse().map((note) => {
-                    const mine = note.authorId === userId;
-                    return (
-                      <View
-                        key={note.id}
-                        className={`max-w-[80%] px-3.5 py-2.5 ${mine ? "self-end rounded-[20px] rounded-br-md bg-accent" : "self-start rounded-[20px] rounded-bl-md bg-surface"}`}
-                        style={mine ? undefined : ELEVATION[1]}
-                      >
-                        <Text className={`font-body-bold text-[15px] leading-5 ${mine ? "text-accent-ink" : "text-ink"}`}>
-                          {note.content}
-                        </Text>
-                      </View>
-                    );
-                  })}
+                  {[...state.notes]
+                    .slice(0, 4)
+                    .reverse()
+                    .map((note) => {
+                      const mine = note.authorId === userId;
+                      return (
+                        <View
+                          key={note.id}
+                          className={`max-w-[80%] px-3.5 py-2.5 ${mine ? "self-end rounded-[20px] rounded-br-md bg-accent" : "self-start rounded-[20px] rounded-bl-md bg-surface"}`}
+                          style={mine ? undefined : ELEVATION[1]}
+                        >
+                          <Text
+                            className={`font-body-bold text-[15px] leading-5 ${mine ? "text-accent-ink" : "text-ink"}`}
+                          >
+                            {note.content}
+                          </Text>
+                        </View>
+                      );
+                    })}
                 </View>
               )}
             </>
@@ -335,15 +352,22 @@ export function DuoScreen() {
                   style={ELEVATION[1]}
                 >
                   <View>
-                    <Eyebrow className={index % 2 === 0 ? "text-tint-duo-ink" : "text-tint-kitchen-ink"}>
+                    <Eyebrow
+                      className={index % 2 === 0 ? "text-tint-duo-ink" : "text-tint-kitchen-ink"}
+                    >
                       {voucher.mode === "points" ? `${voucher.pointsCost} puntos` : "Regalo"}
                     </Eyebrow>
-                    <Text numberOfLines={2} className="mt-1.5 font-display text-[19px] leading-[22px] text-ink">
+                    <Text
+                      numberOfLines={2}
+                      className="mt-1.5 font-display text-[19px] leading-[22px] text-ink"
+                    >
                       {voucher.title}
                     </Text>
                   </View>
                   {space.isOwner ? (
-                    <Text className="font-body-extrabold text-[12.5px] text-accent-strong">Canjear</Text>
+                    <Text className="font-body-extrabold text-[12.5px] text-accent-strong">
+                      Canjear
+                    </Text>
                   ) : null}
                 </PressableScale>
               ))}
@@ -378,7 +402,12 @@ export function DuoScreen() {
                     title={goal.title}
                     subtitle={goal.isCompleted ? "¡Cumplida!" : `${goal.progress}% completado`}
                     leading={<IconTile icon="flag" tint="kitchen" />}
-                    trailing={<ProgressRing progress={goal.progress / 100} accessibilityLabel={goal.title} />}
+                    trailing={
+                      <ProgressRing
+                        progress={goal.progress / 100}
+                        accessibilityLabel={goal.title}
+                      />
+                    }
                   />
                 ))}
               </ListGroup>
@@ -403,7 +432,11 @@ export function DuoScreen() {
             ) : null}
           </ListGroup>
 
-          <Sheet visible={noteOpen} onClose={() => setNoteOpen(false)} title={`Nota para ${other.name}`}>
+          <Sheet
+            visible={noteOpen}
+            onClose={() => setNoteOpen(false)}
+            title={`Nota para ${other.name}`}
+          >
             <Input
               label="Tu nota"
               value={noteText}
@@ -413,7 +446,12 @@ export function DuoScreen() {
               multiline
               autoFocus
             />
-            <Button title="Enviar" loading={sending} disabled={!noteText.trim()} onPress={() => void submitNote()} />
+            <Button
+              title="Enviar"
+              loading={sending}
+              disabled={!noteText.trim()}
+              onPress={() => void submitNote()}
+            />
           </Sheet>
           {!space.isOwner ? (
             <PartnerVoucherModal

@@ -1,7 +1,8 @@
+import { refreshDuoWidget } from "@/src/features/duo/widget";
 import "../global.css";
 import { useEffect, useRef } from "react";
 import { Stack, router, usePathname, useSegments, type ErrorBoundaryProps } from "expo-router";
-import { useColorScheme, View } from "react-native";
+import { AppState, useColorScheme, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -179,6 +180,17 @@ function RootLayoutNavigator() {
   const pathname = usePathname();
   const segments = useSegments();
   const notificationResponseListener = useRef<NotificationEventSubscription | null>(null);
+
+  // El widget de Duo se refresca al abrir la app y cada vez que vuelve al frente.
+  const duoUserId = moduleVisibility.partner_features_enabled ? session?.user.id : undefined;
+  useEffect(() => {
+    if (!duoUserId) return;
+    void refreshDuoWidget(duoUserId);
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") void refreshDuoWidget(duoUserId);
+    });
+    return () => subscription.remove();
+  }, [duoUserId]);
 
   useEffect(() => {
     let release: (() => void) | null = null;
