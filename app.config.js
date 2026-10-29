@@ -1,4 +1,5 @@
 const withMochiHealthConnectPermissionDelegate = require('./plugins/with-mochi-health-connect-delegate.js')
+const withMochiWidgetAssets = require('./plugins/with-mochi-widget-assets.js')
 
 // En builds de producción las variables obligatorias deben existir: no se permite caer en IDs de prueba.
 const REQUIRED_PRODUCTION_ENV = [
@@ -76,6 +77,7 @@ module.exports = ({ config }) => {
     },
   ],
   withMochiHealthConnectPermissionDelegate,
+  withMochiWidgetAssets,
 ],
   }
 }

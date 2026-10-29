@@ -61,12 +61,44 @@
                 "systemMedium"
               ],
               "displayName": "Resumen Mochi",
-              "description": "Puntos, racha y bloque del dia",
+              "description": "Mochi, tu frase del día y lo que sigue",
               "contentMarginsDisabled": false,
               "android": {
-                "minWidth": 180,
+                "minWidth": 250,
                 "minHeight": 110,
-                "targetCellWidth": 3,
+                "targetCellWidth": 4,
+                "targetCellHeight": 2,
+                "resizeMode": "both"
+              }
+            },
+            {
+              "name": "MochiRachaWidget",
+              "supportedFamilies": [
+                "systemSmall"
+              ],
+              "displayName": "Racha Mochi",
+              "description": "Tu racha y tus hábitos de hoy",
+              "contentMarginsDisabled": false,
+              "android": {
+                "minWidth": 110,
+                "minHeight": 110,
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "both"
+              }
+            },
+            {
+              "name": "MochiDuoWidget",
+              "supportedFamilies": [
+                "systemSmall"
+              ],
+              "displayName": "Duo",
+              "description": "La última nota de tu pareja",
+              "contentMarginsDisabled": false,
+              "android": {
+                "minWidth": 110,
+                "minHeight": 110,
+                "targetCellWidth": 2,
                 "targetCellHeight": 2,
                 "resizeMode": "both"
               }

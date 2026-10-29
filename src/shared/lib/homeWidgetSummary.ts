@@ -4,6 +4,7 @@ import { Platform } from "react-native";
 import { isExpoGo } from "@/lib/env";
 import { pickLine, WIDGET_LINES } from "@/src/features/companion/lines";
 import { toLocalISODate } from "@/src/shared/lib/dates";
+import { getManualPeriodStarts } from "@/src/shared/lib/manualCycle";
 
 export type HomeWidgetSummaryPayload = {
   userId: string;
@@ -11,6 +12,9 @@ export type HomeWidgetSummaryPayload = {
   streak: number;
   nextBlock: string;
   updatedAt: string;
+  /** Hábitos hechos hoy y total (widget de racha). Opcionales por compatibilidad con la caché. */
+  habitsDone?: number;
+  habitsTotal?: number;
 };
 
 const HOME_WIDGET_STORAGE_PREFIX = "widget:home-summary:";
@@ -39,14 +43,22 @@ async function syncWidgetSnapshot(payload: HomeWidgetSummaryPayload): Promise<vo
   try {
     // eslint-disable-next-line import/no-unresolved -- módulo con sufijo de plataforma (.ios/.android), lo resuelve Metro
     const widgetModule = await import("@/src/shared/widgets/mochiSummaryWidget");
+    const showPeriod = (await getManualPeriodStarts()).length > 0;
     widgetModule.mochiSummaryWidget.updateSnapshot({
       points: payload.points,
       streak: payload.streak,
       nextBlock: payload.nextBlock,
       updatedAtLabel: formatUpdatedLabel(payload.updatedAt),
       line: pickLine(WIDGET_LINES, toLocalISODate(new Date())),
+      showPeriod,
     });
     widgetModule.mochiSummaryWidget.reload();
+    widgetModule.mochiStreakWidget.updateSnapshot({
+      streak: payload.streak,
+      habitsDone: payload.habitsDone ?? 0,
+      habitsTotal: payload.habitsTotal ?? 0,
+    });
+    widgetModule.mochiStreakWidget.reload();
   } catch (error) {
     reportError(error, { scope: "HomeWidget" });
   }
@@ -80,5 +92,25 @@ export async function loadHomeWidgetSummary(
     return parsed as HomeWidgetSummaryPayload;
   } catch {
     return null;
+  }
+}
+
+export type DuoWidgetPayload = {
+  hasPartner: boolean;
+  partnerName: string;
+  note: string;
+  mood: number;
+};
+
+/** Widget de Duo: la última nota de la pareja y su ánimo compartido. */
+export async function saveDuoWidget(payload: DuoWidgetPayload): Promise<void> {
+  if ((Platform.OS !== "ios" && Platform.OS !== "android") || isExpoGo) return;
+  try {
+    // eslint-disable-next-line import/no-unresolved -- módulo con sufijo de plataforma (.ios/.android), lo resuelve Metro
+    const widgetModule = await import("@/src/shared/widgets/mochiSummaryWidget");
+    widgetModule.mochiDuoWidget.updateSnapshot(payload);
+    widgetModule.mochiDuoWidget.reload();
+  } catch (error) {
+    reportError(error, { scope: "DuoWidget" });
   }
 }

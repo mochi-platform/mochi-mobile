@@ -7,6 +7,7 @@ import type { Mood } from "@/src/features/companion/lines";
 import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { energyProfileFromPhase } from "@/src/shared/lib/ai";
 import { toLocalISODate } from "@/src/shared/lib/dates";
+import { saveDuoWidget } from "@/src/shared/lib/homeWidgetSummary";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import {
   Button,
@@ -89,6 +90,15 @@ export function DuoScreen() {
     try {
       const next = await loadDuo(userId);
       setState(next);
+      const partner = next.space ? (next.space.isOwner ? next.space.partner : next.space.owner) : null;
+      const lastNote = next.notes.find((n) => n.authorId !== userId);
+      const theirMood = next.checkins.find((c) => c.userId !== userId)?.mood ?? 0;
+      void saveDuoWidget({
+        hasPartner: Boolean(partner && next.space?.inviteStatus === "accepted"),
+        partnerName: partner?.name ?? "tu pareja",
+        note: lastNote?.content ?? "",
+        mood: theirMood,
+      });
       if (next.space && next.partnerModeReady) void markNotesRead(next.space.id).catch(() => {});
     } catch (error) {
       reportError(error, { scope: "duo/load" });

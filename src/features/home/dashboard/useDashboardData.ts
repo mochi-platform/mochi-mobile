@@ -301,7 +301,7 @@ export function useDashboardData(userId: string | undefined) {
         const firstBlock = nextTodayBlocks[0];
         const nextBlockLabel = firstBlock
           ? `${firstBlock.subject} ${formatTimeHHMM(firstBlock.start_time)}`
-          : "Sin bloque programado";
+          : "Día libre";
 
         const cachePayload: HomeDashboardCache = {
           todayBlocks: nextTodayBlocks,
@@ -326,6 +326,8 @@ export function useDashboardData(userId: string | undefined) {
           streak: nextCurrentStreak,
           nextBlock: nextBlockLabel,
           updatedAt: new Date().toISOString(),
+          habitsDone: nextHabitLogsCount,
+          habitsTotal: nextHabitCount,
         });
       } catch (err) {
         if (!mounted) {

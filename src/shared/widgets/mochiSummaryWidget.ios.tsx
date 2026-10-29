@@ -1,5 +1,9 @@
 import { createWidget } from "expo-widgets";
-import type { MochiSummaryWidgetProps } from "./widgetProps";
+import type {
+  MochiDuoWidgetProps,
+  MochiStreakWidgetProps,
+  MochiSummaryWidgetProps,
+} from "./widgetProps";
 import { HStack, Text, VStack } from "@expo/ui/swift-ui";
 import {
   background,
@@ -72,4 +76,42 @@ function MochiSummaryWidgetView(props: MochiSummaryWidgetProps) {
 export const mochiSummaryWidget = createWidget<MochiSummaryWidgetProps>(
   "MochiResumenWidget",
   MochiSummaryWidgetView,
+);
+
+// iOS no se compila hoy; versiones mínimas para que los tres widgets existan en ambas plataformas.
+function MochiStreakWidgetView(props: MochiStreakWidgetProps) {
+  "widget";
+  return (
+    <VStack spacing={4} modifiers={[padding({ all: 14 }), background("#FBF6EF"), cornerRadius(18)]}>
+      <Text modifiers={[foregroundStyle("#3A2A2E")]}>
+        {props.streak > 0 ? `Racha de ${props.streak}` : "¡Empieza hoy!"}
+      </Text>
+      <Text modifiers={[foregroundStyle("#7A6469")]}>
+        {`${props.habitsDone} de ${props.habitsTotal} hábitos`}
+      </Text>
+    </VStack>
+  );
+}
+
+function MochiDuoWidgetView(props: MochiDuoWidgetProps) {
+  "widget";
+  return (
+    <VStack spacing={6} modifiers={[padding({ all: 14 }), background("#F7E5EF"), cornerRadius(18)]}>
+      <Text modifiers={[foregroundStyle("#9C5A85")]}>DUO</Text>
+      <Text modifiers={[foregroundStyle("#3A2A2E")]}>
+        {props.hasPartner
+          ? props.note || `Aún no hay notas de ${props.partnerName}.`
+          : "Invita a tu pareja desde Duo."}
+      </Text>
+    </VStack>
+  );
+}
+
+export const mochiStreakWidget = createWidget<MochiStreakWidgetProps>(
+  "MochiRachaWidget",
+  MochiStreakWidgetView,
+);
+export const mochiDuoWidget = createWidget<MochiDuoWidgetProps>(
+  "MochiDuoWidget",
+  MochiDuoWidgetView,
 );
