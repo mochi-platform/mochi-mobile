@@ -38,9 +38,7 @@ export function TabBar({ tabs, active, onSelect }: TabBarProps) {
               accessibilityLabel={tab.label}
               accessibilityState={{ selected: on }}
               haptics="selection"
-              onPress={() => {
-                if (!on) onSelect(tab);
-              }}
+              onPress={() => onSelect(tab)}
               className="flex-1 items-center justify-center gap-0.5"
             >
               <View className="items-center justify-center px-4 py-1">

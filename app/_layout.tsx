@@ -352,7 +352,11 @@ function RootLayoutNavigator() {
         <TabBar
           tabs={tabs}
           active={activeTab}
-          onSelect={(tab) => router.replace(tab.route as never)}
+          onSelect={(tab) => {
+            // Desde una subpantalla (p. ej. Hábitos, dentro de Yo) la pestaña vuelve a su raíz.
+            const root = tab.route.replace("/(tabs)", "") || "/";
+            if (pathname !== root) router.replace(tab.route as never);
+          }}
         />
       ) : null}
     </View>

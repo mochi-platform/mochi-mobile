@@ -4,6 +4,8 @@ import { Tabs } from "expo-router";
 export default function TabsLayout() {
   return (
     <Tabs
+      // «Atrás» desde Hábitos, Metas, etc. vuelve a Yo y no a Hoy.
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarStyle: { display: "none" },
@@ -68,21 +70,18 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="goals"
         options={{
-          href: null,
           title: "Metas",
         }}
       />
       <Tabs.Screen
         name="mood"
         options={{
-          href: null,
           title: "Estado de ánimo",
         }}
       />
       <Tabs.Screen
         name="gratitude"
         options={{
-          href: null,
           title: "Gratitud",
         }}
       />
