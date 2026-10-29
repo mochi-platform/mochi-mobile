@@ -58,10 +58,11 @@ describe("ListGroup y ListRow", () => {
 });
 
 describe("SectionHeader", () => {
-  it("muestra la acción solo cuando hay manejador", () => {
+  it("sin manejador la etiqueta es solo informativa; con manejador es un botón", () => {
     const onAction = jest.fn();
-    const { rerender } = render(<SectionHeader title="Tu día" actionLabel="Ver semana" />);
-    expect(screen.queryByText("Ver semana")).toBeNull();
+    const { rerender } = render(<SectionHeader title="Tu día" actionLabel="2 h" />);
+    expect(screen.getByText("2 h")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "2 h" })).toBeNull();
     rerender(<SectionHeader title="Tu día" actionLabel="Ver semana" onAction={onAction} />);
     fireEvent.press(screen.getByRole("button", { name: "Ver semana" }));
     expect(onAction).toHaveBeenCalledTimes(1);
