@@ -409,7 +409,7 @@ export function AnalyticsScreen() {
             </Text>
           </PressableScale>
         ) : null}
-        {weeklyChartData.length === 0 ? (
+        {weeklyChartData.every((p) => p.hours === 0) ? (
           <Caption>Aún no hay horas de estudio para mostrar.</Caption>
         ) : (
           <>
@@ -444,7 +444,7 @@ export function AnalyticsScreen() {
 
       <SectionHeader title="Hábitos por mes" />
       <Surface className="p-4">
-        {monthlyChartData.length === 0 ? (
+        {monthlyChartData.every((p) => p.completed === 0) ? (
           <Caption>Aún no hay hábitos registrados para mostrar.</Caption>
         ) : (
           <>
@@ -479,7 +479,7 @@ export function AnalyticsScreen() {
 
       <SectionHeader title="Tu racha, 30 días" />
       <Surface className="p-4">
-        {streakChartData.length === 0 ? (
+        {streakChartData.every((p) => p.streak === 0) ? (
           <Caption>Aún no hay actividad suficiente para ver tu racha.</Caption>
         ) : (
           <>

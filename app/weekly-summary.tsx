@@ -490,21 +490,31 @@ export function WeeklySummaryScreen() {
         </Surface>
       ) : (
         <ListGroup>
-          {atlasWeeks.slice(0, 6).map((week) => (
-            <ListRow
-              key={week.key}
-              title={`${week.isCurrentWeek ? "Esta semana · " : ""}${formatRange(week.startISO, week.endISO)}`}
-              subtitle={`${week.sessions} sesiones · ${week.exams} exámenes · ${week.recommendation}`}
-              multiline
-              trailing={
-                <View
-                  className={`rounded-full px-2.5 py-1 ${week.intensity === "Alta" ? "bg-tint-me" : week.intensity === "Media" ? "bg-tint-kitchen" : "bg-tint-ok"}`}
-                >
-                  <Text className="font-body-extrabold text-[11px] text-ink">{week.intensity}</Text>
-                </View>
-              }
-            />
-          ))}
+          {atlasWeeks
+            .slice(
+              Math.max(
+                0,
+                atlasWeeks.findIndex((w) => w.isCurrentWeek),
+              ),
+            )
+            .slice(0, 6)
+            .map((week) => (
+              <ListRow
+                key={week.key}
+                title={`${week.isCurrentWeek ? "Esta semana · " : ""}${formatRange(week.startISO, week.endISO)}`}
+                subtitle={`${week.sessions} sesiones · ${week.exams} exámenes · ${week.recommendation}`}
+                multiline
+                trailing={
+                  <View
+                    className={`rounded-full px-2.5 py-1 ${week.intensity === "Alta" ? "bg-tint-me" : week.intensity === "Media" ? "bg-tint-kitchen" : "bg-tint-ok"}`}
+                  >
+                    <Text className="font-body-extrabold text-[11px] text-ink">
+                      {week.intensity}
+                    </Text>
+                  </View>
+                }
+              />
+            ))}
         </ListGroup>
       )}
 
