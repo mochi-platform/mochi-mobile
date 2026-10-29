@@ -2,7 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
+import { BackHandler, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, { FadeInRight } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModuleVisibility } from "@/src/core/providers/ModuleVisibilityContext";
@@ -50,6 +51,8 @@ import {
 } from "./modules";
 
 type Intent = "personal" | "partner";
+const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
 type Step = "intent" | "age" | "name" | "goals" | "consents" | "code" | "done" | "blocked";
 
 const FLOWS: Record<Intent, Step[]> = {
@@ -212,7 +215,7 @@ export function OnboardingScreen() {
 
   const confirmAge = () => {
     if (!ageGroup) {
-      setError("Escribe un año (por ejemplo 2004) y un mes (1 a 12) válidos.");
+      setError("Escribe tu año de nacimiento (por ejemplo 2004) y elige el mes.");
       return;
     }
     if (ageGroup === "under_16") {
@@ -296,9 +299,14 @@ export function OnboardingScreen() {
       const settings = Object.fromEntries(MODULES.map((m) => [m.key, false]));
       const { error: settingsError } = await supabase
         .from("user_settings")
-        .upsert({ user_id: userId, ...settings, quick_capture_enabled: false }, { onConflict: "user_id" });
+        .upsert(
+          { user_id: userId, ...settings, quick_capture_enabled: false },
+          { onConflict: "user_id" },
+        );
       if (settingsError) throw settingsError;
-      const { error: inviteError } = await supabase.rpc("accept_partner_invite", { p_invite_code: code });
+      const { error: inviteError } = await supabase.rpc("accept_partner_invite", {
+        p_invite_code: code,
+      });
       if (inviteError) throw inviteError;
       // Si el servidor aún no tiene el modo pareja, se queda en modo personal sin módulos.
       await setAppMode("partner").catch((e) => reportError(e, { scope: "onboarding/app-mode" }));
@@ -325,7 +333,12 @@ export function OnboardingScreen() {
     const status = await requestNotificationPermissions();
     if (status !== "granted") return;
     setRemindersOn(true);
-    await saveNotificationPrefs({ enabled: true, morningEnabled: true, studyEnabled: true, habitEnabled: true });
+    await saveNotificationPrefs({
+      enabled: true,
+      morningEnabled: true,
+      studyEnabled: true,
+      habitEnabled: true,
+    });
     await scheduleMorningReminder(wakeUpTime);
   };
 
@@ -337,12 +350,27 @@ export function OnboardingScreen() {
 
   const talk = (expression: MochiExpression, text: string, big = false) => (
     <View className={big ? "mt-6 items-center" : "mt-5 flex-row items-end gap-2.5"}>
-      <MochiCharacter expression={expression} size={big ? 190 : 96} animated={big} interactive={big} />
-      <MochiBubble className={big ? "mt-3 self-stretch" : "flex-1"} tail={big ? "up" : "left"} text={text} size={big ? "lg" : "md"} />
+      <MochiCharacter
+        expression={expression}
+        size={big ? 190 : 96}
+        animated={big}
+        interactive={big}
+      />
+      <MochiBubble
+        className={big ? "mt-3 self-stretch" : "flex-1"}
+        tail={big ? "up" : "left"}
+        text={text}
+        size={big ? "lg" : "md"}
+      />
     </View>
   );
 
-  const choice = (value: Intent, icon: keyof typeof Ionicons.glyphMap, title: string, subtitle: string) => {
+  const choice = (
+    value: Intent,
+    icon: keyof typeof Ionicons.glyphMap,
+    title: string,
+    subtitle: string,
+  ) => {
     const on = intent === value;
     return (
       <PressableScale
@@ -373,9 +401,18 @@ export function OnboardingScreen() {
       case "intent":
         return (
           <>
-            {talk("excited", "¡Hola! Soy Mochi. Antes de empezar, ¿vienes por ti o te invitó tu pareja?", true)}
+            {talk(
+              "excited",
+              "¡Hola! Soy Mochi. Antes de empezar, ¿vienes por ti o te invitó tu pareja?",
+              true,
+            )}
             <View className="mt-6 gap-3" accessibilityRole="radiogroup">
-              {choice("personal", "sparkles", "Vengo por mí", "Estudio, hábitos, ciclo y más, a mi ritmo")}
+              {choice(
+                "personal",
+                "sparkles",
+                "Vengo por mí",
+                "Estudio, hábitos, ciclo y más, a mi ritmo",
+              )}
               {choice("partner", "heart", "Me invitó mi pareja", "Tengo un código de Mochi Duo")}
             </View>
             <Caption className="mx-1 mt-4">
@@ -389,15 +426,42 @@ export function OnboardingScreen() {
       case "age":
         return (
           <>
-            {talk("thinking", "Primero, tu edad. Solo guardo si eres mayor o menor de 18, nunca tu fecha.")}
+            {talk(
+              "thinking",
+              "Primero, tu edad. Solo guardo si eres mayor o menor de 18, nunca tu fecha.",
+            )}
             <View className="mt-6">
-              <Input label="Año de nacimiento" keyboardType="number-pad" maxLength={4} value={birthYear} onChangeText={setBirthYear} placeholder="2004" />
-              <Input label="Mes (1 a 12)" keyboardType="number-pad" maxLength={2} value={birthMonth} onChangeText={setBirthMonth} placeholder="8" error={error} />
+              <Input
+                label="Año de nacimiento"
+                keyboardType="number-pad"
+                maxLength={4}
+                value={birthYear}
+                onChangeText={setBirthYear}
+                placeholder="2004"
+              />
             </View>
+            <Text className="mb-2 ml-1 font-body-bold text-sm text-ink">Mes</Text>
+            <View className="mb-3 flex-row flex-wrap gap-2">
+              {MONTHS.map((label, index) => (
+                <Chip
+                  key={label}
+                  label={label}
+                  selected={birthMonth === String(index + 1)}
+                  onPress={() => setBirthMonth(String(index + 1))}
+                />
+              ))}
+            </View>
+            {error ? <Caption className="mb-3 ml-1 text-danger">{error}</Caption> : null}
             {ageGroup === "16_17" ? (
               <Surface className="mb-4 p-4">
-                <Toggle label="Mi madre, padre o tutor sabe que uso Mochi y está de acuerdo" value={guardianOk} onValueChange={setGuardianOk} />
-                <Caption className="mt-1">A tu edad tratamos tus datos con más cuidado: no verás anuncios personalizados.</Caption>
+                <Toggle
+                  label="Mi madre, padre o tutor sabe que uso Mochi y está de acuerdo"
+                  value={guardianOk}
+                  onValueChange={setGuardianOk}
+                />
+                <Caption className="mt-1">
+                  A tu edad tratamos tus datos con más cuidado: no verás anuncios personalizados.
+                </Caption>
               </Surface>
             ) : null}
             <Button title="Continuar" onPress={confirmAge} />
@@ -406,13 +470,31 @@ export function OnboardingScreen() {
       case "name":
         return (
           <>
-            {talk("happy", intent === "partner" ? "¡Bienvenido! ¿Cómo te llamas?" : "¡Qué bueno tenerte aquí! ¿Cómo te llamas?")}
+            {talk(
+              "happy",
+              intent === "partner"
+                ? "¡Bienvenido! ¿Cómo te llamas?"
+                : "¡Qué bueno tenerte aquí! ¿Cómo te llamas?",
+            )}
             <View className="mt-6">
-              <Input label="Tu nombre" value={fullName} onChangeText={setFullName} placeholder="Tu nombre" autoCapitalize="words" error={error} />
+              <Input
+                label="Tu nombre"
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder="Tu nombre"
+                autoCapitalize="words"
+                error={error}
+              />
               {intent === "personal" ? (
                 <>
-                  <Text className="mb-1.5 ml-1 font-body-bold text-sm text-ink">¿A qué hora te despiertas?</Text>
-                  <Button title={wakeUpTime} variant="outline" onPress={() => setShowTimePicker(true)} />
+                  <Text className="mb-1.5 ml-1 font-body-bold text-sm text-ink">
+                    ¿A qué hora te despiertas?
+                  </Text>
+                  <Button
+                    title={wakeUpTime}
+                    variant="outline"
+                    onPress={() => setShowTimePicker(true)}
+                  />
                 </>
               ) : null}
             </View>
@@ -425,7 +507,9 @@ export function OnboardingScreen() {
         return (
           <>
             {talk("thinking", `Me encanta, ${firstName}. ¿Qué quieres cuidar conmigo?`)}
-            <Caption className="mx-1 mb-3 mt-5">Elige todo lo que quieras. Lo puedes cambiar después.</Caption>
+            <Caption className="mx-1 mb-3 mt-5">
+              Elige todo lo que quieras. Lo puedes cambiar después.
+            </Caption>
             <View className="flex-row flex-wrap gap-2.5">
               {GOALS.map((g) => (
                 <Chip
@@ -434,7 +518,9 @@ export function OnboardingScreen() {
                   label={g.label}
                   selected={goals.includes(g.key)}
                   onPress={() =>
-                    setGoals((prev) => (prev.includes(g.key) ? prev.filter((k) => k !== g.key) : [...prev, g.key]))
+                    setGoals((prev) =>
+                      prev.includes(g.key) ? prev.filter((k) => k !== g.key) : [...prev, g.key],
+                    )
                   }
                 />
               ))}
@@ -442,7 +528,11 @@ export function OnboardingScreen() {
             <Surface tone="sunken" className="mt-5 flex-row items-center gap-3 p-4">
               <Ionicons name="sparkles" size={20} color={COLORS.accent} />
               <Caption className="flex-1 text-ink">
-                Tendrás {MODULES.filter((m) => modules.has(m.key)).map((m) => m.label).join(", ")}. Nada más, para que no te abrume.
+                Tendrás{" "}
+                {MODULES.filter((m) => modules.has(m.key))
+                  .map((m) => m.label)
+                  .join(", ")}
+                . Nada más, para que no te abrume.
               </Caption>
             </Surface>
             <View className="mt-6">
@@ -453,19 +543,39 @@ export function OnboardingScreen() {
       case "consents":
         return (
           <>
-            {talk("love", "Tu privacidad es tuya. Todo empieza apagado: activa solo lo que quieras.")}
+            {talk(
+              "love",
+              "Tu privacidad es tuya. Todo empieza apagado: activa solo lo que quieras.",
+            )}
             <View className="mt-5 gap-3">
               <Surface className="p-4">
-                <Toggle label="Que Mochi recuerde tus metas" description="Un resumen de tus metas, exámenes y racha para personalizar sus respuestas. Nunca datos de salud." value={memoryConsent} onValueChange={setMemoryConsent} />
+                <Toggle
+                  label="Que Mochi recuerde tus metas"
+                  description="Un resumen de tus metas, exámenes y racha para personalizar sus respuestas. Nunca datos de salud."
+                  value={memoryConsent}
+                  onValueChange={setMemoryConsent}
+                />
               </Surface>
               <Surface className="p-4">
-                <Toggle label="Guardar el resumen de mi ciclo" description="Solo inicio y duración, para que tu pareja vea tu energía en Duo si tú lo permites. No va a la IA." value={cycleConsent} onValueChange={setCycleConsent} />
+                <Toggle
+                  label="Guardar el resumen de mi ciclo"
+                  description="Solo inicio y duración, para que tu pareja vea tu energía en Duo si tú lo permites. No va a la IA."
+                  value={cycleConsent}
+                  onValueChange={setCycleConsent}
+                />
               </Surface>
               <Surface className="p-4">
-                <Toggle label="Ayudar a mejorar Mochi" description="Estadísticas de uso anónimas. Nunca salud ni lo que escribes." value={analyticsConsent} onValueChange={setAnalyticsConsent} />
+                <Toggle
+                  label="Ayudar a mejorar Mochi"
+                  description="Estadísticas de uso anónimas. Nunca salud ni lo que escribes."
+                  value={analyticsConsent}
+                  onValueChange={setAnalyticsConsent}
+                />
               </Surface>
             </View>
-            {error ? <Text className="ml-1 mt-3 font-body-bold text-sm text-danger">{error}</Text> : null}
+            {error ? (
+              <Text className="ml-1 mt-3 font-body-bold text-sm text-danger">{error}</Text>
+            ) : null}
             <View className="mt-6">
               <Button title="Terminar" loading={saving} onPress={() => void finishPersonal()} />
             </View>
@@ -474,7 +584,10 @@ export function OnboardingScreen() {
       case "code":
         return (
           <>
-            {talk("love", `${firstName}, escribe el código que te compartió tu pareja. Así podrán mandarse notas y regalarse vales.`)}
+            {talk(
+              "love",
+              `${firstName}, escribe el código que te compartió tu pareja. Así podrán mandarse notas y regalarse vales.`,
+            )}
             <View className="mt-6">
               <Input
                 label="Código de invitación"
@@ -490,7 +603,9 @@ export function OnboardingScreen() {
             </View>
             <Surface tone="sunken" className="mt-5 flex-row items-center gap-3 p-4">
               <Ionicons name="lock-closed" size={18} color={COLORS.inkMuted} />
-              <Caption className="flex-1">Solo verás lo que tu pareja decida compartir contigo.</Caption>
+              <Caption className="flex-1">
+                Solo verás lo que tu pareja decida compartir contigo.
+              </Caption>
             </Surface>
             <View className="mt-6">
               <Button title="Unirme" loading={saving} onPress={() => void finishPartner()} />
@@ -500,7 +615,11 @@ export function OnboardingScreen() {
       case "done":
         return intent === "partner" ? (
           <>
-            {talk("celebrating", `¡Listo, ${firstName}! Ya están conectados. Te espero en Duo.`, true)}
+            {talk(
+              "celebrating",
+              `¡Listo, ${firstName}! Ya están conectados. Te espero en Duo.`,
+              true,
+            )}
             <View className="mt-6">
               <Button title="Ir a Duo" onPress={() => void leave("/(tabs)/duo")} />
             </View>
@@ -529,9 +648,17 @@ export function OnboardingScreen() {
       case "blocked":
         return (
           <>
-            {talk("soft_sad", "Aún no puedes usar Mochi: es para personas de 16 años o más. Te espero cuando cumplas 16.", true)}
+            {talk(
+              "soft_sad",
+              "Aún no puedes usar Mochi: es para personas de 16 años o más. Te espero cuando cumplas 16.",
+              true,
+            )}
             <View className="mt-6">
-              <Button title="Cerrar sesión" variant="outline" onPress={() => void supabase.auth.signOut()} />
+              <Button
+                title="Cerrar sesión"
+                variant="outline"
+                onPress={() => void supabase.auth.signOut()}
+              />
             </View>
           </>
         );
@@ -543,30 +670,49 @@ export function OnboardingScreen() {
   const showProgress = step !== "done" && step !== "blocked" && step !== "intent";
   return (
     <View className="flex-1 bg-canvas" style={{ paddingTop: insets.top }}>
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView
-          className="flex-1"
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 28 }}
-        >
-          {showProgress ? (
-            <View className="mt-1 flex-row items-center gap-3">
-              <PressableScale haptics="selection" onPress={back} disabled={!canGoBack} hitSlop={12} accessibilityLabel="Volver al paso anterior">
-                <Ionicons name="chevron-back" size={24} color={COLORS.inkMuted} />
-              </PressableScale>
-              <View className="flex-1 flex-row gap-1.5" accessibilityRole="progressbar" accessibilityLabel={`Paso ${stepIndex} de ${flow.length - 2}`}>
-                {flow.slice(1, -1).map((s, i) => (
-                  <View key={s} className={`h-1.5 flex-1 rounded-full ${i < stepIndex ? "bg-accent" : "bg-line"}`} />
-                ))}
-              </View>
+      <KeyboardAwareScrollView
+        bottomOffset={24}
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 10,
+          paddingBottom: insets.bottom + 28,
+        }}
+      >
+        {showProgress ? (
+          <View className="mt-1 flex-row items-center gap-3">
+            <PressableScale
+              haptics="selection"
+              onPress={back}
+              disabled={!canGoBack}
+              hitSlop={12}
+              accessibilityLabel="Volver al paso anterior"
+            >
+              <Ionicons name="chevron-back" size={24} color={COLORS.inkMuted} />
+            </PressableScale>
+            <View
+              className="flex-1 flex-row gap-1.5"
+              accessibilityRole="progressbar"
+              accessibilityLabel={`Paso ${stepIndex} de ${flow.length - 2}`}
+            >
+              {flow.slice(1, -1).map((s, i) => (
+                <View
+                  key={s}
+                  className={`h-1.5 flex-1 rounded-full ${i < stepIndex ? "bg-accent" : "bg-line"}`}
+                />
+              ))}
             </View>
-          ) : null}
-          {step === "intent" ? <Display className="mt-2 text-center">Mochi</Display> : null}
-          <Animated.View key={step} entering={FadeInRight.duration(DURATION.base).easing(EASE_OUT).reduceMotion(REDUCE)}>
-            {body}
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </View>
+        ) : null}
+        {step === "intent" ? <Display className="mt-2 text-center">Mochi</Display> : null}
+        <Animated.View
+          key={step}
+          entering={FadeInRight.duration(DURATION.base).easing(EASE_OUT).reduceMotion(REDUCE)}
+        >
+          {body}
+        </Animated.View>
+      </KeyboardAwareScrollView>
       <TimePickerModal
         visible={showTimePicker}
         time={wakeUpTime}
@@ -577,7 +723,11 @@ export function OnboardingScreen() {
         }}
         onCancel={() => setShowTimePicker(false)}
       />
-      <QrScannerModal visible={scannerOpen} onClose={() => setScannerOpen(false)} onCode={(code) => setInviteCode(code.toUpperCase())} />
+      <QrScannerModal
+        visible={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onCode={(code) => setInviteCode(code.toUpperCase())}
+      />
     </View>
   );
 }

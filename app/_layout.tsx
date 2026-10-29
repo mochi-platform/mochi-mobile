@@ -1,3 +1,4 @@
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { refreshDuoWidget } from "@/src/features/duo/widget";
 import {
   registerWidgetRefresh,
@@ -400,22 +401,25 @@ export function RootLayout() {
   }, [fontsReady]);
   if (!fontsReady) return null;
   return (
-    <SystemBarsProvider>
-      <SessionProvider>
-        <ModuleVisibilityProvider>
-          <AchievementProvider>
-            <ThemeProvider>
-              <QueryProvider>
-                <CycleProvider>
-                  <RootLayoutNavigator />
-                  <OfflineBanner />
-                </CycleProvider>
-              </QueryProvider>
-            </ThemeProvider>
-          </AchievementProvider>
-        </ModuleVisibilityProvider>
-      </SessionProvider>
-    </SystemBarsProvider>
+    // Con edge-to-edge Android ya no encoge la ventana al abrir el teclado: esto lo maneja.
+    <KeyboardProvider>
+      <SystemBarsProvider>
+        <SessionProvider>
+          <ModuleVisibilityProvider>
+            <AchievementProvider>
+              <ThemeProvider>
+                <QueryProvider>
+                  <CycleProvider>
+                    <RootLayoutNavigator />
+                    <OfflineBanner />
+                  </CycleProvider>
+                </QueryProvider>
+              </ThemeProvider>
+            </AchievementProvider>
+          </ModuleVisibilityProvider>
+        </SessionProvider>
+      </SystemBarsProvider>
+    </KeyboardProvider>
   );
 }
 

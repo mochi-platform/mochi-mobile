@@ -1,13 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Modal, Pressable, View, useWindowDimensions } from "react-native";
+import { KeyboardAvoidingView, KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -56,10 +49,8 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
       statusBarTranslucent
       navigationBarTranslucent
     >
-      <KeyboardAvoidingView
-        className="flex-1 justify-end"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      {/* La hoja sube con el teclado (edge-to-edge: Android no encoge la ventana). */}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: "flex-end" }}>
         {visible ? (
           <Animated.View
             entering={FadeIn.duration(DURATION.base).reduceMotion(REDUCE)}
@@ -85,14 +76,15 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
             <View className="mb-3 h-1.5 w-10 self-center rounded-full bg-ink-faint/50" />
             {title ? <Title className="mb-3">{title}</Title> : null}
             {/* Contenido alto (formularios) se desplaza dentro de la hoja en vez de salirse. */}
-            <ScrollView
+            <KeyboardAwareScrollView
               style={{ maxHeight: height * 0.72 }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               bounces={false}
+              bottomOffset={24}
             >
               {children}
-            </ScrollView>
+            </KeyboardAwareScrollView>
           </Animated.View>
         ) : null}
       </KeyboardAvoidingView>

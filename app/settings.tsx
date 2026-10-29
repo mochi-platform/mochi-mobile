@@ -7,7 +7,7 @@ import { COLORS } from "@/src/shared/theme/tokens";
 import { Caption, Display, ErrorState, PressableScale, Skeleton } from "@/src/shared/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import { View } from "react-native";
 import type {} from "react-native-purchases";
 import { router, useFocusEffect } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -55,6 +55,7 @@ import { HealthSection } from "@/src/features/settings/components/HealthSection"
 import { CyclePrivacySection } from "@/src/features/settings/components/CyclePrivacySection";
 import { NotificationsSection } from "@/src/features/settings/components/NotificationsSection";
 import { AccountSection } from "@/src/features/settings/components/AccountSection";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -475,11 +476,9 @@ export function SettingsScreen() {
   return (
     <>
       <SafeAreaView className="flex-1 bg-canvas">
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <ScrollView
+        <View className="flex-1">
+          <KeyboardAwareScrollView
+            bottomOffset={24}
             className="flex-1 px-5"
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -616,8 +615,8 @@ export function SettingsScreen() {
                 <AccountSection onSignOut={handleSignOut} onDeleteAccount={handleDeleteAccount} />
               </>
             )}
-          </ScrollView>
-        </KeyboardAvoidingView>
+          </KeyboardAwareScrollView>
+        </View>
       </SafeAreaView>
       {AlertComponent}
     </>

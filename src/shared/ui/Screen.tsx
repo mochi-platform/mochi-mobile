@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View } from "react-native";
+import { RefreshControl, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getTabBarClearance } from "@/src/shared/lib/layout";
 import { COLORS } from "@/src/shared/theme/tokens";
@@ -89,11 +90,13 @@ export function Screen({
       </View>
     );
   }
-  const content = (
+  return (
     <View className="flex-1 bg-canvas">
-      <ScrollView
+      {/* Desplaza hasta el campo enfocado: con edge-to-edge Android no encoge la ventana. */}
+      <KeyboardAwareScrollView
         className="flex-1 bg-canvas"
-        keyboardShouldPersistTaps={keyboard ? "handled" : undefined}
+        bottomOffset={24}
+        keyboardShouldPersistTaps="handled"
         keyboardDismissMode={keyboard ? "on-drag" : undefined}
         contentContainerStyle={{
           paddingTop: insets.top,
@@ -115,7 +118,7 @@ export function Screen({
       >
         {header}
         {children}
-      </ScrollView>
+      </KeyboardAwareScrollView>
       {/* El contenido no se ve por debajo de la barra de estado al desplazarse. */}
       <View
         pointerEvents="none"
@@ -123,14 +126,5 @@ export function Screen({
         style={{ height: insets.top }}
       />
     </View>
-  );
-  if (!keyboard) return content;
-  return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-canvas"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      {content}
-    </KeyboardAvoidingView>
   );
 }

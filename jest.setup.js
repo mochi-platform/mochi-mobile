@@ -52,3 +52,6 @@ jest.mock("expo-background-task", () => ({
   registerTaskAsync: jest.fn(async () => undefined),
   unregisterTaskAsync: jest.fn(async () => undefined),
 }));
+jest.mock("react-native-keyboard-controller", () =>
+  require("react-native-keyboard-controller/jest"),
+);

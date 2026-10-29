@@ -1,12 +1,6 @@
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { Ionicons, AntDesign } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
@@ -236,11 +230,9 @@ export function LoginScreen() {
 
   const busy = loading || googleLoading;
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-canvas"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
+    <View className="flex-1 bg-canvas">
+      <KeyboardAwareScrollView
+        bottomOffset={24}
         className="flex-1"
         contentContainerStyle={{
           flexGrow: 1,
@@ -387,8 +379,8 @@ export function LoginScreen() {
               : "Al registrarte aceptas nuestros términos de uso y la política de privacidad."}
           </Caption>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
