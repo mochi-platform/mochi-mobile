@@ -62,7 +62,7 @@ export function NotificationsSection({
         <View className="mt-1">
           <Toggle
             label="Buenos días"
-            description={`A las ${wakeUpTime || "06:00"}, tu hora de despertar`}
+            description={`A las ${(wakeUpTime || "06:00").slice(0, 5)}, tu hora de despertar`}
             value={notifPrefs.morningEnabled}
             onValueChange={(v) => void onToggleMorning(v)}
           />

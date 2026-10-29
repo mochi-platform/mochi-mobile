@@ -34,3 +34,13 @@ export async function syncCycleSummary(params: {
     p_source: params.source,
   });
 }
+
+/** Borra del servidor un inicio de periodo registrado a mano (al deshacer «Me llegó hoy»). */
+export async function removeCycleSummary(periodStart: string): Promise<void> {
+  const { error } = await supabase
+    .from("cycle_logs")
+    .delete()
+    .eq("period_start_date", periodStart)
+    .eq("source", "manual");
+  if (error) throw error;
+}

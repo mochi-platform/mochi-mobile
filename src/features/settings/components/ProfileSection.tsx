@@ -18,6 +18,8 @@ export function ProfileSection({
   onSaveProfile,
   onOpenTimePicker,
 }: ProfileSectionProps) {
+  // Postgres guarda «08:00:00»; se muestra como «08:00».
+  const wakeUp = (profile.wake_up_time || "06:00").slice(0, 5);
   return (
     <Surface className="mt-6 p-4">
       <Title className="mb-3">Perfil</Title>
@@ -37,10 +39,10 @@ export function ProfileSection({
       <PressableScale
         haptics="selection"
         onPress={onOpenTimePicker}
-        accessibilityLabel={`Hora de despertar: ${profile.wake_up_time || "06:00"}`}
+        accessibilityLabel={`Hora de despertar: ${wakeUp}`}
         className="mb-4 min-h-[52px] items-center justify-center rounded-control bg-surface-muted"
       >
-        <Text className="font-display text-xl text-ink">{profile.wake_up_time || "06:00"}</Text>
+        <Text className="font-display text-xl text-ink">{wakeUp}</Text>
       </PressableScale>
       <Button title="Guardar perfil" loading={savingProfile} onPress={() => void onSaveProfile()} />
     </Surface>

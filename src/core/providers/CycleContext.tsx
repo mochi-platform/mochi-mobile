@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
-import { syncCycleSummary } from "@/src/shared/lib/consents";
+import { removeCycleSummary, syncCycleSummary } from "@/src/shared/lib/consents";
 import { toLocalISODate } from "@/src/shared/lib/dates";
 import {
   addManualPeriodStart,
@@ -93,7 +93,10 @@ export function CycleProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const undoPeriodToday = useCallback(async () => {
-    await removeManualPeriodStart();
+    const today = toLocalISODate(new Date());
+    await removeManualPeriodStart(today);
+    // Si se había subido con consentimiento, también se borra del servidor.
+    await removeCycleSummary(today).catch(() => undefined);
     setLoggedToday(false);
     await invalidateCyclePhaseCache();
     await refresh();
