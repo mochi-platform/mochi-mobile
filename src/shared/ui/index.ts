@@ -9,7 +9,7 @@ export { ListGroup, ListRow } from "./ListGroup";
 export { MochiBubble } from "./MochiBubble";
 export { PressableScale } from "./PressableScale";
 export { ProgressRing } from "./ProgressRing";
-export { Screen } from "./Screen";
+export { CloseButton, Screen } from "./Screen";
 export { SectionHeader } from "./SectionHeader";
 export { Sheet } from "./Sheet";
 export { Skeleton } from "./Skeleton";

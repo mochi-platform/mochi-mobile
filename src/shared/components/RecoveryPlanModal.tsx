@@ -17,7 +17,7 @@ export function RecoveryPlanModal({ visible, plan, onStart, onDismiss }: Recover
   if (!plan) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
+    <Modal statusBarTranslucent visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View className="flex-1 items-center justify-center bg-ink/30 px-6">
         <View
           accessibilityViewIsModal

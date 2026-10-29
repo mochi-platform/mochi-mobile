@@ -363,7 +363,7 @@ export function RecipeDetailScreen() {
                   colors={["rgba(0,0,0,0)", "rgba(40,20,20,0.6)"]}
                   start={{ x: 0.5, y: 0.2 }}
                   end={{ x: 0.5, y: 1 }}
-                  className="flex-1 justify-end px-5 pb-4"
+                  style={{ flex: 1, justifyContent: "flex-end", paddingHorizontal: 20, paddingBottom: 16 }}
                 >
                   <Text className="font-display text-[26px] leading-[30px] text-white">
                     {recipe.title}

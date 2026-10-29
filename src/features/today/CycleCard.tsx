@@ -64,7 +64,7 @@ export function CycleCard() {
   const logButton = (
     <Button
       title={loggedToday ? "Deshacer registro" : "Me llegó hoy"}
-      variant={loggedToday ? "ghost" : "soft"}
+      variant="soft"
       loading={saving}
       onPress={() => void logToday()}
     />

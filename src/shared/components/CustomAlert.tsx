@@ -52,7 +52,7 @@ export function CustomAlert({ visible, title, message, buttons }: CustomAlertPro
   const cardAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => undefined}>
+    <Modal statusBarTranslucent visible={visible} transparent animationType="fade" onRequestClose={() => undefined}>
       <View className="flex-1 items-center justify-center bg-ink/30 px-6">
         <Animated.View
           accessibilityViewIsModal

@@ -1,4 +1,5 @@
-import { ActivityIndicator, Pressable, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { COLORS } from "@/src/shared/theme/tokens";
 import { ACCENT_GLOW } from "./elevation";
@@ -22,6 +23,14 @@ const label: Record<Variant, string> = {
   danger: "text-white",
 };
 
+const ICON: Record<Variant, string> = {
+  primary: COLORS.accentInk,
+  soft: COLORS.accentStrong,
+  outline: COLORS.ink,
+  ghost: COLORS.accentStrong,
+  danger: "#FFFFFF",
+};
+
 type ButtonProps = {
   title: string;
   onPress: () => void;
@@ -29,6 +38,8 @@ type ButtonProps = {
   loading?: boolean;
   disabled?: boolean;
   accessibilityLabel?: string;
+  /** Ícono opcional a la izquierda del texto. */
+  icon?: keyof typeof Ionicons.glyphMap;
 };
 
 export function Button({
@@ -38,6 +49,7 @@ export function Button({
   loading = false,
   disabled = false,
   accessibilityLabel,
+  icon,
 }: ButtonProps) {
   const inactive = disabled || loading;
   const press = usePressScale();
@@ -65,7 +77,10 @@ export function Button({
             }
           />
         ) : (
-          <Text className={`font-body-extrabold text-[16.5px] ${label[variant]}`}>{title}</Text>
+          <View className="flex-row items-center gap-2">
+            {icon ? <Ionicons name={icon} size={18} color={ICON[variant]} /> : null}
+            <Text className={`font-body-extrabold text-[16.5px] ${label[variant]}`}>{title}</Text>
+          </View>
         )}
       </Animated.View>
     </Pressable>

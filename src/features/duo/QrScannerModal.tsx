@@ -13,7 +13,7 @@ export function QrScannerModal({ visible, onClose, onCode }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal statusBarTranslucent visible={visible} animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 bg-canvas px-5" style={{ paddingTop: insets.top }}>
         <Title className="mt-8">Escanea el código de tu pareja</Title>
         {permission?.granted ? (

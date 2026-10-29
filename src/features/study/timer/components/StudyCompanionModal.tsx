@@ -46,7 +46,7 @@ export function StudyCompanionModal({
   onSend,
 }: StudyCompanionModalProps) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={() => onClose()}>
+    <Modal statusBarTranslucent visible={visible} transparent animationType="slide" onRequestClose={() => onClose()}>
       <View className="flex-1 justify-end bg-black/40">
         <View className="max-h-[90%] rounded-t-3xl bg-surface px-5 pb-10 pt-5">
           <View className="mb-2 h-1.5 w-16 self-center rounded-full bg-surface-muted" />

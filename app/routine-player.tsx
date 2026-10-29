@@ -319,7 +319,7 @@ export function RoutinePlayerScreen() {
               colors={["rgba(251,246,239,0.7)", "rgba(251,246,239,0.86)", "rgba(251,246,239,0.95)"]}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
-              className="h-full w-full"
+              style={{ width: "100%", height: "100%" }}
             />
           </ImageBackground>
         </RNAnimated.View>

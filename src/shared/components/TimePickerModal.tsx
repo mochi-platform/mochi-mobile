@@ -209,7 +209,7 @@ export function TimePickerModal({
   }));
 
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
+    <Modal statusBarTranslucent transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
       <Pressable
         accessible={false}
         onPress={onCancel}

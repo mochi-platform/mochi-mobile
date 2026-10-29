@@ -145,7 +145,7 @@ export function StudyScreen() {
               {d.day}
             </Text>
             <View
-              className={`mt-0.5 h-[5px] w-[5px] rounded-full ${examDays.has(d.iso) ? "bg-tint-me-ink" : "bg-transparent"}`}
+              className={`mt-0.5 h-[5px] w-[5px] rounded-full bg-tint-me-ink ${examDays.has(d.iso) ? "" : "opacity-0"}`}
             />
           </View>
         ))}

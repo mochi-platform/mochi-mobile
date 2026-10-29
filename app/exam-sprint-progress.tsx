@@ -165,7 +165,7 @@ export function ExamSprintProgressScreen() {
       </KeyboardAvoidingView>
 
       {/* Create Sprint Modal */}
-      <Modal visible={showCreateModal} transparent animationType="slide">
+      <Modal statusBarTranslucent visible={showCreateModal} transparent animationType="slide">
         <View className="flex-1 justify-end bg-black/40">
           <View className="max-h-96 rounded-t-3xl bg-surface p-4">
             <View className="mb-4 flex-row items-center justify-between">

@@ -1,44 +1,22 @@
-import { COLORS } from "@/src/shared/theme/tokens";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { View } from "react-native";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { TimePickerModal } from "@/src/shared/components/TimePickerModal";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
 import { useSession } from "@/src/core/providers/SessionContext";
 import { supabase } from "@/src/shared/lib/supabase";
-
-const daysOfWeek = [
-  { value: 0, label: "Domingo" },
-  { value: 1, label: "Lunes" },
-  { value: 2, label: "Martes" },
-  { value: 3, label: "Miércoles" },
-  { value: 4, label: "Jueves" },
-  { value: 5, label: "Viernes" },
-  { value: 6, label: "Sábado" },
-];
-
-const colors = [
-  { value: "pink", label: "Rosa", hex: "#fce7f3" },
-  { value: "blue", label: "Azul", hex: "#dbeafe" },
-  { value: "yellow", label: "Amarillo", hex: "#fef3c7" },
-  { value: "teal", label: "Teal", hex: "#ccfbf1" },
-  { value: "purple", label: "Púrpura", hex: "#e9d5ff" },
-  { value: "green", label: "Verde", hex: "#dcfce7" },
-];
+import { ColorSwatches, DayChips, TimeRange } from "@/src/features/study/components/BlockFormParts";
+import {
+  Button,
+  ErrorState,
+  Input,
+  Screen,
+  SectionHeader,
+  Skeleton,
+  Surface,
+} from "@/src/shared/ui";
 
 export function EditStudyBlockScreen() {
-  const insets = useSafeAreaInsets();
   const { blockId } = useLocalSearchParams<{ blockId?: string | string[] }>();
   const { session } = useSession();
   const { showAlert, AlertComponent } = useCustomAlert();
@@ -157,179 +135,74 @@ export function EditStudyBlockScreen() {
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-tint-study">
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <ScrollView
-            className="flex-1 bg-tint-study"
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-          >
-            <View className="px-5 py-6">
-              <TouchableOpacity
-                onPress={() => router.back()}
-                className="mb-4 flex-row items-center"
-              >
-                <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
-                <Text className="ml-2 text-lg font-bold text-ink">Volver</Text>
-              </TouchableOpacity>
+      <Screen
+        title="Editar bloque"
+        subtitle="Ajusta materia, horario y color."
+        withTabBar={false}
+        closable
+        keyboard
+      >
+        {loading ? (
+          <View className="mt-4 gap-3">
+            <Skeleton height={80} className="rounded-card" />
+            <Skeleton height={120} className="rounded-card" />
+          </View>
+        ) : error ? (
+          <ErrorState message={error} onRetry={() => void loadBlock()} />
+        ) : (
+          <>
+            <Input
+              label="Materia"
+              placeholder="Ejemplo: Cálculo"
+              value={subject}
+              onChangeText={setSubject}
+              editable={!saving}
+            />
 
-              <Text className="text-3xl font-extrabold text-ink">Editar bloque de estudio</Text>
-              <Text className="mt-1 text-sm font-semibold text-ink">
-                Ajusta materia, horario y color para tu semana
-              </Text>
+            <SectionHeader title="Día de la semana" />
+            <DayChips value={dayOfWeek} onChange={setDayOfWeek} />
 
-              {loading ? (
-                <View className="mt-10 items-center">
-                  <ActivityIndicator size="small" color={COLORS.accent} />
-                  <Text className="mt-3 text-sm font-semibold text-ink">Cargando bloque...</Text>
-                </View>
-              ) : error ? (
-                <View className="mt-6 rounded-3xl bg-surface-muted p-4">
-                  <Text className="text-sm font-semibold text-danger">{error}</Text>
-                  <TouchableOpacity
-                    className="mt-4 rounded-2xl bg-accent py-3"
-                    onPress={() => void loadBlock()}
-                  >
-                    <Text className="text-center font-bold text-white">Reintentar</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <>
-                  <View className="mt-6 rounded-3xl bg-surface p-4">
-                    <Text className="text-sm font-bold text-ink">Materia</Text>
-                    <TextInput
-                      className="mt-2 rounded-2xl bg-surface-muted px-4 py-3 text-base text-ink"
-                      placeholder="Ejemplo: Matemáticas"
-                      placeholderTextColor={COLORS.inkFaint}
-                      value={subject}
-                      onChangeText={setSubject}
-                      editable={!saving}
-                    />
-                  </View>
+            <SectionHeader title="Horario" />
+            <Surface className="p-4">
+              <TimeRange
+                start={startTime}
+                end={endTime}
+                onPressStart={() => setShowStartPicker(true)}
+                onPressEnd={() => setShowEndPicker(true)}
+                disabled={saving}
+              />
+            </Surface>
 
-                  <View className="mt-4 rounded-3xl bg-surface p-4">
-                    <Text className="text-sm font-bold text-ink">Día de la semana</Text>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      className="-mx-2 mt-3"
-                    >
-                      {daysOfWeek.map((day) => (
-                        <TouchableOpacity
-                          key={day.value}
-                          className={`mx-2 rounded-2xl px-4 py-2 ${dayOfWeek === day.value ? "bg-accent" : "bg-tint-study"}`}
-                          onPress={() => setDayOfWeek(day.value)}
-                        >
-                          <Text
-                            className={`font-bold ${dayOfWeek === day.value ? "text-white" : "text-ink"}`}
-                          >
-                            {day.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
+            <SectionHeader title="Color" />
+            <ColorSwatches value={color} onChange={setColor} disabled={saving} />
 
-                  <View className="mt-4 rounded-3xl bg-surface p-4">
-                    <Text className="text-sm font-bold text-ink">Horario</Text>
-
-                    <View className="mt-3 flex-row gap-3">
-                      <View className="flex-1">
-                        <Text className="text-xs font-semibold text-ink">Inicio</Text>
-                        <TouchableOpacity
-                          className="mt-2 rounded-2xl bg-surface-muted px-4 py-3"
-                          onPress={() => setShowStartPicker(true)}
-                          disabled={saving}
-                        >
-                          <Text className="text-center text-lg font-extrabold text-ink">
-                            {startTime}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-
-                      <View className="items-center justify-center">
-                        <Ionicons name="arrow-forward" size={20} color={COLORS.accent} />
-                      </View>
-
-                      <View className="flex-1">
-                        <Text className="text-xs font-semibold text-ink">Fin</Text>
-                        <TouchableOpacity
-                          className="mt-2 rounded-2xl bg-surface-muted px-4 py-3"
-                          onPress={() => setShowEndPicker(true)}
-                          disabled={saving}
-                        >
-                          <Text className="text-center text-lg font-extrabold text-ink">
-                            {endTime}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View className="mt-4 rounded-3xl bg-surface p-4">
-                    <Text className="text-sm font-bold text-ink">Color</Text>
-                    <View className="mt-3 flex-row flex-wrap gap-2">
-                      {colors.map((col) => (
-                        <TouchableOpacity
-                          key={col.value}
-                          className={`min-w-[28%] flex-1 rounded-2xl border-4 py-3 ${color === col.value ? "" : "border-transparent"}`}
-                          style={{ backgroundColor: col.hex }}
-                          onPress={() => setColor(col.value)}
-                          disabled={saving}
-                        >
-                          <Text className="text-center text-xs font-bold text-ink">
-                            {col.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-
-                  <TouchableOpacity
-                    className="mt-8 rounded-2xl bg-accent py-4 disabled:opacity-60"
-                    onPress={() => void handleSave()}
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <Text className="text-center text-lg font-extrabold text-white">
-                        Guardar cambios
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                </>
-              )}
+            <View className="mt-8">
+              <Button title="Guardar cambios" loading={saving} onPress={() => void handleSave()} />
             </View>
+          </>
+        )}
+      </Screen>
 
-            <TimePickerModal
-              visible={showStartPicker}
-              time={startTime}
-              label="Hora de inicio"
-              onConfirm={(time) => {
-                setStartTime(time);
-                setShowStartPicker(false);
-              }}
-              onCancel={() => setShowStartPicker(false)}
-            />
-
-            <TimePickerModal
-              visible={showEndPicker}
-              time={endTime}
-              label="Hora de fin"
-              onConfirm={(time) => {
-                setEndTime(time);
-                setShowEndPicker(false);
-              }}
-              onCancel={() => setShowEndPicker(false)}
-            />
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+      <TimePickerModal
+        visible={showStartPicker}
+        time={startTime}
+        label="Hora de inicio"
+        onConfirm={(time) => {
+          setStartTime(time);
+          setShowStartPicker(false);
+        }}
+        onCancel={() => setShowStartPicker(false)}
+      />
+      <TimePickerModal
+        visible={showEndPicker}
+        time={endTime}
+        label="Hora de fin"
+        onConfirm={(time) => {
+          setEndTime(time);
+          setShowEndPicker(false);
+        }}
+        onCancel={() => setShowEndPicker(false)}
+      />
       {AlertComponent}
     </>
   );
