@@ -1,22 +1,24 @@
 import { COLORS } from "@/src/shared/theme/tokens";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/src/shared/lib/supabase";
 import { useSession } from "@/src/core/providers/SessionContext";
 import type { Exercise } from "@/src/shared/types/database";
 import { useCustomAlert } from "@/src/shared/components/CustomAlert";
+import {
+  Button,
+  Caption,
+  Chip,
+  Input,
+  ListGroup,
+  ListRow,
+  Screen,
+  SectionHeader,
+  Skeleton,
+  Surface,
+} from "@/src/shared/ui";
 
 const days = [
   { id: 1, short: "L", label: "Lunes" },
@@ -29,7 +31,6 @@ const days = [
 ];
 
 export function RoutineCreateScreen() {
-  const insets = useSafeAreaInsets();
   const { session } = useSession();
   const { showAlert, AlertComponent } = useCustomAlert();
   const [routineName, setRoutineName] = useState("");
@@ -176,146 +177,88 @@ export function RoutineCreateScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-tint-ok">
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+    <>
+      <Screen
+        title="Nueva rutina"
+        subtitle="Arma una rutina con tus ejercicios guardados."
+        withTabBar={false}
+        closable
+        keyboard
       >
-        <ScrollView
-          className="flex-1 bg-tint-ok"
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-        >
-          <View className="px-5 py-6">
-            <TouchableOpacity onPress={() => router.back()} className="mb-4 flex-row items-center">
-              <Ionicons name="chevron-back" size={24} color={COLORS.positive} />
-              <Text className="ml-2 text-lg font-bold text-positive">Volver</Text>
-            </TouchableOpacity>
+        <Input
+          label="Nombre"
+          placeholder="Ejemplo: Fuerza de tren inferior"
+          value={routineName}
+          onChangeText={setRoutineName}
+          editable={!saving}
+        />
 
-            <Text className="text-3xl font-extrabold text-positive">Nueva rutina</Text>
-            <Text className="mt-1 text-sm font-semibold text-positive">
-              Crea una rutina con tus ejercicios guardados
-            </Text>
+        <SectionHeader title="Días" />
+        <View className="flex-row flex-wrap gap-2">
+          {days.map((day) => (
+            <Chip
+              key={day.id}
+              label={day.label}
+              selected={selectedDays.includes(day.id)}
+              onPress={saving ? undefined : () => toggleDay(day.id)}
+            />
+          ))}
+        </View>
 
-            <View className="mt-6 rounded-3xl bg-surface p-4">
-              <Text className="text-sm font-bold text-positive">Nombre de la rutina</Text>
-              <TextInput
-                className="mt-2 rounded-2xl bg-surface-muted px-4 py-3 text-base text-positive"
-                placeholder="Ejemplo: Fuerza de tren inferior"
-                value={routineName}
-                onChangeText={setRoutineName}
-                editable={!saving}
-              />
-            </View>
+        <SectionHeader
+          title="Ejercicios"
+          actionLabel="Crear nuevo"
+          onAction={
+            saving ? undefined : () => router.push("/exercise-create?returnTo=/routine-create")
+          }
+        />
+        {loadingExercises ? (
+          <Skeleton height={140} className="rounded-card" />
+        ) : error ? (
+          <Surface tone="sunken" className="p-4">
+            <Caption className="text-danger">{error}</Caption>
+          </Surface>
+        ) : exercises.length === 0 ? (
+          <Surface tone="sunken" className="p-4">
+            <Caption>
+              Aún no tienes ejercicios guardados. Crea el primero para armar tu rutina.
+            </Caption>
+          </Surface>
+        ) : (
+          <ListGroup>
+            {exercises.map((exercise) => {
+              const isSelected = selectedExerciseIds.includes(exercise.id);
+              return (
+                <ListRow
+                  key={exercise.id}
+                  title={exercise.name}
+                  subtitle={`${exercise.sets} series · ${exercise.reps} repeticiones · ${Math.ceil(exercise.duration_seconds / 60)} min`}
+                  leading={
+                    <Ionicons
+                      name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                      size={26}
+                      color={isSelected ? COLORS.accent : COLORS.inkFaint}
+                    />
+                  }
+                  trailing={<View />}
+                  onPress={saving ? undefined : () => toggleExercise(exercise.id)}
+                />
+              );
+            })}
+          </ListGroup>
+        )}
 
-            <View className="mt-4 rounded-3xl bg-surface p-4">
-              <Text className="text-sm font-bold text-positive">Días de entrenamiento</Text>
-              <View className="mt-3 flex-row flex-wrap">
-                {days.map((day) => {
-                  const active = selectedDays.includes(day.id);
-
-                  return (
-                    <TouchableOpacity
-                      key={day.id}
-                      className={`mb-2 mr-2 rounded-2xl border px-4 py-3 ${active ? "bg-positive" : "bg-surface-muted"}`}
-                      onPress={() => toggleDay(day.id)}
-                      disabled={saving}
-                    >
-                      <Text
-                        className={`text-sm font-extrabold ${active ? "text-white" : "text-positive"}`}
-                      >
-                        {day.short}
-                      </Text>
-                      <Text
-                        className={`text-xs font-semibold ${active ? "text-accent-ink" : "text-positive"}`}
-                      >
-                        {day.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View className="mt-4 rounded-3xl bg-surface p-4">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm font-bold text-positive">Ejercicios para la rutina</Text>
-                <TouchableOpacity
-                  className="rounded-xl bg-surface-muted px-3 py-2"
-                  onPress={() => router.push("/exercise-create?returnTo=/routine-create")}
-                  disabled={saving}
-                >
-                  <Text className="text-xs font-bold text-positive">Añadir ejercicio nuevo</Text>
-                </TouchableOpacity>
-              </View>
-
-              {loadingExercises ? (
-                <View className="items-center py-8">
-                  <ActivityIndicator size="small" color={COLORS.positive} />
-                  <Text className="mt-3 text-sm font-semibold text-positive">
-                    Cargando ejercicios...
-                  </Text>
-                </View>
-              ) : error ? (
-                <View className="mt-4 rounded-2xl bg-surface-muted p-3">
-                  <Text className="text-sm font-semibold text-danger">{error}</Text>
-                </View>
-              ) : exercises.length === 0 ? (
-                <View className="mt-4 rounded-2xl bg-surface-muted p-4">
-                  <Text className="text-sm font-semibold text-positive">
-                    Aún no tienes ejercicios guardados. Crea el primero para armar tu rutina.
-                  </Text>
-                </View>
-              ) : (
-                <View className="mt-4">
-                  {exercises.map((exercise) => {
-                    const isSelected = selectedExerciseIds.includes(exercise.id);
-
-                    return (
-                      <TouchableOpacity
-                        key={exercise.id}
-                        className="mb-3 flex-row items-center rounded-2xl bg-surface-muted p-3"
-                        onPress={() => toggleExercise(exercise.id)}
-                        disabled={saving}
-                      >
-                        <Ionicons
-                          name={isSelected ? "checkbox" : "square"}
-                          size={22}
-                          color={isSelected ? COLORS.positive : COLORS.inkMuted}
-                        />
-                        <View className="ml-3 flex-1">
-                          <Text className="text-sm font-bold text-ink">{exercise.name}</Text>
-                          <Text className="text-xs font-semibold text-ink">
-                            {exercise.sets} series • {exercise.reps} repeticiones •{" "}
-                            {Math.ceil(exercise.duration_seconds / 60)} min
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-
-            <TouchableOpacity
-              className="mb-10 mt-8 rounded-2xl bg-positive py-4 disabled:opacity-60"
-              onPress={handleCreateRoutine}
-              disabled={saving || loadingExercises}
-            >
-              {saving ? (
-                <ActivityIndicator size="large" color="white" />
-              ) : (
-                <Text className="text-center text-lg font-extrabold text-white">
-                  Guardar rutina
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <View className="mt-8">
+          <Button
+            title="Guardar rutina"
+            loading={saving}
+            disabled={loadingExercises}
+            onPress={() => void handleCreateRoutine()}
+          />
+        </View>
+      </Screen>
       {AlertComponent}
-    </SafeAreaView>
+    </>
   );
 }
 
