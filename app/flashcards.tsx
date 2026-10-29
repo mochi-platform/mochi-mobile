@@ -1,9 +1,7 @@
-import { COLORS } from "@/src/shared/theme/tokens";
-import { Ionicons } from "@expo/vector-icons";
+import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, View } from "react-native";
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -16,13 +14,25 @@ import { QUALITY, intervalLabel, nextSchedule, type Rating } from "@/src/feature
 import { addPoints } from "@/src/shared/lib/gamification";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
-import { Button, EmptyState, ErrorState } from "@/src/shared/ui";
+import {
+  Button,
+  Caption,
+  Display,
+  ELEVATION,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  MochiQuote,
+  PressableScale,
+  Screen,
+  Skeleton,
+} from "@/src/shared/ui";
 
 const RATINGS: { rating: Rating; label: string; className: string }[] = [
-  { rating: "again", label: "Otra vez", className: "bg-danger" },
-  { rating: "hard", label: "Difícil", className: "bg-warning" },
-  { rating: "good", label: "Bien", className: "bg-accent" },
-  { rating: "easy", label: "Fácil", className: "bg-positive" },
+  { rating: "again", label: "Otra vez", className: "bg-tint-me" },
+  { rating: "hard", label: "Difícil", className: "bg-tint-kitchen" },
+  { rating: "good", label: "Bien", className: "bg-accent-soft" },
+  { rating: "easy", label: "Fácil", className: "bg-tint-ok" },
 ];
 
 /** Repaso espaciado (SM-2): solo aparecen las tarjetas que ya toca ver. */
@@ -105,43 +115,47 @@ export function FlashcardsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-canvas">
-        <ActivityIndicator size="large" color={COLORS.accent} />
-      </SafeAreaView>
+      <Screen title="Repaso" withTabBar={false} closable>
+        <Skeleton height={320} className="mt-6 rounded-card" />
+      </Screen>
     );
   }
   if (failed) {
     return (
-      <SafeAreaView className="flex-1 justify-center bg-canvas">
+      <Screen title="Repaso" withTabBar={false} closable>
         <ErrorState
           onRetry={() => router.replace(deckId ? `/flashcards?deckId=${deckId}` : "/flashcards")}
         />
-      </SafeAreaView>
+      </Screen>
     );
   }
   if (!card && !completed) {
     return (
-      <SafeAreaView className="flex-1 justify-center bg-canvas px-4">
+      <Screen title="Repaso" withTabBar={false} closable>
         <EmptyState
           title="Nada que repasar por hoy"
           message="Cuando una tarjeta toque verse de nuevo, aparecerá aquí."
           actionLabel="Volver a mis mazos"
           onAction={() => router.back()}
         />
-      </SafeAreaView>
+      </Screen>
     );
   }
   if (completed) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-canvas px-6">
-        <Text className="text-2xl font-extrabold text-ink">¡Repaso completo!</Text>
-        <Text className="mb-6 mt-2 text-center text-sm font-semibold text-ink-muted">
-          Repasaste {reviewed} tarjetas. Mochi te las mostrará de nuevo cuando toque.
-        </Text>
-        <View className="self-stretch">
-          <Button title="Volver" onPress={() => router.back()} />
+      <Screen withTabBar={false} scroll={false}>
+        <View className="flex-1 items-center justify-center">
+          <MochiCharacter expression="celebrating" size={170} />
+          <Display className="mt-2 text-center">¡Repaso completo!</Display>
+          <MochiQuote className="mt-2 text-center text-[17px] leading-[23px]">
+            Repasaste {reviewed} {reviewed === 1 ? "tarjeta" : "tarjetas"}. Te las muestro de nuevo
+            cuando toque.
+          </MochiQuote>
+          <View className="mt-6 self-stretch">
+            <Button title="Listo" onPress={() => router.back()} />
+          </View>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
@@ -154,75 +168,75 @@ export function FlashcardsScreen() {
   const progress = Math.round(((index + 1) / cards.length) * 100);
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas px-5">
-      <View className="mt-4 flex-row items-center justify-between">
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          onPress={() => router.back()}
-          className="min-h-[44px] flex-row items-center"
-        >
-          <Ionicons name="chevron-back" size={22} color={COLORS.accent} />
-          <Text className="text-sm font-bold text-ink-muted">Volver</Text>
-        </TouchableOpacity>
-        <Text className="text-xs font-bold text-ink-muted">
-          {index + 1}/{cards.length}
-        </Text>
+    <Screen
+      title="Repaso"
+      withTabBar={false}
+      scroll={false}
+      closable
+      headerRight={
+        <Caption className="mt-3">
+          {index + 1} de {cards.length}
+        </Caption>
+      }
+    >
+      <View className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-muted">
+        <View className="h-full rounded-full bg-accent" style={{ width: `${progress}%` }} />
       </View>
 
-      <View className="mt-4 h-2 w-full rounded-full bg-accent-soft">
-        <View className="h-2 rounded-full bg-accent" style={{ width: `${progress}%` }} />
-      </View>
-
-      <TouchableOpacity
-        accessibilityRole="button"
+      <PressableScale
+        haptics="selection"
+        scaleTo={0.98}
         accessibilityLabel={
           flipped
             ? `Respuesta: ${current.back}`
             : `Pregunta: ${current.front}. Toca para ver la respuesta`
         }
-        className="mt-8 h-80"
-        activeOpacity={0.95}
+        className="mt-6 h-80"
         onPress={toggle}
       >
         <Animated.View
-          style={frontStyle}
-          className="absolute h-full w-full rounded-card border-2 border-line bg-surface p-6"
+          style={[frontStyle, ELEVATION[2]]}
+          className="absolute h-full w-full justify-center rounded-card bg-surface p-6"
         >
-          <Text className="text-xs font-bold uppercase text-ink-muted">Frente</Text>
-          <Text className="mt-4 text-lg font-extrabold text-ink">{current.front}</Text>
+          <Eyebrow>Pregunta</Eyebrow>
+          <Text className="mt-3 font-display text-[24px] leading-[30px] text-ink">
+            {current.front}
+          </Text>
         </Animated.View>
         <Animated.View
-          style={backStyle}
-          className="absolute h-full w-full rounded-card border-2 border-accent bg-accent-soft p-6"
+          style={[backStyle, ELEVATION[2]]}
+          className="absolute h-full w-full justify-center rounded-card bg-accent-soft p-6"
         >
-          <Text className="text-xs font-bold uppercase text-ink-muted">Respuesta</Text>
-          <Text className="mt-4 text-lg font-extrabold text-ink">{current.back}</Text>
+          <Eyebrow>Respuesta</Eyebrow>
+          <Text className="mt-3 font-body-bold text-[19px] leading-[26px] text-ink">
+            {current.back}
+          </Text>
         </Animated.View>
-      </TouchableOpacity>
+      </PressableScale>
 
       {flipped ? (
-        <View className="mt-6 flex-row gap-2">
-          {RATINGS.map(({ rating, label, className }) => (
-            <TouchableOpacity
-              key={rating}
-              accessibilityRole="button"
-              className={`min-h-[56px] flex-1 items-center justify-center rounded-control px-1 ${className}`}
-              onPress={() => void rate(rating)}
-            >
-              <Text className="text-sm font-extrabold text-white">{label}</Text>
-              <Text className="text-[10px] font-semibold text-white">
-                {intervalLabel(nextSchedule(schedule, QUALITY[rating]).intervalDays)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <>
+          <Caption className="mt-6 text-center">¿Qué tan bien la recordaste?</Caption>
+          <View className="mt-2 flex-row gap-2">
+            {RATINGS.map(({ rating, label, className }) => (
+              <PressableScale
+                key={rating}
+                accessibilityLabel={label}
+                className={`min-h-[60px] flex-1 items-center justify-center rounded-control px-1 ${className}`}
+                onPress={() => void rate(rating)}
+              >
+                <Text className="font-body-extrabold text-sm text-ink">{label}</Text>
+                <Text className="font-body text-[11px] text-ink-muted">
+                  {intervalLabel(nextSchedule(schedule, QUALITY[rating]).intervalDays)}
+                </Text>
+              </PressableScale>
+            ))}
+          </View>
+        </>
       ) : (
-        <Text className="mt-6 text-center text-sm font-semibold text-ink-muted">
-          Toca la tarjeta para voltearla
-        </Text>
+        <Caption className="mt-6 text-center">Toca la tarjeta para ver la respuesta.</Caption>
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }
 
