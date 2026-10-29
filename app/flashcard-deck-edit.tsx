@@ -3,12 +3,21 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View } from "react-native";
 import { AIError, generateFlashcardsFromImage } from "@/src/shared/lib/ai";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
-import { Button, Card, Input } from "@/src/shared/ui";
+import {
+  Button,
+  Caption,
+  Input,
+  ListGroup,
+  ListRow,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Surface,
+} from "@/src/shared/ui";
 
 type Draft = { front: string; back: string };
 type ExistingCard = { id: string; front: string; back: string };
@@ -143,55 +152,40 @@ export function FlashcardDeckEditScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <View className="flex-row items-center px-4 pb-2 pt-2">
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          className="h-11 w-11 items-center justify-center"
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
-        </TouchableOpacity>
-        <Text className="ml-1 text-xl font-extrabold text-ink">
-          {deckId ? "Editar mazo" : "Nuevo mazo"}
-        </Text>
-      </View>
+    <Screen title={deckId ? "Editar mazo" : "Nuevo mazo"} withTabBar={false} closable keyboard>
+      <Input label="Materia" value={subject} onChangeText={setSubject} editable={!deckId} />
+      <Input label="Tema (opcional)" value={topic} onChangeText={setTopic} editable={!deckId} />
 
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Input label="Materia" value={subject} onChangeText={setSubject} editable={!deckId} />
-        <Input label="Tema (opcional)" value={topic} onChangeText={setTopic} editable={!deckId} />
-
-        {existing.length > 0 ? (
-          <View className="mb-4">
-            <Text className="mb-2 text-sm font-bold text-ink">
-              Tarjetas del mazo ({existing.length})
-            </Text>
+      {existing.length > 0 ? (
+        <>
+          <SectionHeader title={`Tarjetas del mazo (${existing.length})`} />
+          <ListGroup>
             {existing.map((c) => (
-              <Card key={c.id} className="mb-2 flex-row items-center">
-                <View className="flex-1 pr-2">
-                  <Text className="text-sm font-extrabold text-ink">{c.front}</Text>
-                  <Text className="text-xs font-semibold text-ink-muted">{c.back}</Text>
-                </View>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Borrar tarjeta"
-                  className="h-11 w-11 items-center justify-center"
-                  onPress={() => void removeExisting(c.id)}
-                >
-                  <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
-                </TouchableOpacity>
-              </Card>
+              <ListRow
+                key={c.id}
+                title={c.front}
+                subtitle={c.back}
+                multiline
+                trailing={
+                  <PressableScale
+                    haptics="warning"
+                    accessibilityLabel="Borrar tarjeta"
+                    onPress={() => void removeExisting(c.id)}
+                    className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+                  >
+                    <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                  </PressableScale>
+                }
+              />
             ))}
-          </View>
-        ) : null}
+          </ListGroup>
+        </>
+      ) : null}
 
-        <Text className="mb-2 text-sm font-bold text-ink">Tarjetas nuevas</Text>
+      <SectionHeader title="Tarjetas nuevas" />
+      <View className="gap-3">
         {drafts.map((draft, i) => (
-          <Card key={i} className="mb-3">
+          <Surface key={i} className="p-4 pb-2">
             <Input
               label={`Pregunta ${i + 1}`}
               value={draft.front}
@@ -205,36 +199,40 @@ export function FlashcardDeckEditScreen() {
               multiline
             />
             {drafts.length > 1 ? (
-              <Button
-                title="Quitar"
-                variant="outline"
-                onPress={() => setDrafts((prev) => prev.filter((_, idx) => idx !== i))}
-              />
+              <View className="mb-2">
+                <Button
+                  title="Quitar"
+                  variant="ghost"
+                  onPress={() => setDrafts((prev) => prev.filter((_, idx) => idx !== i))}
+                />
+              </View>
             ) : null}
-          </Card>
+          </Surface>
         ))}
+      </View>
 
-        <View className="gap-2">
-          <Button
-            title="Agregar otra tarjeta"
-            variant="soft"
-            onPress={() => setDrafts((prev) => [...prev, { front: "", back: "" }])}
-          />
-          <Button
-            title="Generar desde una foto (Premium)"
-            variant="outline"
-            loading={busy === "photo"}
-            onPress={() => void importFromPhoto()}
-          />
-        </View>
+      <View className="mt-3 gap-2">
+        <Button
+          title="Agregar otra tarjeta"
+          variant="soft"
+          icon="add"
+          onPress={() => setDrafts((prev) => [...prev, { front: "", back: "" }])}
+        />
+        <Button
+          title="Crear desde una foto (Premium)"
+          variant="outline"
+          icon="camera-outline"
+          loading={busy === "photo"}
+          onPress={() => void importFromPhoto()}
+        />
+      </View>
 
-        {error ? <Text className="mt-3 text-sm font-semibold text-danger">{error}</Text> : null}
+      {error ? <Caption className="ml-1 mt-3 text-danger">{error}</Caption> : null}
 
-        <View className="mt-5">
-          <Button title="Guardar" loading={busy === "save"} onPress={() => void save()} />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <View className="mt-5">
+        <Button title="Guardar" loading={busy === "save"} onPress={() => void save()} />
+      </View>
+    </Screen>
   );
 }
 
