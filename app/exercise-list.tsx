@@ -2,14 +2,26 @@ import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View } from "react-native";
 import { useCycle } from "@/src/core/providers/CycleContext";
 import { energyTip, suggestForToday, type ExerciseItem } from "@/src/features/exercise/suggestions";
 import { energyProfileFromPhase } from "@/src/shared/lib/ai";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
-import { Button, Card, EmptyState, ErrorState, Skeleton } from "@/src/shared/ui";
+import {
+  ACCENT_GLOW,
+  Caption,
+  EmptyState,
+  ErrorState,
+  IconTile,
+  ListGroup,
+  ListRow,
+  MochiBubble,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Skeleton,
+} from "@/src/shared/ui";
 
 /** Lista real de ejercicios, con sugerencias según tu energía de hoy. */
 export function ExerciseListScreen() {
@@ -56,84 +68,77 @@ export function ExerciseListScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <View className="flex-row items-center px-4 pb-2 pt-2">
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          className="h-11 w-11 items-center justify-center"
-          onPress={() => router.back()}
+    <Screen
+      title="Mis ejercicios"
+      withTabBar={false}
+      closable
+      headerRight={
+        <PressableScale
+          onPress={() => router.push("/exercise-create")}
+          accessibilityLabel="Crear ejercicio"
+          className="h-10 w-10 items-center justify-center rounded-full bg-accent"
+          style={ACCENT_GLOW}
         >
-          <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
-        </TouchableOpacity>
-        <Text className="ml-1 text-xl font-extrabold text-ink">Mis ejercicios</Text>
-      </View>
+          <Ionicons name="add" size={24} color={COLORS.accentInk} />
+        </PressableScale>
+      }
+    >
+      {loading ? (
+        <View className="mt-4 gap-3">
+          <Skeleton height={72} className="rounded-card" />
+          <Skeleton height={140} className="rounded-card" />
+        </View>
+      ) : failed ? (
+        <ErrorState onRetry={() => void load()} />
+      ) : items.length === 0 ? (
+        <EmptyState
+          title="Aún no tienes ejercicios"
+          message="Crea tu primer ejercicio y úsalo en tus rutinas."
+          actionLabel="Crear ejercicio"
+          onAction={() => router.push("/exercise-create")}
+        />
+      ) : (
+        <>
+          <MochiBubble className="mt-4" text={energyTip(energy)}>
+            {suggested.length > 0 ? (
+              <Caption className="mt-2">
+                Para hoy: {suggested.map((s) => s.name).join(", ")}
+              </Caption>
+            ) : null}
+          </MochiBubble>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        {loading ? (
-          <View className="gap-3">
-            <Skeleton height={72} />
-            <Skeleton height={72} />
-          </View>
-        ) : failed ? (
-          <ErrorState onRetry={() => void load()} />
-        ) : items.length === 0 ? (
-          <EmptyState
-            title="Aún no tienes ejercicios"
-            message="Crea tu primer ejercicio y úsalo en tus rutinas."
-            actionLabel="Crear ejercicio"
-            onAction={() => router.push("/exercise-create")}
-          />
-        ) : (
-          <>
-            <Card className="mb-4 bg-accent-soft">
-              <Text className="text-sm font-extrabold text-ink">Para hoy</Text>
-              <Text className="mb-2 mt-1 text-xs font-semibold text-ink-muted">
-                {energyTip(energy)}
-              </Text>
-              {suggested.map((s) => (
-                <Text key={s.id} className="text-sm font-bold text-ink">
-                  • {s.name}
-                </Text>
-              ))}
-            </Card>
-
+          <SectionHeader title="Tus ejercicios" />
+          <ListGroup>
             {items.map((item) => (
-              <Card key={item.id} className="mb-3 flex-row items-center">
-                <View className="flex-1 pr-2">
-                  <Text className="text-base font-extrabold text-ink">{item.name}</Text>
-                  <Text className="text-xs font-semibold text-ink-muted">
-                    {[
-                      item.sets ? `${item.sets} series` : null,
-                      item.reps ? `${item.reps} repeticiones` : null,
-                      item.duration_seconds ? `${item.duration_seconds} s` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel={`Borrar ${item.name}`}
-                  className="h-11 w-11 items-center justify-center"
-                  onPress={() => void remove(item.id)}
-                >
-                  <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
-                </TouchableOpacity>
-              </Card>
-            ))}
-
-            <View className="mt-2">
-              <Button
-                title="Crear ejercicio"
-                variant="soft"
-                onPress={() => router.push("/exercise-create")}
+              <ListRow
+                key={item.id}
+                title={item.name}
+                subtitle={
+                  [
+                    item.sets ? `${item.sets} series` : null,
+                    item.reps ? `${item.reps} repeticiones` : null,
+                    item.duration_seconds ? `${item.duration_seconds} s` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || undefined
+                }
+                leading={<IconTile icon="barbell" tint="study" />}
+                trailing={
+                  <PressableScale
+                    haptics="warning"
+                    accessibilityLabel={`Borrar ${item.name}`}
+                    onPress={() => void remove(item.id)}
+                    className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted"
+                  >
+                    <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                  </PressableScale>
+                }
               />
-            </View>
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+            ))}
+          </ListGroup>
+        </>
+      )}
+    </Screen>
   );
 }
 

@@ -1,13 +1,27 @@
+import { MochiCharacter } from "@/src/shared/components/MochiCharacter";
 import { COLORS } from "@/src/shared/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, View } from "react-native";
 import type { Deck } from "@/src/features/flashcards/types";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
-import { Button, Card, EmptyState, ErrorState, Skeleton } from "@/src/shared/ui";
+import {
+  ACCENT_GLOW,
+  Button,
+  Caption,
+  EmptyState,
+  ErrorState,
+  IconTile,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Skeleton,
+  Strong,
+  Surface,
+  Title,
+} from "@/src/shared/ui";
 
 type DeckRow = Deck & { total: number; due: number };
 
@@ -61,92 +75,88 @@ export function FlashcardDecksScreen() {
   const totalDue = decks.reduce((sum, deck) => sum + deck.due, 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <View className="flex-row items-center px-4 pb-2 pt-2">
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          className="h-11 w-11 items-center justify-center"
-          onPress={() => router.back()}
+    <Screen
+      title="Mis mazos"
+      withTabBar={false}
+      closable
+      headerRight={
+        <PressableScale
+          onPress={() => router.push("/flashcard-deck-edit")}
+          accessibilityLabel="Nuevo mazo"
+          className="h-10 w-10 items-center justify-center rounded-full bg-accent"
+          style={ACCENT_GLOW}
         >
-          <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
-        </TouchableOpacity>
-        <Text className="ml-1 text-xl font-extrabold text-ink">Mis mazos</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        {loading ? (
-          <View className="gap-3">
-            <Skeleton height={88} />
-            <Skeleton height={88} />
-          </View>
-        ) : failed ? (
-          <ErrorState onRetry={() => void load()} />
-        ) : decks.length === 0 ? (
-          <EmptyState
-            title="Todavía no tienes mazos"
-            message="Crea uno a mano o deja que Mochi genere tarjetas desde un tema."
-            actionLabel="Crear mi primer mazo"
-            onAction={() => router.push("/flashcard-deck-edit")}
-          />
-        ) : (
-          <>
-            {totalDue > 0 ? (
-              <Card className="mb-4 bg-accent-soft">
-                <Text className="text-base font-extrabold text-ink">
-                  {totalDue} {totalDue === 1 ? "tarjeta toca" : "tarjetas tocan"} repasarse hoy
-                </Text>
-                <View className="mt-3">
+          <Ionicons name="add" size={24} color={COLORS.accentInk} />
+        </PressableScale>
+      }
+    >
+      {loading ? (
+        <View className="mt-4 gap-3">
+          <Skeleton height={96} className="rounded-card" />
+          <Skeleton height={96} className="rounded-card" />
+        </View>
+      ) : failed ? (
+        <ErrorState onRetry={() => void load()} />
+      ) : decks.length === 0 ? (
+        <EmptyState
+          title="Todavía no tienes mazos"
+          message="Crea uno a mano o deja que Mochi genere tarjetas desde un tema."
+          actionLabel="Crear mi primer mazo"
+          onAction={() => router.push("/flashcard-deck-edit")}
+        />
+      ) : (
+        <>
+          {totalDue > 0 ? (
+            <Surface elevation={2} className="mt-4 flex-row items-center gap-3 p-4">
+              <MochiCharacter expression="focused" size={72} animated={false} shadow={false} />
+              <View className="min-w-0 flex-1">
+                <Title>
+                  {totalDue} {totalDue === 1 ? "tarjeta toca hoy" : "tarjetas tocan hoy"}
+                </Title>
+                <View className="mt-2.5 self-start">
                   <Button title="Repasar todo" onPress={() => router.push("/flashcards")} />
                 </View>
-              </Card>
-            ) : null}
+              </View>
+            </Surface>
+          ) : null}
 
+          <SectionHeader title="Tus mazos" />
+          <View className="gap-3">
             {decks.map((deck) => (
-              <TouchableOpacity
-                key={deck.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${deck.subject}, ${deck.topic}. ${deck.due} por repasar de ${deck.total}`}
-                className="mb-3"
-                onPress={() => router.push(`/flashcards?deckId=${deck.id}`)}
-              >
-                <Card>
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-1 pr-3">
-                      <Text className="text-base font-extrabold text-ink">{deck.subject}</Text>
-                      <Text className="text-xs font-semibold text-ink-muted">{deck.topic}</Text>
-                    </View>
-                    <View className="items-end">
-                      <Text className="text-sm font-extrabold text-accent">
-                        {deck.due} por repasar
-                      </Text>
-                      <Text className="text-xs font-semibold text-ink-muted">
-                        {deck.total} tarjetas
-                      </Text>
-                    </View>
+              <Surface key={deck.id} className="p-4">
+                <View className="flex-row items-center gap-3">
+                  <IconTile icon="layers" tint="me" />
+                  <View className="min-w-0 flex-1">
+                    <Strong numberOfLines={1}>{deck.subject}</Strong>
+                    <Caption numberOfLines={1}>{deck.topic}</Caption>
                   </View>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    className="mt-2 min-h-[44px] justify-center"
-                    onPress={() => router.push(`/flashcard-deck-edit?deckId=${deck.id}`)}
-                  >
-                    <Text className="text-xs font-extrabold text-ink-muted">Editar tarjetas</Text>
-                  </TouchableOpacity>
-                </Card>
-              </TouchableOpacity>
+                  <View className="items-end">
+                    <Text className="font-display text-xl text-accent-strong">{deck.due}</Text>
+                    <Caption className="text-[11px]">de {deck.total}</Caption>
+                  </View>
+                </View>
+                <View className="mt-3 flex-row gap-2">
+                  <View className="flex-1">
+                    <Button
+                      title="Repasar"
+                      variant="soft"
+                      onPress={() => router.push(`/flashcards?deckId=${deck.id}`)}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Button
+                      title="Editar"
+                      variant="outline"
+                      onPress={() => router.push(`/flashcard-deck-edit?deckId=${deck.id}`)}
+                    />
+                  </View>
+                </View>
+              </Surface>
             ))}
-
-            <View className="mt-2">
-              <Button
-                title="Nuevo mazo"
-                variant="soft"
-                onPress={() => router.push("/flashcard-deck-edit")}
-              />
-            </View>
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+        </>
+      )}
+    </Screen>
   );
 }
 

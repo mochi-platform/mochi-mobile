@@ -1,9 +1,6 @@
-import { COLORS } from "@/src/shared/theme/tokens";
-import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, View } from "react-native";
 import {
   formatDayLabel,
   formatHours,
@@ -13,7 +10,19 @@ import {
 import { toLocalISODate } from "@/src/shared/lib/dates";
 import { reportError } from "@/src/shared/lib/observability/reportError";
 import { supabase } from "@/src/shared/lib/supabase";
-import { Card, Chip, EmptyState, ErrorState, Skeleton } from "@/src/shared/ui";
+import {
+  EmptyState,
+  ErrorState,
+  IconTile,
+  ListGroup,
+  ListRow,
+  Screen,
+  SectionHeader,
+  Segmented,
+  Skeleton,
+  Stat,
+  Surface,
+} from "@/src/shared/ui";
 
 const RANGES = [
   { days: 7, label: "7 días" },
@@ -61,80 +70,63 @@ export function StudyHistoryScreen() {
   const today = toLocalISODate(new Date());
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <View className="flex-row items-center px-4 pb-2 pt-2">
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          className="h-11 w-11 items-center justify-center"
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
-        </TouchableOpacity>
-        <Text className="ml-1 text-xl font-extrabold text-ink">Historial de estudio</Text>
-      </View>
+    <Screen title="Historial" withTabBar={false} closable>
+      <Segmented
+        className="mt-2"
+        options={RANGES.map((r) => ({ value: String(r.days), label: r.label }))}
+        value={String(rangeDays)}
+        onChange={(value) => setRangeDays(Number(value))}
+      />
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        <View className="mb-4 flex-row gap-2">
-          {RANGES.map((r) => (
-            <Chip
-              key={r.days}
-              label={r.label}
-              selected={rangeDays === r.days}
-              onPress={() => setRangeDays(r.days)}
-            />
-          ))}
+      {loading ? (
+        <View className="mt-4 gap-3">
+          <Skeleton height={90} className="rounded-card" />
+          <Skeleton height={140} className="rounded-card" />
         </View>
+      ) : failed ? (
+        <ErrorState onRetry={() => void load()} />
+      ) : groups.length === 0 ? (
+        <EmptyState
+          title="Aún no hay sesiones"
+          message="Cuando termines una sesión de estudio, aparecerá aquí."
+          actionLabel="Ir a estudiar"
+          onAction={() => router.replace("/study")}
+        />
+      ) : (
+        <>
+          <Surface elevation={2} className="mt-4 flex-row items-center gap-6 p-4">
+            <Stat value={formatHours(totalSeconds)} label="en total" />
+            <Stat value={String(rows.length)} label={rows.length === 1 ? "sesión" : "sesiones"} />
+          </Surface>
 
-        {loading ? (
-          <View className="gap-3">
-            <Skeleton height={72} />
-            <Skeleton height={72} />
-            <Skeleton height={72} />
-          </View>
-        ) : failed ? (
-          <ErrorState onRetry={() => void load()} />
-        ) : groups.length === 0 ? (
-          <EmptyState
-            title="Aún no hay sesiones"
-            message="Cuando termines una sesión de estudio, aparecerá aquí."
-            actionLabel="Ir a estudiar"
-            onAction={() => router.replace("/study")}
-          />
-        ) : (
-          <>
-            <Card className="mb-4 bg-accent-soft">
-              <Text className="text-xs font-extrabold uppercase text-ink-muted">
-                Total en el periodo
-              </Text>
-              <Text className="text-2xl font-extrabold text-ink">{formatHours(totalSeconds)}</Text>
-              <Text className="text-xs font-semibold text-ink-muted">{rows.length} sesiones</Text>
-            </Card>
-
-            {groups.map((group) => (
-              <View key={group.day} className="mb-4">
-                <View className="mb-2 flex-row items-center justify-between">
-                  <Text className="text-sm font-extrabold capitalize text-ink">
-                    {formatDayLabel(group.day, today)}
-                  </Text>
-                  <Text className="text-xs font-bold text-ink-muted">
-                    {formatHours(group.totalSeconds)}
-                  </Text>
-                </View>
+          {groups.map((group) => (
+            <View key={group.day}>
+              <SectionHeader
+                title={(() => {
+                  const label = formatDayLabel(group.day, today);
+                  return label.charAt(0).toUpperCase() + label.slice(1);
+                })()}
+                actionLabel={formatHours(group.totalSeconds)}
+              />
+              <ListGroup>
                 {group.sessions.map((s) => (
-                  <Card key={s.id} className="mb-2 flex-row items-center justify-between">
-                    <Text className="flex-1 pr-2 text-sm font-bold text-ink">{s.subject}</Text>
-                    <Text className="text-xs font-extrabold text-accent">
-                      {formatHours(s.duration_seconds)}
-                    </Text>
-                  </Card>
+                  <ListRow
+                    key={s.id}
+                    title={s.subject}
+                    leading={<IconTile icon="book" tint="study" />}
+                    trailing={
+                      <Text className="font-body-extrabold text-sm text-accent-strong">
+                        {formatHours(s.duration_seconds)}
+                      </Text>
+                    }
+                  />
                 ))}
-              </View>
-            ))}
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+              </ListGroup>
+            </View>
+          ))}
+        </>
+      )}
+    </Screen>
   );
 }
 

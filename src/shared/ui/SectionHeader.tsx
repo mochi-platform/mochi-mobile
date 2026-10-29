@@ -28,6 +28,8 @@ export function SectionHeader({
         >
           <Text className="font-body-extrabold text-sm text-accent-strong">{actionLabel}</Text>
         </PressableScale>
+      ) : actionLabel ? (
+        <Text className="font-body-bold text-sm text-ink-muted">{actionLabel}</Text>
       ) : null}
     </View>
   );
