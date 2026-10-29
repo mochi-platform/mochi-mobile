@@ -1,9 +1,10 @@
 import { COLORS } from "@/src/shared/theme/tokens";
 import { toLocalISODate } from "@/src/shared/lib/dates";
 import { Ionicons } from "@expo/vector-icons";
-import { Text, View, ScrollView, TouchableOpacity } from "react-native";
+import { Text, View, ScrollView } from "react-native";
 import { useExamSprintProgress } from "@/src/shared/hooks/useExamSprintProgress";
 import type { ExamPrepSprint, ExamSprintMilestone } from "@mochi/supabase/types";
+import { Caption, Stat, Strong, Surface } from "@/src/shared/ui";
 
 interface SprintTrackerProps {
   sprint: ExamPrepSprint & { milestones?: ExamSprintMilestone[] };
@@ -47,61 +48,45 @@ export function SprintTracker({ sprint }: SprintTrackerProps) {
     };
   });
 
+  const average =
+    progressEntries.reduce((sum, p) => sum + p.hours_studied, 0) / (completedDays || 1);
   return (
-    <View className="rounded-2xl bg-surface p-4">
-      {/* Header */}
-      <View className="mb-4">
-        <View className="mb-2 flex-row items-center justify-between">
-          <Text className="text-base font-bold text-ink">
-            Progreso: {completedDays}/{totalDays} días
-          </Text>
-        </View>
-
-        {/* Progress Bar */}
-        <View className="h-2 overflow-hidden rounded-full bg-surface-muted">
-          <View
-            className="h-full bg-positive"
-            style={{ width: `${(completedDays / totalDays) * 100}%` }}
-          />
-        </View>
+    <Surface className="p-4">
+      <View className="flex-row items-center justify-between">
+        <Strong>
+          {completedDays} de {totalDays} días
+        </Strong>
+        <Caption>{Math.round((completedDays / totalDays) * 100)}%</Caption>
+      </View>
+      <View className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted">
+        <View
+          className="h-full rounded-full bg-positive"
+          style={{ width: `${(completedDays / totalDays) * 100}%` }}
+        />
       </View>
 
-      {/* Days Calendar Grid */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View className="flex-row gap-2">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-4 mt-4">
+        <View className="flex-row gap-2 px-4">
           {days.map((day) => (
-            <TouchableOpacity
+            <View
               key={day.dayNumber}
-              activeOpacity={0.85}
-              className={`h-12 w-12 items-center justify-center rounded-lg border-2 ${
-                day.completed ? "bg-tint-ok" : "bg-surface-muted"
-              }`}
+              accessibilityLabel={`Día ${day.dayNumber}${day.completed ? ", completado" : ""}`}
+              className={`h-12 w-12 items-center justify-center rounded-[14px] ${day.completed ? "bg-tint-ok" : "bg-surface-muted"}`}
             >
-              <Text className="text-center text-xs font-semibold">{day.dayNumber}</Text>
-              {day.completed && <Ionicons name="checkmark" size={16} color={COLORS.positive} />}
-            </TouchableOpacity>
+              {day.completed ? (
+                <Ionicons name="checkmark" size={18} color={COLORS.positive} />
+              ) : (
+                <Text className="font-body-extrabold text-sm text-ink-muted">{day.dayNumber}</Text>
+              )}
+            </View>
           ))}
         </View>
       </ScrollView>
 
-      {/* Stats */}
-      <View className="mt-4 pt-3">
-        <View className="flex-row justify-between">
-          <View>
-            <Text className="text-xs text-ink">Horas promedio</Text>
-            <Text className="text-sm font-bold text-ink">
-              {(
-                progressEntries.reduce((sum, p) => sum + p.hours_studied, 0) / (completedDays || 1)
-              ).toFixed(1)}
-              h
-            </Text>
-          </View>
-          <View>
-            <Text className="text-xs text-ink">Meta diaria</Text>
-            <Text className="text-sm font-bold text-ink">{sprint.daily_target_hours}h</Text>
-          </View>
-        </View>
+      <View className="mt-4 flex-row">
+        <Stat className="flex-1" value={`${average.toFixed(1)}h`} label="promedio al día" />
+        <Stat className="flex-1" value={`${sprint.daily_target_hours}h`} label="meta diaria" />
       </View>
-    </View>
+    </Surface>
   );
 }
