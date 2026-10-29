@@ -1,4 +1,8 @@
 import { refreshDuoWidget } from "@/src/features/duo/widget";
+import {
+  registerWidgetRefresh,
+  unregisterWidgetRefresh,
+} from "@/src/shared/widgets/backgroundRefresh";
 import "../global.css";
 import { useEffect, useRef } from "react";
 import { Stack, router, usePathname, useSegments, type ErrorBoundaryProps } from "expo-router";
@@ -180,6 +184,13 @@ function RootLayoutNavigator() {
   const pathname = usePathname();
   const segments = useSegments();
   const notificationResponseListener = useRef<NotificationEventSubscription | null>(null);
+
+  // Con sesión, Android refresca los widgets en segundo plano (~30 min); sin sesión, se cancela.
+  const signedIn = Boolean(session);
+  useEffect(() => {
+    if (isExpoGo) return;
+    void (signedIn ? registerWidgetRefresh() : unregisterWidgetRefresh());
+  }, [signedIn]);
 
   // El widget de Duo se refresca al abrir la app y cada vez que vuelve al frente.
   const duoUserId = moduleVisibility.partner_features_enabled ? session?.user.id : undefined;
